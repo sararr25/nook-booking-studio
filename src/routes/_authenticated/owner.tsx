@@ -142,8 +142,20 @@ const flashDesigns = [
 ];
 
 function FlashTab() {
-  const [files, setFiles] = useState<string[]>([]);
-  return <div><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Pre-made tattoos</p><h2 className="display mt-3 text-3xl">The flash book</h2><p className="mt-2 text-sm text-muted-foreground">Available designs can be selected directly during booking.</p></div><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm border border-border px-4 text-sm hover:bg-secondary"><Upload className="size-4"/>Upload design<input type="file" accept="image/*" multiple className="sr-only" onChange={(event) => { const names = Array.from(event.target.files ?? []).map((file) => file.name); setFiles((current) => [...current, ...names]); toast.success(`${names.length} design${names.length === 1 ? "" : "s"} ready to save`); }} /></label></div><div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">{flashDesigns.map((design) => <article key={design.id} className="overflow-hidden rounded-sm border border-border bg-card"><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><div className="p-3"><h3 className="text-sm font-semibold">{design.title}</h3><p className="mt-1 text-xs text-muted-foreground">€{design.price} · {formatDuration(design.duration)}</p></div></article>)}{files.map((name) => <div key={name} className="flex aspect-[4/5] items-center justify-center rounded-sm border border-dashed border-brand bg-brand-soft/30 p-4 text-center"><span><ImagePlus className="mx-auto size-5"/><span className="mt-2 block text-xs">{name}</span></span></div>)}</div></div>;
+  const [uploads, setUploads] = useState<{ name: string; url: string }[]>([]);
+  const upload = async (files: File[]) => {
+    for (const file of files) {
+      const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+      const { error: storageError } = await supabase.storage.from("flash-gallery").upload(path, file);
+      if (storageError) { toast.error(storageError.message); continue; }
+      const { error: rowError } = await supabase.from("flash_designs").insert({ title: file.name.replace(/\.[^.]+$/, ""), image_path: path, price: 150, duration_minutes: 90 });
+      if (rowError) { toast.error(rowError.message); continue; }
+      const { data } = await supabase.storage.from("flash-gallery").createSignedUrl(path, 3600);
+      if (data?.signedUrl) setUploads((current) => [...current, { name: file.name, url: data.signedUrl }]);
+      toast.success(`${file.name} added to the flash book`);
+    }
+  };
+  return <div><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Pre-made tattoos</p><h2 className="display mt-3 text-3xl">The flash book</h2><p className="mt-2 text-sm text-muted-foreground">Available designs can be selected directly during booking.</p></div><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm border border-border px-4 text-sm hover:bg-secondary"><Upload className="size-4"/>Upload design<input type="file" accept="image/*" multiple className="sr-only" onChange={(event) => void upload(Array.from(event.target.files ?? []))} /></label></div><div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">{flashDesigns.map((design) => <article key={design.id} className="overflow-hidden rounded-sm border border-border bg-card"><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><div className="p-3"><h3 className="text-sm font-semibold">{design.title}</h3><p className="mt-1 text-xs text-muted-foreground">€{design.price} · {formatDuration(design.duration)}</p></div></article>)}{uploads.map((item) => <article key={item.url} className="overflow-hidden rounded-sm border border-brand bg-card"><img src={item.url} alt={item.name} className="aspect-[4/5] w-full object-cover"/><p className="truncate p-3 text-xs">{item.name}</p></article>)}</div></div>;
 }
 
 function RequestsTab() {
