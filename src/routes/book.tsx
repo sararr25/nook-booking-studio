@@ -608,64 +608,33 @@ function SummaryPanel({
   serviceName,
   selected,
   currentStep,
+  artistName,
 }: {
   quote: ReturnType<typeof buildQuote>;
   currency: string;
   serviceName: string;
   selected: { date: string; slot: Slot } | null;
   currentStep: number;
+  artistName?: string;
 }) {
   return (
-     <div className="nook-panel bg-background/50 p-4 sm:p-5">
-       <p className="text-xs font-bold">Your booking</p>
-       <div className="mt-4 flex gap-3"><img src={botanical} alt="Selected floral tattoo design" className="size-16 rounded-md object-cover"/><div className="flex flex-wrap content-start gap-1"><span className="rounded bg-secondary px-2 py-1 text-[9px]">Medium size</span><span className="rounded bg-secondary px-2 py-1 text-[9px]">Fine line · Black & grey</span></div></div>
-       <div className="mt-4 grid grid-cols-2 gap-4">
-       <div><span className="block text-[10px] text-muted-foreground">Estimated price</span><p className="mt-1 text-sm font-bold">
-        {quote.high === 0
-          ? "Free"
-          : `${formatMoney(quote.low, currency)}–${formatMoney(quote.high, currency)}`}
-       </p></div><div><span className="block text-[10px] text-muted-foreground">Estimated time</span><p className="mt-1 text-sm font-bold">~ {formatDuration(quote.duration)}</p></div></div>
-
-       <dl className="mt-5 space-y-3 border-t border-border pt-5 text-xs">
-         {stepNames.map((name, index) => <div key={name} className="flex items-center gap-3"><span className={cn("flex size-5 items-center justify-center rounded-full border", index < currentStep ? "border-primary bg-primary text-primary-foreground" : "border-border")} >{index < currentStep ? <Check className="size-3"/> : <span className="size-1 rounded-full bg-border"/>}</span><span>{name}</span></div>)}
-         <div className="hidden">
-        <div className="flex items-start justify-between gap-3">
-          <dt className="text-muted-foreground">Artists</dt>
-          <dd className="text-right">
-            {quote.eligibleTeam.length === 0
-              ? "—"
-              : quote.eligibleTeam.map((m) => m.name.split(" ")[0]).join(", ")}
-          </dd>
+      <div className="bg-secondary/40 px-5 py-7 sm:px-8 lg:min-h-[38rem]">
+        <div className="flex items-center justify-between border-b border-foreground pb-4"><p className="font-display text-lg font-bold">Sitting / spec</p><span className="text-xs font-semibold text-brand">NO. 0{currentStep + 1}</span></div>
+        <p className="mt-6 text-[10px] font-bold uppercase text-muted-foreground">01 / Service</p>
+        <p className="mt-1 font-display text-xl font-semibold">{serviceName}</p>
+        <div className="mt-6 border-t border-border py-4">
+          <p className="text-[10px] font-bold uppercase text-muted-foreground">02 / Estimated quote</p>
+          <p key={`${quote.low}-${quote.high}`} className="nook-enter mt-1 font-display text-2xl font-bold tabular-nums">{quote.high === 0 ? "Free" : `${formatMoney(quote.low, currency)}–${formatMoney(quote.high, currency)}`}</p>
         </div>
-        {quote.deposit > 0 && (
-          <div className="flex items-start justify-between gap-3">
-            <dt className="text-muted-foreground">Deposit</dt>
-            <dd>{formatMoney(quote.deposit, currency)}</dd>
-          </div>
-        )}
-        <div className="flex items-start justify-between gap-3">
-          <dt className="text-muted-foreground">Approval</dt>
-          <dd className="text-right">{quote.requiresReview ? "Owner review" : "Instant"}</dd>
+        <div className="grid grid-cols-2 border-y border-border py-4">
+          <div><p className="text-[10px] font-bold uppercase text-muted-foreground">03 / Sitting</p><p key={quote.duration} className="nook-enter mt-1 font-display text-lg font-semibold">{formatDuration(quote.duration)}</p></div>
+          <div className="border-l border-border pl-4"><p className="text-[10px] font-bold uppercase text-muted-foreground">04 / Artist</p><p key={artistName} className="nook-enter mt-1 font-display text-lg font-semibold">{artistName ?? "To be matched"}</p></div>
         </div>
-        {selected && (
-          <div className="flex items-start justify-between gap-3">
-            <dt className="text-muted-foreground">Slot</dt>
-            <dd className="text-right">
-              {new Date(`${selected.date}T00:00:00`).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-              })}{" "}
-              · {selected.slot.time}
-            </dd>
-          </div>
-        )}
-         </div></dl>
-
-      {quote.requiresPhotos && (
-        <p className="mt-5 flex items-start gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
-          <Camera className="mt-0.5 size-3.5 shrink-0" /> Reference photos required
-        </p>
-      )}
+        {selected && <div className="border-b border-border py-4"><p className="text-[10px] font-bold uppercase text-muted-foreground">05 / Appointment</p><p className="mt-1 text-sm font-semibold">{new Date(`${selected.date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" })} · {selected.slot.time}</p></div>}
+        <p className="mt-5 text-xs text-muted-foreground">{quote.requiresReview ? "Pending studio review" : "Ready for confirmation"}{quote.requiresPhotos ? " · Reference pictures required" : ""}</p>
+        <div className="mt-8 flex gap-1" aria-label={`Step ${currentStep + 1} of ${stepNames.length}`}>
+          {stepNames.map((name, index) => <span key={name} className={cn("h-1 flex-1 bg-border transition-colors duration-300", index <= currentStep && "bg-brand")} />)}
+        </div>
     </div>
   );
 }
