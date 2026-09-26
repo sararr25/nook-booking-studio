@@ -112,7 +112,7 @@ function BookingFlow() {
       date: selected.date,
       time: selected.slot.time,
       memberId: selected.slot.memberId,
-      flashDesignId,
+      ...(flashDesignId ? { flashDesignId } : {}),
       referencePaths: uploadedPaths,
       status: pending ? "pending" : "confirmed",
       quote: {
