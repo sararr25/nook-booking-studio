@@ -113,5 +113,7 @@ export type BookingRequest = {
   date: string; // yyyy-mm-dd
   time: string; // "13:00"
   memberId: string;
+  flashDesignId?: string;
+  referencePaths?: string[];
   status: "confirmed" | "pending" | "declined";
 };

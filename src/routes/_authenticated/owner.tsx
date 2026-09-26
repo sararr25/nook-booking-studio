@@ -1,14 +1,20 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, RotateCcw, X } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CalendarDays, Check, ImagePlus, LogOut, RotateCcw, Unplug, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/nook/site-header";
 import { useNook } from "@/lib/nook/store";
 import { formatDuration, formatMoney } from "@/lib/nook/engine";
 import type { BookingRequest, BusinessConfig } from "@/lib/nook/types";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import botanical from "@/assets/flash-botanical.jpg";
+import moth from "@/assets/flash-moth.jpg";
+import sun from "@/assets/flash-sun.jpg";
+import swallow from "@/assets/flash-swallow.jpg";
 
-export const Route = createFileRoute("/owner")({
+export const Route = createFileRoute("/_authenticated/owner")({
   head: () => ({
     meta: [
       { title: "Studio settings — Nook" },
@@ -22,19 +28,22 @@ export const Route = createFileRoute("/owner")({
         property: "og:description",
         content: "Approve or edit requests, and decide what each answer does to price and time.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: OwnerPage,
 });
 
-const tabs = ["Requests", "Services", "Questions", "Team", "Policies"] as const;
+const tabs = ["Overview", "Bookings", "Availability", "Services", "Questions", "Team", "Flash", "Policies"] as const;
 type Tab = (typeof tabs)[number];
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function OwnerPage() {
   const { business, requests, resetAll } = useNook();
-  const [tab, setTab] = useState<Tab>("Requests");
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>("Overview");
   const pending = requests.filter((r) => r.status === "pending").length;
 
   return (
@@ -52,7 +61,7 @@ function OwnerPage() {
                 : "Nothing waiting. The book runs itself today."}
             </p>
           </div>
-          <button
+          <div className="flex gap-2"><button
             type="button"
             onClick={() => {
               resetAll();
@@ -61,7 +70,7 @@ function OwnerPage() {
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-sm transition-colors hover:bg-secondary"
           >
             <RotateCcw className="size-3.5" /> Reset demo
-          </button>
+          </button><Button variant="outline" className="h-11 rounded-full" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }}><LogOut /> Sign out</Button></div>
         </div>
 
         <div className="mt-8 flex gap-1 overflow-x-auto border-b border-border">
@@ -78,7 +87,7 @@ function OwnerPage() {
               )}
             >
               {t}
-              {t === "Requests" && pending > 0 && (
+              {t === "Bookings" && pending > 0 && (
                 <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-brand-foreground">
                   {pending}
                 </span>
@@ -88,15 +97,65 @@ function OwnerPage() {
         </div>
 
         <div className="py-8">
-          {tab === "Requests" && <RequestsTab />}
+          {tab === "Overview" && <OverviewTab onOpen={setTab} />}
+          {tab === "Bookings" && <RequestsTab />}
+          {tab === "Availability" && <AvailabilityTab />}
           {tab === "Services" && <ServicesTab />}
           {tab === "Questions" && <QuestionsTab />}
           {tab === "Team" && <TeamTab />}
+          {tab === "Flash" && <FlashTab />}
           {tab === "Policies" && <PoliciesTab />}
         </div>
       </main>
     </div>
   );
+}
+
+function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
+  const { business, requests } = useNook();
+  const pending = requests.filter((request) => request.status === "pending");
+  const confirmed = requests.filter((request) => request.status === "confirmed");
+  const panels: { title: string; count: string; detail: string; tab: Tab }[] = [
+    { title: "Needs your review", count: String(pending.length), detail: pending[0]?.customerName ?? "Nothing waiting", tab: "Bookings" },
+    { title: "Today", count: String(confirmed.length), detail: confirmed[0]?.customerName ?? "No appointments", tab: "Bookings" },
+    { title: "Flash book", count: "4", detail: "Designs ready to book", tab: "Flash" },
+  ];
+  return <div>
+    <p className="eyebrow">Owner dashboard</p>
+    <h2 className="display mt-3 text-3xl">Good morning</h2>
+    <p className="mt-2 text-sm text-muted-foreground">{pending.length} thing{pending.length === 1 ? "" : "s"} need your attention today.</p>
+    <div className="mt-8 grid gap-3 md:grid-cols-3">{panels.map((panel) => <button key={panel.title} type="button" onClick={() => onOpen(panel.tab)} className="rounded-sm border border-border bg-card p-5 text-left transition-colors hover:border-brand"><div className="flex items-start justify-between"><span className="text-sm font-semibold">{panel.title}</span><span className="display text-3xl text-brand">{panel.count}</span></div><p className="mt-8 text-sm text-muted-foreground">{panel.detail}</p></button>)}</div>
+    <div className="mt-10 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]"><div><p className="eyebrow">Next in the book</p><div className="mt-3 divide-y divide-border border-y border-border">{requests.slice(0, 4).map((request) => <div key={request.id} className="flex items-center justify-between gap-4 py-4"><span><strong className="block text-sm">{request.time} · {request.customerName}</strong><span className="text-xs text-muted-foreground">{business.services.find((service) => service.id === request.serviceId)?.name}</span></span><StatusPill status={request.status} /></div>)}</div></div><div className="border-l border-border pl-0 lg:pl-8"><p className="eyebrow">Studio status</p><dl className="mt-3 space-y-4 text-sm"><div className="flex justify-between"><dt className="text-muted-foreground">Professionals</dt><dd>{business.team.length}</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Calendar</dt><dd className="text-brand">Not connected</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Auto-approval</dt><dd>Under {formatMoney(business.policies.autoApproveUnder, business.policies.currency)}</dd></div></dl></div></div>
+  </div>;
+}
+
+function AvailabilityTab() {
+  const { business } = useNook();
+  return <div className="grid gap-10 lg:grid-cols-[1fr_18rem]"><section><p className="eyebrow">Weekly hours</p><h2 className="display mt-3 text-3xl">When the studio is open</h2><p className="mt-3 max-w-xl text-sm text-muted-foreground">Edit each professional’s working days and hours in Team. Nook uses them to find sessions long enough for each request.</p><div className="mt-8 divide-y divide-border border-y border-border">{business.team.map((member) => <div key={member.id} className="grid gap-2 py-5 sm:grid-cols-[1fr_1.4fr_auto]"><span className="font-medium">{member.name}</span><span className="text-sm text-muted-foreground">{member.days.map((day) => weekdays[day]).join(", ")}</span><span className="text-sm tabular-nums">{member.start}–{member.end}</span></div>)}</div></section><aside className="rounded-sm border border-border bg-card p-5"><CalendarDays className="size-5"/><h3 className="mt-4 font-semibold">Google Calendar</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Connect the studio calendar to remove busy times from customer availability.</p><Button className="mt-5 w-full rounded-sm" variant="outline" disabled><Unplug /> Not connected</Button><p className="mt-3 text-xs text-muted-foreground">Calendar access was not approved during setup.</p></aside></div>;
+}
+
+const flashDesigns = [
+  { id: "botanical", title: "Wildflower stem", price: 160, duration: 75, image: botanical },
+  { id: "moth", title: "Night moth", price: 220, duration: 120, image: moth },
+  { id: "sun", title: "Ornamental sun", price: 190, duration: 90, image: sun },
+  { id: "swallow", title: "Fine-line swallow", price: 180, duration: 90, image: swallow },
+];
+
+function FlashTab() {
+  const [uploads, setUploads] = useState<{ name: string; url: string }[]>([]);
+  const upload = async (files: File[]) => {
+    for (const file of files) {
+      const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+      const { error: storageError } = await supabase.storage.from("flash-gallery").upload(path, file);
+      if (storageError) { toast.error(storageError.message); continue; }
+      const { error: rowError } = await supabase.from("flash_designs").insert({ title: file.name.replace(/\.[^.]+$/, ""), image_path: path, price: 150, duration_minutes: 90 });
+      if (rowError) { toast.error(rowError.message); continue; }
+      const { data } = await supabase.storage.from("flash-gallery").createSignedUrl(path, 3600);
+      if (data?.signedUrl) setUploads((current) => [...current, { name: file.name, url: data.signedUrl }]);
+      toast.success(`${file.name} added to the flash book`);
+    }
+  };
+  return <div><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Pre-made tattoos</p><h2 className="display mt-3 text-3xl">The flash book</h2><p className="mt-2 text-sm text-muted-foreground">Available designs can be selected directly during booking.</p></div><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm border border-border px-4 text-sm hover:bg-secondary"><Upload className="size-4"/>Upload design<input type="file" accept="image/*" multiple className="sr-only" onChange={(event) => void upload(Array.from(event.target.files ?? []))} /></label></div><div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">{flashDesigns.map((design) => <article key={design.id} className="overflow-hidden rounded-sm border border-border bg-card"><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><div className="p-3"><h3 className="text-sm font-semibold">{design.title}</h3><p className="mt-1 text-xs text-muted-foreground">€{design.price} · {formatDuration(design.duration)}</p></div></article>)}{uploads.map((item) => <article key={item.url} className="overflow-hidden rounded-sm border border-brand bg-card"><img src={item.url} alt={item.name} className="aspect-[4/5] w-full object-cover"/><p className="truncate p-3 text-xs">{item.name}</p></article>)}</div></div>;
 }
 
 function RequestsTab() {
@@ -339,8 +398,10 @@ function ServicesTab() {
 
 function QuestionsTab() {
   const { business, updateBusiness } = useNook();
-  const [serviceId, setServiceId] = useState(business.services[0].id);
+  const [serviceId, setServiceId] = useState(business.services[0]?.id ?? "tattoo");
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
+
+  if (!service) return <p className="text-sm text-muted-foreground">Add a service to edit its questions.</p>;
 
   const patchOption = (
     questionId: string,
@@ -359,7 +420,7 @@ function QuestionsTab() {
                   ? q
                   : {
                       ...q,
-                      options: q.options?.map((o) => (o.id === optionId ? { ...o, ...patch } : o)),
+                       ...(q.options ? { options: q.options.map((o) => (o.id === optionId ? { ...o, ...patch } : o)) } : {}),
                     },
               ),
             },

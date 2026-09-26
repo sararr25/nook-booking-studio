@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Camera, Check, Clock, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, Check, Clock, ImagePlus, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/nook/site-header";
@@ -14,7 +14,12 @@ import {
   visibleQuestions,
 } from "@/lib/nook/engine";
 import type { Slot } from "@/lib/nook/engine";
-import type { Answers, Question } from "@/lib/nook/types";
+import type { Answers, BookingRequest, Question } from "@/lib/nook/types";
+import { supabase } from "@/integrations/supabase/client";
+import botanical from "@/assets/flash-botanical.jpg";
+import moth from "@/assets/flash-moth.jpg";
+import sun from "@/assets/flash-sun.jpg";
+import swallow from "@/assets/flash-swallow.jpg";
 
 export const Route = createFileRoute("/book")({
   head: () => ({
@@ -30,6 +35,8 @@ export const Route = createFileRoute("/book")({
         property: "og:description",
         content: "A short questionnaire, an honest quote, then real availability.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: BookingFlow,
@@ -40,15 +47,18 @@ const stepNames = ["Service", "Details", "Quote", "Time", "You"];
 function BookingFlow() {
   const { business, requests, addRequest } = useNook();
   const [step, setStep] = useState(0);
-  const [serviceId, setServiceId] = useState(business.services[0].id);
+  const [serviceId, setServiceId] = useState(business.services[0]?.id ?? "tattoo");
   const [answers, setAnswers] = useState<Answers>({});
   const [selected, setSelected] = useState<{ date: string; slot: Slot } | null>(null);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [notes, setNotes] = useState("");
+  const [flashDesignId, setFlashDesignId] = useState<string | undefined>();
+  const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
   const [done, setDone] = useState<null | { pending: boolean; date: string; time: string; who: string }>(null);
 
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
+  if (!service) return <div className="p-8">No services are available.</div>;
   const questions = useMemo(() => visibleQuestions(service, answers), [service, answers]);
   const quote = useMemo(() => buildQuote(business, service, answers), [business, service, answers]);
 
@@ -76,14 +86,23 @@ function BookingFlow() {
       };
     });
 
-  const submit = () => {
+  const submit = async () => {
     if (!selected || !name.trim() || !contact.trim()) {
       toast.error("Add your name and a way to reach you.");
       return;
     }
     const pending = quote.requiresReview;
-    addRequest({
-      id: `req-${Date.now()}`,
+    const requestId = crypto.randomUUID();
+    const uploadedPaths: string[] = [];
+    for (const file of referenceFiles) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const path = `${requestId}/${crypto.randomUUID()}-${safeName}`;
+      const { error } = await supabase.storage.from("booking-references").upload(path, file);
+      if (error) { toast.error(`Could not upload ${file.name}`); return; }
+      uploadedPaths.push(path);
+    }
+    const request: BookingRequest = {
+      id: requestId,
       createdAt: new Date().toISOString(),
       customerName: name.trim(),
       contact: contact.trim(),
@@ -93,6 +112,8 @@ function BookingFlow() {
       date: selected.date,
       time: selected.slot.time,
       memberId: selected.slot.memberId,
+      ...(flashDesignId ? { flashDesignId } : {}),
+      referencePaths: uploadedPaths,
       status: pending ? "pending" : "confirmed",
       quote: {
         low: quote.low,
@@ -103,7 +124,15 @@ function BookingFlow() {
         reviewReasons: quote.reviewReasons,
         lines: quote.lines,
       },
+    };
+    const { error } = await supabase.from("booking_requests").insert({
+      id: request.id, customer_name: request.customerName, contact: request.contact, notes: request.notes,
+      service_id: request.serviceId, answers: request.answers, quote: request.quote,
+      appointment_date: request.date, appointment_time: request.time, flash_design_id: null,
+      reference_paths: uploadedPaths, status: request.status,
     });
+    if (error) { toast.error(error.message); return; }
+    addRequest(request);
     setDone({
       pending,
       date: selected.date,
@@ -116,10 +145,10 @@ function BookingFlow() {
 
   const canContinue =
     (step === 0 && Boolean(service)) ||
-    (step === 1 && allAnswered) ||
+    (step === 1 && allAnswered && (service.id !== "flash" || Boolean(flashDesignId))) ||
     step === 2 ||
     (step === 3 && Boolean(selected)) ||
-    step === 4;
+    (step === 4 && (!quote.requiresPhotos || referenceFiles.length > 0));
 
   return (
     <div className="min-h-screen pb-28">
@@ -198,6 +227,7 @@ function BookingFlow() {
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 Each answer updates the estimate on the right. Nothing here is binding.
               </p>
+              {service.id === "flash" && <FlashPicker selected={flashDesignId} onSelect={setFlashDesignId} />}
               <div className="mt-8 space-y-10">
                 {questions.map((q, i) => (
                   <QuestionBlock
@@ -281,12 +311,19 @@ function BookingFlow() {
                   />
                 </Field>
 
+                <Field label="Reference photos" optional={!quote.requiresPhotos}>
+                  <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed border-border bg-card text-center transition-colors hover:border-brand">
+                    <Camera className="size-5" /><span className="mt-2 text-sm font-medium">Add photos</span><span className="mt-1 text-xs text-muted-foreground">JPG, PNG or WebP · up to 10 MB each</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(event) => setReferenceFiles(Array.from(event.target.files ?? []).slice(0, 5))} />
+                  </label>
+                  {referenceFiles.length > 0 && <ul className="mt-3 grid gap-2 sm:grid-cols-2">{referenceFiles.map((file) => <li key={`${file.name}-${file.lastModified}`} className="flex items-center justify-between rounded-sm border border-border px-3 py-2 text-xs"><span className="truncate">{file.name}</span><button type="button" aria-label={`Remove ${file.name}`} onClick={() => setReferenceFiles((files) => files.filter((candidate) => candidate !== file))}><Trash2 className="size-4 text-muted-foreground" /></button></li>)}</ul>}
+                </Field>
+
                 {quote.requiresPhotos && (
                   <div className="flex items-start gap-3 rounded-sm border border-brand/40 bg-brand-soft/40 p-4 text-sm">
                     <Camera className="mt-0.5 size-4 shrink-0 text-brand" />
                     <p>
-                      Reference photos are required for this one. We&apos;ll email you a link to upload
-                      them right after booking.
+                      Reference photos are required for this request. Add at least one above.
                     </p>
                   </div>
                 )}
@@ -343,6 +380,17 @@ function BookingFlow() {
       </div>
     </div>
   );
+}
+
+const bookingFlashDesigns = [
+  { id: "botanical", title: "Wildflower stem", detail: "Fine line · €160", image: botanical },
+  { id: "moth", title: "Night moth", detail: "Fine line · €220", image: moth },
+  { id: "sun", title: "Ornamental sun", detail: "Blackwork · €190", image: sun },
+  { id: "swallow", title: "Fine-line swallow", detail: "Fine line · €180", image: swallow },
+];
+
+function FlashPicker({ selected, onSelect }: { selected: string | undefined; onSelect: (id: string) => void }) {
+  return <div className="mt-8"><div className="flex items-center gap-2"><ImagePlus className="size-4 text-brand"/><h2 className="font-semibold">Choose a flash design</h2></div><p className="mt-1 text-sm text-muted-foreground">Each design is tattooed once. Select one to reserve it with your request.</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{bookingFlashDesigns.map((design) => <button key={design.id} type="button" onClick={() => onSelect(design.id)} className={cn("overflow-hidden rounded-sm border bg-card text-left transition-colors", selected === design.id ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-brand")}><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><span className="block p-3"><span className="block text-sm font-semibold">{design.title}</span><span className="mt-1 block text-xs text-muted-foreground">{design.detail}</span></span></button>)}</div></div>;
 }
 
 function Field({

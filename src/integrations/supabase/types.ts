@@ -14,16 +14,302 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      availability: {
+        Row: {
+          available: boolean
+          created_at: string
+          ends_at: string
+          external_event_id: string | null
+          id: string
+          professional_id: string | null
+          source: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          ends_at: string
+          external_event_id?: string | null
+          id?: string
+          professional_id?: string | null
+          source?: string
+          starts_at: string
+          updated_at?: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          ends_at?: string
+          external_event_id?: string | null
+          id?: string
+          professional_id?: string | null
+          source?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_requests: {
+        Row: {
+          answers: Json
+          appointment_date: string
+          appointment_time: string
+          contact: string
+          created_at: string
+          customer_name: string
+          flash_design_id: string | null
+          id: string
+          notes: string
+          professional_id: string | null
+          quote: Json
+          reference_paths: string[]
+          service_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          appointment_date: string
+          appointment_time: string
+          contact: string
+          created_at?: string
+          customer_name: string
+          flash_design_id?: string | null
+          id?: string
+          notes?: string
+          professional_id?: string | null
+          quote?: Json
+          reference_paths?: string[]
+          service_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          appointment_date?: string
+          appointment_time?: string
+          contact?: string
+          created_at?: string
+          customer_name?: string
+          flash_design_id?: string | null
+          id?: string
+          notes?: string
+          professional_id?: string | null
+          quote?: Json
+          reference_paths?: string[]
+          service_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_requests_flash_design_id_fkey"
+            columns: ["flash_design_id"]
+            isOneToOne: false
+            referencedRelation: "flash_designs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_requests_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flash_designs: {
+        Row: {
+          artist_id: string | null
+          available: boolean
+          created_at: string
+          description: string
+          duration_minutes: number
+          id: string
+          image_path: string
+          price: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          artist_id?: string | null
+          available?: boolean
+          created_at?: string
+          description?: string
+          duration_minutes: number
+          id?: string
+          image_path: string
+          price: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          artist_id?: string | null
+          available?: boolean
+          created_at?: string
+          description?: string
+          duration_minutes?: number
+          id?: string
+          image_path?: string
+          price?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flash_designs_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professionals: {
+        Row: {
+          active: boolean
+          created_at: string
+          end_time: string
+          id: string
+          initials: string
+          max_session_minutes: number
+          name: string
+          role_title: string
+          skills: string[]
+          start_time: string
+          updated_at: string
+          working_days: number[]
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          end_time?: string
+          id?: string
+          initials: string
+          max_session_minutes?: number
+          name: string
+          role_title: string
+          skills?: string[]
+          start_time?: string
+          updated_at?: string
+          working_days?: number[]
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          end_time?: string
+          id?: string
+          initials?: string
+          max_session_minutes?: number
+          name?: string
+          role_title?: string
+          skills?: string[]
+          start_time?: string
+          updated_at?: string
+          working_days?: number[]
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      studio_settings: {
+        Row: {
+          business_name: string
+          currency: string
+          id: string
+          location: string
+          policies: Json
+          services: Json
+          updated_at: string
+        }
+        Insert: {
+          business_name: string
+          currency?: string
+          id?: string
+          location: string
+          policies?: Json
+          services?: Json
+          updated_at?: string
+        }
+        Update: {
+          business_name?: string
+          currency?: string
+          id?: string
+          location?: string
+          policies?: Json
+          services?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_initial_owner: { Args: never; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "staff" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +436,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "staff", "customer"],
+    },
   },
 } as const
