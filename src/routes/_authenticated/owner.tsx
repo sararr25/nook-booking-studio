@@ -70,7 +70,7 @@ function OwnerPage() {
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-sm transition-colors hover:bg-secondary"
           >
             <RotateCcw className="size-3.5" /> Reset demo
-          </button><Button variant="outline" className="h-11 rounded-full" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: {}, replace: true }); }}><LogOut /> Sign out</Button></div>
+          </button><Button variant="outline" className="h-11 rounded-full" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }}><LogOut /> Sign out</Button></div>
         </div>
 
         <div className="mt-8 flex gap-1 overflow-x-auto border-b border-border">

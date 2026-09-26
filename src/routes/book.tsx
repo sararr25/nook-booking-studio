@@ -389,7 +389,7 @@ const bookingFlashDesigns = [
   { id: "swallow", title: "Fine-line swallow", detail: "Fine line · €180", image: swallow },
 ];
 
-function FlashPicker({ selected, onSelect }: { selected?: string; onSelect: (id: string) => void }) {
+function FlashPicker({ selected, onSelect }: { selected: string | undefined; onSelect: (id: string) => void }) {
   return <div className="mt-8"><div className="flex items-center gap-2"><ImagePlus className="size-4 text-brand"/><h2 className="font-semibold">Choose a flash design</h2></div><p className="mt-1 text-sm text-muted-foreground">Each design is tattooed once. Select one to reserve it with your request.</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{bookingFlashDesigns.map((design) => <button key={design.id} type="button" onClick={() => onSelect(design.id)} className={cn("overflow-hidden rounded-sm border bg-card text-left transition-colors", selected === design.id ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-brand")}><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><span className="block p-3"><span className="block text-sm font-semibold">{design.title}</span><span className="mt-1 block text-xs text-muted-foreground">{design.detail}</span></span></button>)}</div></div>;
 }
 
