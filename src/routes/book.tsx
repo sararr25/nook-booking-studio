@@ -360,7 +360,6 @@ function BookingFlow() {
        </div>
        </main>
       </div>
-    </div>
   );
 }
 
