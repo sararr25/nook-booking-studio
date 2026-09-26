@@ -138,8 +138,8 @@ export const buildQuote = (
 };
 
 const toMinutes = (time: string) => {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
+  const parts = time.split(":").map(Number);
+  return (parts[0] ?? 0) * 60 + (parts[1] ?? 0);
 };
 
 export const toTimeLabel = (minutes: number) => {

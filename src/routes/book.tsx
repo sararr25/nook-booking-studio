@@ -143,10 +143,10 @@ function BookingFlow() {
 
   const canContinue =
     (step === 0 && Boolean(service)) ||
-    (step === 1 && allAnswered) ||
+    (step === 1 && allAnswered && (service.id !== "flash" || Boolean(flashDesignId))) ||
     step === 2 ||
     (step === 3 && Boolean(selected)) ||
-    step === 4;
+    (step === 4 && (!quote.requiresPhotos || referenceFiles.length > 0));
 
   return (
     <div className="min-h-screen pb-28">

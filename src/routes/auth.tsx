@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({ notice: search.notice === "owner-only" ? "owner-only" : undefined }),
+  validateSearch: (search: Record<string, unknown>) => ({ notice: search["notice"] === "owner-only" ? "owner-only" : undefined }),
   head: () => ({ meta: [
     { title: "Owner sign in — Nook" },
     { name: "description", content: "Secure sign in for the Ember & Thread owner workspace." },
@@ -48,7 +48,7 @@ function OwnerAuth() {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     setBusy(false);
-    if (result.error) { toast.error(result.error.message); return; }
+    if (result.error) { toast.error(String(result.error)); return; }
     if (!result.redirected) await navigate({ to: "/owner" });
   };
 
