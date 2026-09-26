@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Camera, Check, Clock, ImagePlus, Plus, Trash2, U
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { SiteHeader } from "@/components/nook/site-header";
 import { MonthCalendar } from "@/components/nook/month-calendar";
 import { useNook } from "@/lib/nook/store";
 import {
@@ -355,6 +356,7 @@ function BookingFlow() {
               {step < 4 && <ArrowRight className="size-4" />}
              </Button>
          </div>
+       </div>
        </div>
        </main>
       </div>
