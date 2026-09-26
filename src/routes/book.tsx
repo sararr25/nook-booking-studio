@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Camera, Check, Clock, ExternalLink, ImagePlus, Plus, Star, Trash2, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
@@ -61,11 +61,11 @@ function BookingFlow() {
   const [done, setDone] = useState<null | { pending: boolean; date: string; time: string; who: string }>(null);
 
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
+  const questions = service ? visibleQuestions(service, answers) : [];
+  const quote = service ? buildQuote(business, service, answers) : null;
   if (!service) return <div className="p-8">No services are available.</div>;
-  const questions = useMemo(() => visibleQuestions(service, answers), [service, answers]);
-  const quote = useMemo(() => buildQuote(business, service, answers), [business, service, answers]);
-
-  const recommendation = useMemo(() => recommendArtist(quote), [quote]);
+  if (!quote) return <div className="p-8">No quote is available.</div>;
+  const recommendation = recommendArtist(quote);
   const chosenMember =
     artistChoice === "auto"
       ? recommendation?.member
@@ -76,13 +76,9 @@ function BookingFlow() {
     setSelected(null);
   };
 
-  const booked = useMemo(
-    () =>
-      requests
-        .filter((r) => r.status !== "declined")
-        .map((r) => ({ date: r.date, time: r.time, memberId: r.memberId })),
-    [requests],
-  );
+  const booked = requests
+    .filter((r) => r.status !== "declined")
+    .map((r) => ({ date: r.date, time: r.time, memberId: r.memberId }));
 
   const allAnswered = questions.every((q) => isAnswered(q, answers));
 
