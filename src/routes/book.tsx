@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Camera, Check, Clock, ExternalLink, ImagePlus, Plus, Star, Trash2, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
