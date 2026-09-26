@@ -109,6 +109,41 @@ function OwnerPage() {
   );
 }
 
+function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
+  const { business, requests } = useNook();
+  const pending = requests.filter((request) => request.status === "pending");
+  const confirmed = requests.filter((request) => request.status === "confirmed");
+  const panels: { title: string; count: string; detail: string; tab: Tab }[] = [
+    { title: "Needs your review", count: String(pending.length), detail: pending[0]?.customerName ?? "Nothing waiting", tab: "Bookings" },
+    { title: "Today", count: String(confirmed.length), detail: confirmed[0]?.customerName ?? "No appointments", tab: "Bookings" },
+    { title: "Flash book", count: "4", detail: "Designs ready to book", tab: "Flash" },
+  ];
+  return <div>
+    <p className="eyebrow">Owner dashboard</p>
+    <h2 className="display mt-3 text-3xl">Good morning</h2>
+    <p className="mt-2 text-sm text-muted-foreground">{pending.length} thing{pending.length === 1 ? "" : "s"} need your attention today.</p>
+    <div className="mt-8 grid gap-3 md:grid-cols-3">{panels.map((panel) => <button key={panel.title} type="button" onClick={() => onOpen(panel.tab)} className="rounded-sm border border-border bg-card p-5 text-left transition-colors hover:border-brand"><div className="flex items-start justify-between"><span className="text-sm font-semibold">{panel.title}</span><span className="display text-3xl text-brand">{panel.count}</span></div><p className="mt-8 text-sm text-muted-foreground">{panel.detail}</p></button>)}</div>
+    <div className="mt-10 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]"><div><p className="eyebrow">Next in the book</p><div className="mt-3 divide-y divide-border border-y border-border">{requests.slice(0, 4).map((request) => <div key={request.id} className="flex items-center justify-between gap-4 py-4"><span><strong className="block text-sm">{request.time} · {request.customerName}</strong><span className="text-xs text-muted-foreground">{business.services.find((service) => service.id === request.serviceId)?.name}</span></span><StatusPill status={request.status} /></div>)}</div></div><div className="border-l border-border pl-0 lg:pl-8"><p className="eyebrow">Studio status</p><dl className="mt-3 space-y-4 text-sm"><div className="flex justify-between"><dt className="text-muted-foreground">Professionals</dt><dd>{business.team.length}</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Calendar</dt><dd className="text-brand">Not connected</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Auto-approval</dt><dd>Under {formatMoney(business.policies.autoApproveUnder, business.policies.currency)}</dd></div></dl></div></div>
+  </div>;
+}
+
+function AvailabilityTab() {
+  const { business } = useNook();
+  return <div className="grid gap-10 lg:grid-cols-[1fr_18rem]"><section><p className="eyebrow">Weekly hours</p><h2 className="display mt-3 text-3xl">When the studio is open</h2><p className="mt-3 max-w-xl text-sm text-muted-foreground">Edit each professional’s working days and hours in Team. Nook uses them to find sessions long enough for each request.</p><div className="mt-8 divide-y divide-border border-y border-border">{business.team.map((member) => <div key={member.id} className="grid gap-2 py-5 sm:grid-cols-[1fr_1.4fr_auto]"><span className="font-medium">{member.name}</span><span className="text-sm text-muted-foreground">{member.days.map((day) => weekdays[day]).join(", ")}</span><span className="text-sm tabular-nums">{member.start}–{member.end}</span></div>)}</div></section><aside className="rounded-sm border border-border bg-card p-5"><CalendarDays className="size-5"/><h3 className="mt-4 font-semibold">Google Calendar</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Connect the studio calendar to remove busy times from customer availability.</p><Button className="mt-5 w-full rounded-sm" variant="outline" disabled><Unplug /> Not connected</Button><p className="mt-3 text-xs text-muted-foreground">Calendar access was not approved during setup.</p></aside></div>;
+}
+
+const flashDesigns = [
+  { id: "botanical", title: "Wildflower stem", price: 160, duration: 75, image: botanical },
+  { id: "moth", title: "Night moth", price: 220, duration: 120, image: moth },
+  { id: "sun", title: "Ornamental sun", price: 190, duration: 90, image: sun },
+  { id: "swallow", title: "Fine-line swallow", price: 180, duration: 90, image: swallow },
+];
+
+function FlashTab() {
+  const [files, setFiles] = useState<string[]>([]);
+  return <div><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Pre-made tattoos</p><h2 className="display mt-3 text-3xl">The flash book</h2><p className="mt-2 text-sm text-muted-foreground">Available designs can be selected directly during booking.</p></div><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm border border-border px-4 text-sm hover:bg-secondary"><Upload className="size-4"/>Upload design<input type="file" accept="image/*" multiple className="sr-only" onChange={(event) => { const names = Array.from(event.target.files ?? []).map((file) => file.name); setFiles((current) => [...current, ...names]); toast.success(`${names.length} design${names.length === 1 ? "" : "s"} ready to save`); }} /></label></div><div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">{flashDesigns.map((design) => <article key={design.id} className="overflow-hidden rounded-sm border border-border bg-card"><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><div className="p-3"><h3 className="text-sm font-semibold">{design.title}</h3><p className="mt-1 text-xs text-muted-foreground">€{design.price} · {formatDuration(design.duration)}</p></div></article>)}{files.map((name) => <div key={name} className="flex aspect-[4/5] items-center justify-center rounded-sm border border-dashed border-brand bg-brand-soft/30 p-4 text-center"><span><ImagePlus className="mx-auto size-5"/><span className="mt-2 block text-xs">{name}</span></span></div>)}</div></div>;
+}
+
 function RequestsTab() {
   const { business, requests, setRequestStatus, updateRequest } = useNook();
   const [editing, setEditing] = useState<string | null>(null);
