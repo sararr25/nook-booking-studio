@@ -49,7 +49,11 @@ type StoreValue = {
   resetAll: () => void;
 };
 
-const StoreContext = createContext<StoreValue | null>(null);
+// Keep one context instance across hot reloads so the provider and consumers always match.
+const contextHolder = globalThis as typeof globalThis & {
+  __nookStoreContext?: React.Context<StoreValue | null>;
+};
+const StoreContext = (contextHolder.__nookStoreContext ??= createContext<StoreValue | null>(null));
 
 const read = <T,>(key: string, fallback: T): T => {
   if (typeof window === "undefined") return fallback;
