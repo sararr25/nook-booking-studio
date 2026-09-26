@@ -190,9 +190,9 @@ export const defaultBusiness: BusinessConfig = {
     {
       id: "consult",
       name: "Consultation",
-      blurb: "Thirty minutes to talk through a bigger project. Free, and counts toward your deposit.",
+      blurb: "Twenty minutes to talk through a bigger project. Free, and counts toward your deposit.",
       basePrice: 0,
-      baseDuration: 30,
+      baseDuration: 20,
       depositPercent: 0,
       questions: [
         {
@@ -225,6 +225,7 @@ export const defaultBusiness: BusinessConfig = {
       start: "11:00",
       end: "19:00",
       maxSession: 360,
+      portfolioUrl: "https://instagram.com/inesmarrow.ink",
     },
     {
       id: "tove",
@@ -236,6 +237,7 @@ export const defaultBusiness: BusinessConfig = {
       start: "10:00",
       end: "17:00",
       maxSession: 240,
+      portfolioUrl: "https://instagram.com/tovelind.ink",
     },
     {
       id: "rafa",
@@ -247,6 +249,7 @@ export const defaultBusiness: BusinessConfig = {
       start: "12:00",
       end: "20:00",
       maxSession: 300,
+      portfolioUrl: "https://instagram.com/rafaosei.ink",
     },
   ],
 };

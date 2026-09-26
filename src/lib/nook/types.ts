@@ -61,6 +61,8 @@ export type TeamMember = {
   end: string; // "18:00"
   /** Longest single sitting they take, in minutes. */
   maxSession: number;
+  /** Public link to the artist's portfolio. */
+  portfolioUrl?: string;
 };
 
 export type Policies = {

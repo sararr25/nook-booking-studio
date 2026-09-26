@@ -109,7 +109,7 @@ export const buildQuote = (
     }
   }
 
-  duration = Math.max(30, Math.round(duration / 15) * 15);
+  duration = Math.max(service.baseDuration, Math.round(duration / 15) * 15);
   const uniqueSkills = Array.from(new Set(requiredSkills));
   const eligibleTeam = business.team.filter(
     (m) => uniqueSkills.every((s) => m.skills.includes(s)) && m.maxSession >= duration,
@@ -194,4 +194,22 @@ export const slotsForDay = (
     }
   }
   return slots.sort((a, b) => a.time.localeCompare(b.time)).slice(0, 8);
+};
+
+/** Picks the strongest fit: covers the required skills, specialises in them, and has room to spare. */
+export const recommendArtist = (quote: Quote): { member: TeamMember; reason: string } | null => {
+  const scored = quote.eligibleTeam.map((member) => {
+    const lead = member.skills.slice(0, 2).reduce((sum, skill, index) => sum + (quote.requiredSkills.includes(skill) ? 2 - index : 0), 0);
+    const focus = quote.requiredSkills.length / Math.max(1, member.skills.length);
+    const headroom = Math.min(1, (member.maxSession - quote.duration) / 120);
+    return { member, lead, score: lead * 3 + focus * 2 + headroom };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  if (!best) return null;
+  const reason =
+    best.lead > 0
+      ? `${best.member.role} — closest match to your style and placement.`
+      : `Covers everything this piece needs and has time for a ${formatDuration(quote.duration)} sitting.`;
+  return { member: best.member, reason };
 };
