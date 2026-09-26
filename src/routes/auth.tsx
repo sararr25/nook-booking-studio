@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({ notice: search["notice"] === "owner-only" ? "owner-only" : undefined }),
   head: () => ({ meta: [
     { title: "Owner sign in — Nook" },
