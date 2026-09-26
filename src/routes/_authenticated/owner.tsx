@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, Check, ImagePlus, LogOut, RotateCcw, Unplug, Upload, X } from "lucide-react";
+import { CalendarDays, CalendarRange, Check, ChevronRight, Clock3, Home, ImagePlus, Images, LogOut, RotateCcw, Settings, Unplug, Upload, UsersRound, WandSparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { SiteHeader } from "@/components/nook/site-header";
 import { useNook } from "@/lib/nook/store";
 import { formatDuration, formatMoney } from "@/lib/nook/engine";
 import type { BookingRequest, BusinessConfig } from "@/lib/nook/types";
@@ -47,56 +46,38 @@ function OwnerPage() {
   const pending = requests.filter((r) => r.status === "pending").length;
 
   return (
-    <div className="min-h-screen">
-      <SiteHeader variant="owner" />
+    <div className="min-h-screen bg-secondary p-2 sm:p-5">
+      <div className="mx-auto grid min-h-[calc(100vh-2.5rem)] max-w-7xl overflow-hidden rounded-lg border border-border bg-card nook-shadow lg:grid-cols-[13rem_1fr]">
+      <aside className="border-b border-border p-4 lg:border-b-0 lg:border-r lg:p-5">
+        <div className="flex items-center justify-between lg:block"><span className="text-2xl font-semibold">Nook</span><Button variant="ghost" size="icon" className="lg:hidden" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }}><LogOut/><span className="sr-only">Sign out</span></Button></div>
+        <nav className="mt-4 flex gap-1 overflow-x-auto lg:mt-8 lg:block lg:space-y-1">{tabs.map((item) => { const Icon = tabIcons[item]; return <button key={item} type="button" onClick={() => setTab(item)} className={cn("flex min-h-10 shrink-0 items-center gap-3 rounded-md px-3 text-xs transition-colors lg:w-full", tab === item ? "bg-secondary font-semibold" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}><Icon className="size-4"/>{item}{item === "Bookings" && pending > 0 && <span className="ml-auto rounded-full bg-primary px-1.5 text-[9px] text-primary-foreground">{pending}</span>}</button>; })}</nav>
+        <button type="button" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }} className="mt-8 hidden min-h-10 w-full items-center gap-3 rounded-md px-3 text-xs text-muted-foreground hover:bg-secondary lg:flex"><LogOut className="size-4"/>Sign out</button>
+      </aside>
 
-      <main className="mx-auto w-full max-w-5xl px-5 py-10">
+      <main className="min-w-0 px-5 py-8 sm:px-8 lg:px-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow">{business.archetype}</p>
-            <h1 className="display mt-2 text-3xl sm:text-4xl">{business.name}</h1>
+             <p className="eyebrow">Owner dashboard · {business.name}</p>
+             <h1 className="display mt-2 text-3xl sm:text-4xl">Good morning, Alex</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {pending > 0
                 ? `${pending} request${pending > 1 ? "s" : ""} waiting on you.`
                 : "Nothing waiting. The book runs itself today."}
             </p>
           </div>
-          <div className="flex gap-2"><button
+           <div className="flex gap-2"><Button variant="outline"
             type="button"
             onClick={() => {
               resetAll();
               toast.success("Demo data reset");
             }}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-sm transition-colors hover:bg-secondary"
+             className="min-h-10 rounded-md"
           >
             <RotateCcw className="size-3.5" /> Reset demo
-          </button><Button variant="outline" className="h-11 rounded-full" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }}><LogOut /> Sign out</Button></div>
+           </Button></div>
         </div>
 
-        <div className="mt-8 flex gap-1 overflow-x-auto border-b border-border">
-          {tabs.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={cn(
-                "-mb-px min-h-11 whitespace-nowrap border-b-2 px-3 text-sm transition-colors",
-                tab === t
-                  ? "border-brand font-medium text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t}
-              {t === "Bookings" && pending > 0 && (
-                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-brand-foreground">
-                  {pending}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        <div className="py-8">
+         <div className="py-8 nook-enter" key={tab}>
           {tab === "Overview" && <OverviewTab onOpen={setTab} />}
           {tab === "Bookings" && <RequestsTab />}
           {tab === "Availability" && <AvailabilityTab />}
@@ -107,9 +88,21 @@ function OwnerPage() {
           {tab === "Policies" && <PoliciesTab />}
         </div>
       </main>
+      </div>
     </div>
   );
 }
+
+const tabIcons: Record<Tab, typeof Home> = {
+  Overview: Home,
+  Bookings: CalendarRange,
+  Availability: CalendarDays,
+  Services: WandSparkles,
+  Questions: Clock3,
+  Team: UsersRound,
+  Flash: Images,
+  Policies: Settings,
+};
 
 function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
   const { business, requests } = useNook();
@@ -121,10 +114,8 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
     { title: "Flash book", count: "4", detail: "Designs ready to book", tab: "Flash" },
   ];
   return <div>
-    <p className="eyebrow">Owner dashboard</p>
-    <h2 className="display mt-3 text-3xl">Good morning</h2>
-    <p className="mt-2 text-sm text-muted-foreground">{pending.length} thing{pending.length === 1 ? "" : "s"} need your attention today.</p>
-    <div className="mt-8 grid gap-3 md:grid-cols-3">{panels.map((panel) => <button key={panel.title} type="button" onClick={() => onOpen(panel.tab)} className="rounded-sm border border-border bg-card p-5 text-left transition-colors hover:border-brand"><div className="flex items-start justify-between"><span className="text-sm font-semibold">{panel.title}</span><span className="display text-3xl text-brand">{panel.count}</span></div><p className="mt-8 text-sm text-muted-foreground">{panel.detail}</p></button>)}</div>
+    <p className="text-sm text-muted-foreground">{pending.length} thing{pending.length === 1 ? "" : "s"} need your attention today.</p>
+    <div className="mt-6 grid gap-3 md:grid-cols-3">{panels.map((panel) => <button key={panel.title} type="button" onClick={() => onOpen(panel.tab)} className="nook-panel p-4 text-left transition-colors hover:border-primary"><div className="flex items-center justify-between"><span><span className="block text-xs font-bold">{panel.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{panel.count} {panel.title === "Today" ? "appointments" : "requests"}</span></span><span className="flex size-7 items-center justify-center rounded-full border border-border"><ChevronRight className="size-3.5"/></span></div><div className="mt-5 border-t border-border pt-4"><p className="text-xs font-semibold">{panel.detail}</p><p className="mt-1 text-[10px] text-muted-foreground">{panel.title === "Needs your review" ? "Cover-up · €250–320" : panel.title === "Today" ? "Fine line tattoo" : "Designs ready to book"}</p></div><span className="mt-4 flex min-h-9 w-full items-center justify-center rounded-md border border-border text-xs font-semibold">{panel.title === "Needs your review" ? "Review" : "View"}</span></button>)}</div>
     <div className="mt-10 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]"><div><p className="eyebrow">Next in the book</p><div className="mt-3 divide-y divide-border border-y border-border">{requests.slice(0, 4).map((request) => <div key={request.id} className="flex items-center justify-between gap-4 py-4"><span><strong className="block text-sm">{request.time} · {request.customerName}</strong><span className="text-xs text-muted-foreground">{business.services.find((service) => service.id === request.serviceId)?.name}</span></span><StatusPill status={request.status} /></div>)}</div></div><div className="border-l border-border pl-0 lg:pl-8"><p className="eyebrow">Studio status</p><dl className="mt-3 space-y-4 text-sm"><div className="flex justify-between"><dt className="text-muted-foreground">Professionals</dt><dd>{business.team.length}</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Calendar</dt><dd className="text-brand">Not connected</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Auto-approval</dt><dd>Under {formatMoney(business.policies.autoApproveUnder, business.policies.currency)}</dd></div></dl></div></div>
   </div>;
 }

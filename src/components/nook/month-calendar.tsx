@@ -58,15 +58,16 @@ export function MonthCalendar({
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div>
+    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_8rem]">
+      <div className="nook-panel p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="display text-xl">{monthLabel}</h3>
+        <h3 className="text-sm font-semibold">{monthLabel}</h3>
         <div className="flex gap-1">
           <button
             type="button"
             onClick={() => shift(-1)}
             aria-label="Previous month"
-            className="flex size-11 items-center justify-center rounded-full border border-border text-foreground/70 transition-colors hover:bg-secondary disabled:opacity-40"
+            className="flex size-9 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-secondary disabled:opacity-40"
             disabled={
               cursor.getFullYear() === today.getFullYear() && cursor.getMonth() === today.getMonth()
             }
@@ -77,7 +78,7 @@ export function MonthCalendar({
             type="button"
             onClick={() => shift(1)}
             aria-label="Next month"
-            className="flex size-11 items-center justify-center rounded-full border border-border text-foreground/70 transition-colors hover:bg-secondary"
+            className="flex size-9 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-secondary"
           >
             <ChevronRight className="size-4" />
           </button>
@@ -86,8 +87,8 @@ export function MonthCalendar({
 
       <div className="grid grid-cols-7 gap-1 text-center">
         {weekdayLabels.map((d) => (
-          <div key={d} className="pb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            {d.slice(0, 2)}
+            <div key={d} className="pb-2 text-[10px] font-medium text-muted-foreground">
+             {d.slice(0, 3)}
           </div>
         ))}
         {days.map((day, i) => {
@@ -104,37 +105,36 @@ export function MonthCalendar({
               disabled={!free}
               onClick={() => setOpenDay(isOpen ? null : key)}
               className={cn(
-                "relative flex aspect-square min-h-11 flex-col items-center justify-center rounded-md border text-sm transition-colors",
+                "relative flex aspect-square min-h-9 flex-col items-center justify-center rounded-full text-xs transition-colors",
                 free
-                  ? "border-border bg-card hover:border-brand hover:bg-brand-soft/50"
-                  : "border-transparent text-muted-foreground/40",
-                isOpen && free && "border-brand bg-brand-soft/60",
-                isSelected && "border-brand bg-brand text-brand-foreground hover:bg-brand",
+                  ? "hover:bg-secondary"
+                  : "text-muted-foreground/35",
+                isOpen && free && "bg-primary text-primary-foreground",
+                isSelected && "bg-primary text-primary-foreground",
               )}
             >
               <span className={cn(isSelected && "font-semibold")}>{day.getDate()}</span>
-              {free && !isSelected && (
-                <span className="mt-0.5 text-[10px] text-brand">{slots.length}</span>
-              )}
             </button>
           );
         })}
       </div>
 
-      {openDay && (
-        <div className="mt-5 border-t border-border pt-5">
+      </div>
+      <div className="min-h-52">
+      {openDay ? (
+        <div>
           {openSlots.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nothing open on this day.</p>
           ) : (
             <>
-              <p className="eyebrow mb-3">
+              <p className="mb-3 text-[11px] leading-relaxed text-muted-foreground">
                 {new Date(`${openDay}T00:00:00`).toLocaleDateString("en-GB", {
                   weekday: "long",
                   day: "numeric",
                   month: "long",
                 })}
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid gap-2">
                 {openSlots.map((slot) => {
                   const active =
                     selected?.date === openDay &&
@@ -146,16 +146,13 @@ export function MonthCalendar({
                       type="button"
                       onClick={() => onSelect({ date: openDay, slot })}
                       className={cn(
-                        "min-h-11 rounded-full border px-4 py-2 text-left text-sm transition-colors",
+                        "min-h-10 rounded-md border px-3 py-2 text-center text-xs transition-colors",
                         active
-                          ? "border-brand bg-brand text-brand-foreground"
-                          : "border-border bg-card hover:border-brand hover:bg-brand-soft/40",
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card hover:border-primary",
                       )}
                     >
                       <span className="font-medium">{slot.time}</span>
-                      <span className={cn("ml-2 text-xs", active ? "opacity-80" : "text-muted-foreground")}>
-                        {slot.memberName.split(" ")[0]}
-                      </span>
                     </button>
                   );
                 })}
@@ -163,7 +160,8 @@ export function MonthCalendar({
             </>
           )}
         </div>
-      )}
+      ) : <div className="pt-1"><p className="text-xs font-semibold">Available times</p><p className="mt-1 text-[11px] text-muted-foreground">Choose a day</p></div>}
+      </div>
     </div>
   );
 }

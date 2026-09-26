@@ -53,14 +53,14 @@ function OwnerAuth() {
     if (!result.redirected) await navigate({ to: "/owner" });
   };
 
-  return <main className="grid min-h-screen lg:grid-cols-[1fr_30rem]">
-    <section className="hidden border-r border-border bg-sand/70 p-12 lg:flex lg:flex-col lg:justify-between">
-      <span className="display text-2xl font-semibold">Nook</span>
-      <div className="max-w-xl"><p className="eyebrow">Studio workspace</p><h1 className="display mt-5 text-6xl leading-[1.02]">The quiet side of a busy studio.</h1><p className="mt-6 max-w-md leading-relaxed text-muted-foreground">Review requests, shape your calendar, set honest prices and keep the flash book current.</p></div>
+  return <main className="grid min-h-screen bg-secondary p-3 lg:grid-cols-[1fr_30rem] lg:p-5">
+    <section className="hidden rounded-l-lg border border-r-0 border-border bg-card p-12 lg:flex lg:flex-col lg:justify-between">
+      <span className="text-2xl font-semibold">Nook</span>
+      <div className="max-w-xl"><p className="eyebrow">Studio workspace</p><h1 className="display mt-5 text-6xl leading-[1.02]">Everything in its place.</h1><p className="mt-6 max-w-md leading-relaxed text-muted-foreground">Review requests, shape your calendar, set honest prices and keep the flash book current.</p></div>
       <p className="text-xs text-muted-foreground">Ember & Thread · Malmö</p>
     </section>
-    <section className="flex items-center px-6 py-14 sm:px-12"><div className="mx-auto w-full max-w-sm">
-      <span className="display text-2xl font-semibold lg:hidden">Nook</span><p className="eyebrow mt-12 lg:mt-0">Owner access</p>
+    <section className="flex items-center rounded-lg border border-border bg-card px-6 py-14 lg:rounded-l-none sm:px-12"><div className="mx-auto w-full max-w-sm">
+      <span className="text-2xl font-semibold lg:hidden">Nook</span><p className="eyebrow mt-12 lg:mt-0">Owner access</p>
       <h2 className="display mt-3 text-4xl">{mode === "signin" ? "Welcome back" : "Create your studio account"}</h2>
       <p className="mt-3 text-sm text-muted-foreground">{notice ? "This area is reserved for the studio owner." : "Sign in to manage Ember & Thread."}</p>
       <form onSubmit={submit} className="mt-8 space-y-4">

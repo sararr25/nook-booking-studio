@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Nook uses a monochrome warm-neutral design system with Manrope typography and compact bordered controls, matching the approved editorial reference; this keeps customer and owner experiences visually consistent.

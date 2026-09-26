@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Camera, Check, Clock, ImagePlus, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, Check, Clock, ImagePlus, Plus, Trash2, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/nook/site-header";
 import { MonthCalendar } from "@/components/nook/month-calendar";
 import { useNook } from "@/lib/nook/store";
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/book")({
   component: BookingFlow,
 });
 
-const stepNames = ["Service", "Details", "Quote", "Time", "You"];
+const stepNames = ["Style", "Size", "Placement", "Photo", "Date & time"];
 
 function BookingFlow() {
   const { business, requests, addRequest } = useNook();
@@ -151,36 +152,18 @@ function BookingFlow() {
     (step === 4 && (!quote.requiresPhotos || referenceFiles.length > 0));
 
   return (
-    <div className="min-h-screen pb-28">
-      <SiteHeader />
-
-      <div className="mx-auto w-full max-w-5xl px-5 pt-8">
-        <ol className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          {stepNames.map((label, i) => (
-            <li key={label} className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "transition-colors",
-                  i === step ? "font-semibold text-brand" : i < step ? "text-foreground/70" : "text-muted-foreground/60",
-                )}
-              >
-                {String(i + 1).padStart(2, "0")} {label}
-              </span>
-              {i < stepNames.length - 1 && <span className="text-muted-foreground/40">—</span>}
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      <main className="mx-auto grid w-full max-w-5xl gap-10 px-5 py-8 lg:grid-cols-[1fr_20rem] lg:items-start">
-        <div>
+    <div className="min-h-screen bg-secondary px-3 py-3 sm:px-5 sm:py-6">
+      <main className="mx-auto min-h-[calc(100vh-3rem)] w-full max-w-7xl overflow-hidden rounded-lg border border-border bg-card nook-shadow">
+        <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
+        <div className="grid gap-8 px-5 pb-7 pt-8 sm:px-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10 lg:px-12 lg:pb-10 lg:pt-12">
+        <div className="nook-enter min-w-0" key={step}>
           {step === 0 && (
             <section>
-              <h1 className="display text-3xl sm:text-4xl">What are you booking?</h1>
+               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl">What would you like to book?</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 {business.tagline}
               </p>
-              <div className="mt-8 divide-y divide-border border-y border-border">
+               <div className="mt-9 grid gap-3 sm:grid-cols-3">
                 {business.services.map((s) => (
                   <button
                     key={s.id}
@@ -190,24 +173,21 @@ function BookingFlow() {
                       setAnswers({});
                       setSelected(null);
                     }}
-                    className={cn(
-                      "flex w-full items-start gap-4 py-5 text-left transition-colors hover:bg-sand/50",
-                      serviceId === s.id && "bg-sand/60",
-                    )}
+                     className={cn("nook-panel flex min-h-44 w-full flex-col justify-between p-5 text-left transition-colors hover:border-primary", serviceId === s.id && "border-primary ring-1 ring-primary")}
                   >
                     <span
                       className={cn(
-                        "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border",
-                        serviceId === s.id ? "border-brand bg-brand text-brand-foreground" : "border-border",
+                         "flex size-5 shrink-0 items-center justify-center rounded-full border",
+                         serviceId === s.id ? "border-primary bg-primary text-primary-foreground" : "border-border",
                       )}
                     >
                       {serviceId === s.id && <Check className="size-3" />}
                     </span>
-                    <span className="flex-1">
-                      <span className="display block text-lg">{s.name}</span>
+                     <span className="mt-6 flex-1">
+                       <span className="block text-base font-bold">{s.name}</span>
                       <span className="mt-1 block text-sm text-muted-foreground">{s.blurb}</span>
                     </span>
-                    <span className="hidden shrink-0 text-right text-sm sm:block">
+                     <span className="mt-5 block shrink-0 text-sm">
                       <span className="block font-medium">
                         {s.basePrice === 0 ? "Free" : `from ${formatMoney(s.basePrice, business.policies.currency)}`}
                       </span>
@@ -223,12 +203,10 @@ function BookingFlow() {
 
           {step === 1 && (
             <section>
-              <h1 className="display text-3xl sm:text-4xl">Tell us about the piece</h1>
-              <p className="mt-3 max-w-lg text-sm text-muted-foreground">
-                Each answer updates the estimate on the right. Nothing here is binding.
-              </p>
+               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl">How big is your tattoo?</h1>
+               <p className="mt-3 max-w-lg text-sm text-muted-foreground">This helps us estimate time and price.</p>
               {service.id === "flash" && <FlashPicker selected={flashDesignId} onSelect={setFlashDesignId} />}
-              <div className="mt-8 space-y-10">
+               <div className="mt-8 space-y-9">
                 {questions.map((q, i) => (
                   <QuestionBlock
                     key={q.id}
@@ -247,7 +225,7 @@ function BookingFlow() {
 
           {step === 3 && (
             <section>
-              <h1 className="display text-3xl sm:text-4xl">Pick a date</h1>
+               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl">Choose a date<br />and time</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 Showing days with a free {formatDuration(quote.duration)} block for{" "}
                 {quote.eligibleTeam.length === business.team.length
@@ -277,14 +255,27 @@ function BookingFlow() {
 
           {step === 4 && (
             <section>
-              <h1 className="display text-3xl sm:text-4xl">Almost there</h1>
-              <p className="mt-3 max-w-lg text-sm text-muted-foreground">
+               <h1 className="display text-4xl leading-none sm:text-6xl">Almost done!</h1>
+               <h2 className="mt-4 text-base font-bold">Add a reference photo <span className="font-medium text-muted-foreground">(optional)</span></h2>
+               <p className="mt-1 max-w-lg text-sm text-muted-foreground">
                 {quote.requiresReview
                   ? business.policies.reviewNote
                   : "This one fits the studio's standard rules, so it confirms straight away."}
               </p>
 
-              <div className="mt-8 max-w-md space-y-5">
+               <div className="mt-7 max-w-xl space-y-5">
+                 <Field label="Reference photos" optional={!quote.requiresPhotos}>
+                   <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
+                     <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-background text-center transition-colors hover:border-primary">
+                       <Upload className="size-6" /><span className="mt-3 text-xs font-medium">Drag & drop your image here</span><span className="mt-1 text-[11px] text-muted-foreground">or click to upload</span>
+                       <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(event) => setReferenceFiles(Array.from(event.target.files ?? []).slice(0, 5))} />
+                     </label>
+                     <div className="grid grid-cols-2 gap-2">
+                       {referenceFiles.slice(0, 3).map((file) => <div key={`${file.name}-${file.lastModified}`} className="group relative aspect-square overflow-hidden rounded-md border border-border"><img src={URL.createObjectURL(file)} alt="Reference preview" className="size-full object-cover"/><button type="button" aria-label={`Remove ${file.name}`} onClick={() => setReferenceFiles((files) => files.filter((candidate) => candidate !== file))} className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-card"><Trash2 className="size-3.5" /></button></div>)}
+                       {referenceFiles.length < 5 && <label className="flex aspect-square cursor-pointer items-center justify-center rounded-md border border-dashed border-border"><Plus className="size-5"/><input type="file" accept="image/*" className="sr-only" onChange={(event) => setReferenceFiles((files) => [...files, ...Array.from(event.target.files ?? [])].slice(0, 5))}/></label>}
+                     </div>
+                   </div>
+                 </Field>
                 <Field label="Your name">
                   <input
                     value={name}
@@ -311,14 +302,6 @@ function BookingFlow() {
                   />
                 </Field>
 
-                <Field label="Reference photos" optional={!quote.requiresPhotos}>
-                  <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed border-border bg-card text-center transition-colors hover:border-brand">
-                    <Camera className="size-5" /><span className="mt-2 text-sm font-medium">Add photos</span><span className="mt-1 text-xs text-muted-foreground">JPG, PNG or WebP · up to 10 MB each</span>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(event) => setReferenceFiles(Array.from(event.target.files ?? []).slice(0, 5))} />
-                  </label>
-                  {referenceFiles.length > 0 && <ul className="mt-3 grid gap-2 sm:grid-cols-2">{referenceFiles.map((file) => <li key={`${file.name}-${file.lastModified}`} className="flex items-center justify-between rounded-sm border border-border px-3 py-2 text-xs"><span className="truncate">{file.name}</span><button type="button" aria-label={`Remove ${file.name}`} onClick={() => setReferenceFiles((files) => files.filter((candidate) => candidate !== file))}><Trash2 className="size-4 text-muted-foreground" /></button></li>)}</ul>}
-                </Field>
-
                 {quote.requiresPhotos && (
                   <div className="flex items-start gap-3 rounded-sm border border-brand/40 bg-brand-soft/40 p-4 text-sm">
                     <Camera className="mt-0.5 size-4 shrink-0 text-brand" />
@@ -332,18 +315,16 @@ function BookingFlow() {
           )}
         </div>
 
-        <aside className="hidden lg:block lg:sticky lg:top-24">
+        <aside className="lg:sticky lg:top-6">
           <SummaryPanel
             quote={quote}
             currency={business.policies.currency}
             serviceName={service.name}
             selected={selected}
+            currentStep={step}
           />
         </aside>
-      </main>
-
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-5 py-3">
+         <div className="col-span-full flex items-center justify-between gap-4 border-t border-border pt-5 lg:col-span-1 lg:border-0 lg:pt-0">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
               {service.basePrice === 0
@@ -356,30 +337,39 @@ function BookingFlow() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {step > 0 && (
-              <button
+             {step > 0 && (
+               <Button variant="outline"
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
-                className="flex min-h-11 items-center gap-1.5 rounded-full border border-border px-4 text-sm transition-colors hover:bg-secondary"
+                 className="min-h-11 rounded-md px-4"
               >
                 <ArrowLeft className="size-4" />
                 <span className="hidden sm:inline">Back</span>
-              </button>
+               </Button>
             )}
-            <button
+             <Button
               type="button"
               disabled={!canContinue}
               onClick={() => (step === 4 ? submit() : setStep((s) => s + 1))}
-              className="flex min-h-11 items-center gap-1.5 rounded-full bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40"
+               className="min-h-11 min-w-40 rounded-md px-5"
             >
               {step === 4 ? (quote.requiresReview ? "Send request" : "Confirm booking") : "Continue"}
               {step < 4 && <ArrowRight className="size-4" />}
-            </button>
-          </div>
-        </div>
+             </Button>
+         </div>
+       </div>
+       </div>
+       </main>
       </div>
-    </div>
   );
+}
+
+function BookingHeader({ step, onBack }: { step: number; onBack: () => void }) {
+  return <header className="grid min-h-20 grid-cols-[1fr_auto] items-center gap-5 px-5 sm:grid-cols-[1fr_auto_1fr] sm:px-10 lg:px-12">
+    <div className="flex items-center gap-8"><Link to="/" className="text-2xl font-semibold">Nook</Link>{step > 0 && <button type="button" onClick={onBack} className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"><ArrowLeft className="size-3"/> Back</button>}</div>
+    <div className="hidden items-center gap-2 sm:flex"><span className="mr-2 text-[10px] text-muted-foreground">Step {step + 1} of 5</span>{stepNames.map((name, index) => <span key={name} aria-label={name} className={cn("h-1 w-10 rounded-full", index <= step ? "bg-primary" : "bg-secondary")}/>)}</div>
+    <span className="text-right text-[10px] text-muted-foreground sm:hidden">{step + 1} / 5</span>
+  </header>;
 }
 
 const bookingFlashDesigns = [
@@ -438,23 +428,8 @@ function QuestionBlock({
 
           <div className="mt-4">
             {question.type === "scale" && (
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <span className="display text-4xl">
-                    {typeof value === "number" ? value : (question.min ?? 0)}
-                  </span>
-                  <span className="text-sm text-muted-foreground">{question.unit}</span>
-                </div>
-                <input
-                  type="range"
-                  min={question.min}
-                  max={question.max}
-                  step={question.step}
-                  value={typeof value === "number" ? value : (question.min ?? 0)}
-                  onChange={(e) => onSet(question.id, Number(e.target.value))}
-                  className="mt-3 h-11 w-full max-w-sm accent-[var(--brand)]"
-                  aria-label={question.label}
-                />
+              <div className="grid max-w-2xl grid-cols-3 gap-2">
+                {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <button key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("overflow-hidden rounded-md border bg-card text-left transition-colors", value === size.value ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></button>)}
               </div>
             )}
 
@@ -485,10 +460,10 @@ function QuestionBlock({
                           : onSet(question.id, option.id)
                       }
                       className={cn(
-                        "min-h-11 rounded-sm border px-4 py-2.5 text-left text-sm transition-colors",
+                         "min-h-11 rounded-md border px-4 py-2.5 text-left text-sm transition-colors",
                         active
-                          ? "border-brand bg-brand-soft/60"
-                          : "border-border bg-card hover:border-foreground/30",
+                           ? "border-primary bg-primary text-primary-foreground"
+                           : "border-border bg-card hover:border-primary",
                       )}
                     >
                       <span className="block font-medium">{option.label}</span>
@@ -613,25 +588,28 @@ function SummaryPanel({
   currency,
   serviceName,
   selected,
+  currentStep,
 }: {
   quote: ReturnType<typeof buildQuote>;
   currency: string;
   serviceName: string;
   selected: { date: string; slot: Slot } | null;
+  currentStep: number;
 }) {
   return (
-    <div className="rounded-sm border border-border bg-card p-5">
-      <p className="eyebrow">Running estimate</p>
-      <p className="display mt-2 text-2xl">
+     <div className="nook-panel p-4 sm:p-5">
+       <p className="text-xs font-bold">Your booking</p>
+       <div className="mt-4 flex gap-3"><img src={botanical} alt="Selected floral tattoo design" className="size-16 rounded-md object-cover"/><div className="flex flex-wrap content-start gap-1"><span className="rounded bg-secondary px-2 py-1 text-[9px]">Medium size</span><span className="rounded bg-secondary px-2 py-1 text-[9px]">Fine line · Black & grey</span></div></div>
+       <div className="mt-4 grid grid-cols-2 gap-4">
+       <div><span className="block text-[10px] text-muted-foreground">Estimated price</span><p className="mt-1 text-sm font-bold">
         {quote.high === 0
           ? "Free"
           : `${formatMoney(quote.low, currency)}–${formatMoney(quote.high, currency)}`}
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {serviceName} · {formatDuration(quote.duration)}
-      </p>
+       </p></div><div><span className="block text-[10px] text-muted-foreground">Estimated time</span><p className="mt-1 text-sm font-bold">~ {formatDuration(quote.duration)}</p></div></div>
 
-      <dl className="mt-5 space-y-3 border-t border-border pt-5 text-sm">
+       <dl className="mt-5 space-y-3 border-t border-border pt-5 text-xs">
+         {stepNames.map((name, index) => <div key={name} className="flex items-center gap-3"><span className={cn("flex size-5 items-center justify-center rounded-full border", index < currentStep ? "border-primary bg-primary text-primary-foreground" : "border-border")} >{index < currentStep ? <Check className="size-3"/> : <span className="size-1 rounded-full bg-border"/>}</span><span>{name}</span></div>)}
+         <div className="hidden">
         <div className="flex items-start justify-between gap-3">
           <dt className="text-muted-foreground">Artists</dt>
           <dd className="text-right">
@@ -662,7 +640,7 @@ function SummaryPanel({
             </dd>
           </div>
         )}
-      </dl>
+         </div></dl>
 
       {quote.requiresPhotos && (
         <p className="mt-5 flex items-start gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
