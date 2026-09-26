@@ -444,7 +444,7 @@ function QuestionBlock({
           <div className="mt-4">
             {question.type === "scale" && (
               <div className="grid max-w-2xl grid-cols-1 gap-2 min-[360px]:grid-cols-3">
-                {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <button key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("nook-lift overflow-hidden rounded-md border bg-card text-left", value === size.value ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></button>)}
+                {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <Button variant="ghost" key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal rounded-none border bg-card p-0 text-left", value === size.value ? "border-brand bg-brand-soft/25" : "border-border hover:border-brand")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></Button>)}
               </div>
             )}
 
@@ -466,7 +466,8 @@ function QuestionBlock({
                       ? Array.isArray(value) && value.includes(option.id)
                       : value === option.id;
                   return (
-                    <button
+                    <Button
+                      variant="outline"
                       key={option.id}
                       type="button"
                       onClick={() =>
@@ -475,7 +476,7 @@ function QuestionBlock({
                           : onSet(question.id, option.id)
                       }
                       className={cn(
-                         "min-h-11 max-w-full whitespace-normal rounded-md border px-4 py-2.5 text-left text-sm transition-colors",
+                         "h-auto min-h-11 max-w-full flex-col items-start whitespace-normal rounded-none border px-4 py-2.5 text-left text-sm transition-colors",
                         active
                            ? "border-primary bg-primary text-primary-foreground"
                            : "border-border bg-card hover:border-primary",
@@ -485,7 +486,7 @@ function QuestionBlock({
                       {option.hint && (
                         <span className="mt-0.5 block text-xs text-muted-foreground">{option.hint}</span>
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
