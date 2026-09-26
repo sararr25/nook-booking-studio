@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { defaultBusiness } from "./config";
 import type { BookingRequest, BusinessConfig } from "./types";
 
-const CONFIG_KEY = "nook.business.v1";
+const CONFIG_KEY = "nook.business.v2";
 const REQUESTS_KEY = "nook.requests.v1";
 
 const seedRequests = (): BookingRequest[] => {

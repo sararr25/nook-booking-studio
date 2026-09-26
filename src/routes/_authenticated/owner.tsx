@@ -553,6 +553,17 @@ function TeamTab() {
               <p className="text-sm text-muted-foreground">{m.role}</p>
             </div>
           </div>
+          <label className="mt-4 block max-w-md">
+            <span className="eyebrow mb-1.5 block">Portfolio link</span>
+            <input
+              type="url"
+              value={m.portfolioUrl ?? ""}
+              onChange={(e) => patchMember(m.id, { portfolioUrl: e.target.value })}
+              placeholder="https://instagram.com/…"
+              className="min-h-10 w-full rounded-md border border-border bg-card px-3 text-sm outline-none focus:border-brand"
+            />
+          </label>
+
 
           <div className="mt-4 flex flex-wrap gap-1.5">
             {weekdays.map((label, index) => {
