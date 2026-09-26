@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { dateKey, slotsForDay, type Slot } from "@/lib/nook/engine";
 import type { BusinessConfig, TeamMember } from "@/lib/nook/types";
@@ -58,12 +59,14 @@ export function MonthCalendar({
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_8rem]">
-      <div className="nook-panel p-4 sm:p-5">
+    <div className="grid border-y border-border md:grid-cols-[minmax(0,1fr)_9rem]">
+      <div className="p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold">{monthLabel}</h3>
         <div className="flex gap-1">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             onClick={() => shift(-1)}
             aria-label="Previous month"
@@ -73,15 +76,17 @@ export function MonthCalendar({
             }
           >
             <ChevronLeft className="size-4" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             onClick={() => shift(1)}
             aria-label="Next month"
             className="flex size-9 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-secondary"
           >
             <ChevronRight className="size-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -99,13 +104,14 @@ export function MonthCalendar({
           const isSelected = selected?.date === key;
           const isOpen = openDay === key;
           return (
-            <button
+             <Button
+               variant="ghost"
               key={key}
               type="button"
               disabled={!free}
               onClick={() => setOpenDay(isOpen ? null : key)}
               className={cn(
-                "relative flex aspect-square min-h-9 flex-col items-center justify-center rounded-full text-xs transition-colors",
+                 "relative flex aspect-square h-auto min-h-9 w-full flex-col items-center justify-center rounded-none text-xs transition-colors",
                 free
                   ? "hover:bg-secondary"
                   : "text-muted-foreground/35",
@@ -114,13 +120,13 @@ export function MonthCalendar({
               )}
             >
               <span className={cn(isSelected && "font-semibold")}>{day.getDate()}</span>
-            </button>
+             </Button>
           );
         })}
       </div>
 
       </div>
-      <div className="min-h-52">
+      <div className="min-h-52 border-t border-border p-4 md:border-l md:border-t-0">
       {openDay ? (
         <div>
           {openSlots.length === 0 ? (
@@ -141,19 +147,20 @@ export function MonthCalendar({
                     selected.slot.time === slot.time &&
                     selected.slot.memberId === slot.memberId;
                   return (
-                    <button
+                     <Button
+                       variant="outline"
                       key={`${slot.memberId}-${slot.time}`}
                       type="button"
                       onClick={() => onSelect({ date: openDay, slot })}
                       className={cn(
-                        "min-h-10 rounded-md border px-3 py-2 text-center text-xs transition-colors",
+                         "min-h-10 w-full rounded-none border px-3 py-2 text-center text-xs transition-colors",
                         active
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border bg-card hover:border-primary",
                       )}
                     >
                       <span className="font-medium">{slot.time}</span>
-                    </button>
+                     </Button>
                   );
                 })}
               </div>

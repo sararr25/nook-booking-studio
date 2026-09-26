@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/nook/site-header";
 import { MonthCalendar } from "@/components/nook/month-calendar";
-import { useNook } from "@/lib/nook/store";
+import { NookProvider, useNook } from "@/lib/nook/store";
 import {
   buildQuote,
   formatDuration,
@@ -41,8 +41,12 @@ export const Route = createFileRoute("/book")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: BookingFlow,
+  component: BookingPage,
 });
+
+function BookingPage() {
+  return <NookProvider><BookingFlow /></NookProvider>;
+}
 
 const stepNames = ["Style", "Size", "Placement", "Photo", "Date & time"];
 
@@ -61,11 +65,11 @@ function BookingFlow() {
   const [done, setDone] = useState<null | { pending: boolean; date: string; time: string; who: string }>(null);
 
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
+  const questions = service ? visibleQuestions(service, answers) : [];
+  const quote = service ? buildQuote(business, service, answers) : null;
   if (!service) return <div className="p-8">No services are available.</div>;
-  const questions = useMemo(() => visibleQuestions(service, answers), [service, answers]);
-  const quote = useMemo(() => buildQuote(business, service, answers), [business, service, answers]);
-
-  const recommendation = useMemo(() => recommendArtist(quote), [quote]);
+  if (!quote) return <div className="p-8">No quote is available.</div>;
+  const recommendation = recommendArtist(quote);
   const chosenMember =
     artistChoice === "auto"
       ? recommendation?.member
@@ -76,13 +80,9 @@ function BookingFlow() {
     setSelected(null);
   };
 
-  const booked = useMemo(
-    () =>
-      requests
-        .filter((r) => r.status !== "declined")
-        .map((r) => ({ date: r.date, time: r.time, memberId: r.memberId })),
-    [requests],
-  );
+  const booked = requests
+    .filter((r) => r.status !== "declined")
+    .map((r) => ({ date: r.date, time: r.time, memberId: r.memberId }));
 
   const allAnswered = questions.every((q) => isAnswered(q, answers));
 
@@ -165,20 +165,22 @@ function BookingFlow() {
     (step === 4 && (!quote.requiresPhotos || referenceFiles.length > 0));
 
   return (
-    <div className="min-h-screen bg-background px-3 py-3 sm:px-5 sm:py-6">
-      <main className="mx-auto w-full max-w-7xl overflow-hidden rounded-lg border border-border bg-card nook-shadow lg:min-h-[44rem]">
+    <div className="min-h-screen bg-background">
+      <main className="mx-auto w-full max-w-7xl border-x border-border bg-card lg:min-h-screen">
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
-        <div className="grid gap-8 px-5 pb-7 pt-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-12 lg:px-12 lg:pb-9 lg:pt-8">
-         <div className="nook-enter min-w-0 overflow-hidden" key={step}>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_19rem]">
+          <div className="nook-enter min-w-0 overflow-hidden px-5 pb-10 pt-8 sm:px-10 sm:pt-12 lg:min-h-[38rem] lg:px-12" key={step}>
+           <p className="mb-6 flex items-center gap-4 border-b border-border pb-3 text-[11px] font-semibold uppercase text-brand"><span className="font-display text-lg tabular-nums">{String(step + 1).padStart(2, "0")}</span><span>{stepNames[step]}</span></p>
           {step === 0 && (
             <section>
                <h1 className="display nook-title max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">What would you like to book?</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 {business.tagline}
               </p>
-               <div className="nook-stagger mt-9 grid gap-3 sm:grid-cols-3">
-                {business.services.map((s) => (
-                  <button
+               <div className="nook-stagger mt-9 grid border-t border-border sm:grid-cols-3">
+                 {business.services.map((s, serviceIndex) => (
+                   <Button
+                     variant="ghost"
                     key={s.id}
                     type="button"
                     onClick={() => {
@@ -187,16 +189,9 @@ function BookingFlow() {
                       setSelected(null);
                       setArtistChoice("auto");
                     }}
-                      className={cn("nook-panel nook-lift flex min-h-44 w-full flex-col justify-between p-5 text-left hover:border-brand", serviceId === s.id && "border-primary bg-sand/35 ring-1 ring-primary")}
+                      className={cn("nook-lift flex h-auto min-h-52 w-full flex-col items-start justify-between whitespace-normal rounded-none border-b border-border p-5 text-left hover:bg-brand-soft/30 sm:border-r", serviceId === s.id && "bg-brand-soft/35")}
                   >
-                    <span
-                      className={cn(
-                         "flex size-5 shrink-0 items-center justify-center rounded-full border",
-                         serviceId === s.id ? "border-primary bg-primary text-primary-foreground" : "border-border",
-                      )}
-                    >
-                      {serviceId === s.id && <Check className="size-3" />}
-                    </span>
+                     <span className="flex w-full justify-between text-xs font-semibold tabular-nums text-brand"><span>{String(serviceIndex + 1).padStart(2, "0")}</span>{serviceId === s.id && <Check className="size-4" />}</span>
                      <span className="mt-6 flex-1">
                        <span className="block text-base font-bold">{s.name}</span>
                       <span className="mt-1 block text-sm text-muted-foreground">{s.blurb}</span>
@@ -209,7 +204,7 @@ function BookingFlow() {
                         {formatDuration(s.baseDuration)}+
                       </span>
                     </span>
-                  </button>
+                   </Button>
                 ))}
               </div>
             </section>
@@ -338,16 +333,17 @@ function BookingFlow() {
           )}
         </div>
 
-         <aside className="self-start lg:sticky lg:top-6">
+          <aside className="min-w-0 border-t border-border lg:sticky lg:top-0 lg:self-start lg:border-l lg:border-t-0">
           <SummaryPanel
             quote={quote}
             currency={business.policies.currency}
             serviceName={service.name}
             selected={selected}
             currentStep={step}
+             artistName={chosenMember?.name}
           />
         </aside>
-         <div className="col-span-full flex items-center justify-between gap-4 border-t border-border pt-5 lg:col-span-1 lg:border-0 lg:pt-0">
+          <div className="col-span-full flex min-w-0 items-center justify-between gap-4 border-t border-border px-5 py-5 sm:px-10 lg:px-12">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
               {service.basePrice === 0
@@ -364,7 +360,7 @@ function BookingFlow() {
                <Button variant="outline"
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
-                 className="min-h-11 rounded-md px-4"
+                  className="min-h-11 px-4"
               >
                 <ArrowLeft className="size-4" />
                 <span className="hidden sm:inline">Back</span>
@@ -374,7 +370,7 @@ function BookingFlow() {
               type="button"
               disabled={!canContinue}
               onClick={() => (step === 4 ? submit() : setStep((s) => s + 1))}
-               className="min-h-11 min-w-40 rounded-md px-5"
+                className="min-h-11 min-w-32 px-5 sm:min-w-40"
             >
               {step === 4 ? (quote.requiresReview ? "Send request" : "Confirm booking") : "Continue"}
               {step < 4 && <ArrowRight className="size-4" />}
@@ -452,7 +448,7 @@ function QuestionBlock({
           <div className="mt-4">
             {question.type === "scale" && (
               <div className="grid max-w-2xl grid-cols-1 gap-2 min-[360px]:grid-cols-3">
-                {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <button key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("nook-lift overflow-hidden rounded-md border bg-card text-left", value === size.value ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></button>)}
+                {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <Button variant="ghost" key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal rounded-none border bg-card p-0 text-left", value === size.value ? "border-brand bg-brand-soft/25" : "border-border hover:border-brand")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></Button>)}
               </div>
             )}
 
@@ -474,7 +470,8 @@ function QuestionBlock({
                       ? Array.isArray(value) && value.includes(option.id)
                       : value === option.id;
                   return (
-                    <button
+                    <Button
+                      variant="outline"
                       key={option.id}
                       type="button"
                       onClick={() =>
@@ -483,7 +480,7 @@ function QuestionBlock({
                           : onSet(question.id, option.id)
                       }
                       className={cn(
-                         "min-h-11 max-w-full whitespace-normal rounded-md border px-4 py-2.5 text-left text-sm transition-colors",
+                         "h-auto min-h-11 max-w-full flex-col items-start whitespace-normal rounded-none border px-4 py-2.5 text-left text-sm transition-colors",
                         active
                            ? "border-primary bg-primary text-primary-foreground"
                            : "border-border bg-card hover:border-primary",
@@ -493,7 +490,7 @@ function QuestionBlock({
                       {option.hint && (
                         <span className="mt-0.5 block text-xs text-muted-foreground">{option.hint}</span>
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -612,64 +609,33 @@ function SummaryPanel({
   serviceName,
   selected,
   currentStep,
+  artistName,
 }: {
   quote: ReturnType<typeof buildQuote>;
   currency: string;
   serviceName: string;
   selected: { date: string; slot: Slot } | null;
   currentStep: number;
+  artistName: string | undefined;
 }) {
   return (
-     <div className="nook-panel bg-background/50 p-4 sm:p-5">
-       <p className="text-xs font-bold">Your booking</p>
-       <div className="mt-4 flex gap-3"><img src={botanical} alt="Selected floral tattoo design" className="size-16 rounded-md object-cover"/><div className="flex flex-wrap content-start gap-1"><span className="rounded bg-secondary px-2 py-1 text-[9px]">Medium size</span><span className="rounded bg-secondary px-2 py-1 text-[9px]">Fine line · Black & grey</span></div></div>
-       <div className="mt-4 grid grid-cols-2 gap-4">
-       <div><span className="block text-[10px] text-muted-foreground">Estimated price</span><p className="mt-1 text-sm font-bold">
-        {quote.high === 0
-          ? "Free"
-          : `${formatMoney(quote.low, currency)}–${formatMoney(quote.high, currency)}`}
-       </p></div><div><span className="block text-[10px] text-muted-foreground">Estimated time</span><p className="mt-1 text-sm font-bold">~ {formatDuration(quote.duration)}</p></div></div>
-
-       <dl className="mt-5 space-y-3 border-t border-border pt-5 text-xs">
-         {stepNames.map((name, index) => <div key={name} className="flex items-center gap-3"><span className={cn("flex size-5 items-center justify-center rounded-full border", index < currentStep ? "border-primary bg-primary text-primary-foreground" : "border-border")} >{index < currentStep ? <Check className="size-3"/> : <span className="size-1 rounded-full bg-border"/>}</span><span>{name}</span></div>)}
-         <div className="hidden">
-        <div className="flex items-start justify-between gap-3">
-          <dt className="text-muted-foreground">Artists</dt>
-          <dd className="text-right">
-            {quote.eligibleTeam.length === 0
-              ? "—"
-              : quote.eligibleTeam.map((m) => m.name.split(" ")[0]).join(", ")}
-          </dd>
+      <div className="bg-secondary/40 px-5 py-7 sm:px-8 lg:min-h-[38rem]">
+        <div className="flex items-center justify-between border-b border-foreground pb-4"><p className="font-display text-lg font-bold">Sitting / spec</p><span className="text-xs font-semibold text-brand">NO. 0{currentStep + 1}</span></div>
+        <p className="mt-6 text-[10px] font-bold uppercase text-muted-foreground">01 / Service</p>
+        <p className="mt-1 font-display text-xl font-semibold">{serviceName}</p>
+        <div className="mt-6 border-t border-border py-4">
+          <p className="text-[10px] font-bold uppercase text-muted-foreground">02 / Estimated quote</p>
+          <p key={`${quote.low}-${quote.high}`} className="nook-enter mt-1 font-display text-2xl font-bold tabular-nums">{quote.high === 0 ? "Free" : `${formatMoney(quote.low, currency)}–${formatMoney(quote.high, currency)}`}</p>
         </div>
-        {quote.deposit > 0 && (
-          <div className="flex items-start justify-between gap-3">
-            <dt className="text-muted-foreground">Deposit</dt>
-            <dd>{formatMoney(quote.deposit, currency)}</dd>
-          </div>
-        )}
-        <div className="flex items-start justify-between gap-3">
-          <dt className="text-muted-foreground">Approval</dt>
-          <dd className="text-right">{quote.requiresReview ? "Owner review" : "Instant"}</dd>
+        <div className="grid grid-cols-2 border-y border-border py-4">
+          <div><p className="text-[10px] font-bold uppercase text-muted-foreground">03 / Sitting</p><p key={quote.duration} className="nook-enter mt-1 font-display text-lg font-semibold">{formatDuration(quote.duration)}</p></div>
+          <div className="border-l border-border pl-4"><p className="text-[10px] font-bold uppercase text-muted-foreground">04 / Artist</p><p key={artistName} className="nook-enter mt-1 font-display text-lg font-semibold">{artistName ?? "To be matched"}</p></div>
         </div>
-        {selected && (
-          <div className="flex items-start justify-between gap-3">
-            <dt className="text-muted-foreground">Slot</dt>
-            <dd className="text-right">
-              {new Date(`${selected.date}T00:00:00`).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-              })}{" "}
-              · {selected.slot.time}
-            </dd>
-          </div>
-        )}
-         </div></dl>
-
-      {quote.requiresPhotos && (
-        <p className="mt-5 flex items-start gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
-          <Camera className="mt-0.5 size-3.5 shrink-0" /> Reference photos required
-        </p>
-      )}
+        {selected && <div className="border-b border-border py-4"><p className="text-[10px] font-bold uppercase text-muted-foreground">05 / Appointment</p><p className="mt-1 text-sm font-semibold">{new Date(`${selected.date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" })} · {selected.slot.time}</p></div>}
+        <p className="mt-5 text-xs text-muted-foreground">{quote.requiresReview ? "Pending studio review" : "Ready for confirmation"}{quote.requiresPhotos ? " · Reference pictures required" : ""}</p>
+        <div className="mt-8 flex gap-1" aria-label={`Step ${currentStep + 1} of ${stepNames.length}`}>
+          {stepNames.map((name, index) => <span key={name} className={cn("h-1 flex-1 bg-border transition-colors duration-300", index <= currentStep && "bg-brand")} />)}
+        </div>
     </div>
   );
 }
