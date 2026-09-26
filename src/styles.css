@@ -200,8 +200,53 @@
 
 .nook-enter { animation: nook-enter 240ms ease-out both; }
 
+@keyframes nook-rise {
+  from { opacity: 0; transform: translateY(0.75rem) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nook-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes nook-underline {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.nook-stagger > * { animation: nook-rise 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.nook-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.nook-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.nook-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.nook-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.nook-stagger > *:nth-child(n + 6) { animation-delay: 300ms; }
+
+.nook-lift {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+.nook-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px -18px color-mix(in oklab, var(--foreground) 45%, transparent);
+}
+.nook-pop { animation: nook-pop 320ms ease-out both; }
+
+.nook-title { position: relative; padding-bottom: 0.9rem; }
+.nook-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 3.5rem;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--brand);
+  transform-origin: left;
+  animation: nook-underline 600ms 150ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .nook-enter { animation: none; }
+  .nook-enter, .nook-stagger > *, .nook-pop, .nook-title::after { animation: none; }
+  .nook-lift, .nook-lift:hover { transition: none; transform: none; }
 }
 
 @utility rule-grid {

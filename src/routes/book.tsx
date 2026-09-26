@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Camera, Check, Clock, ImagePlus, Plus, Trash2, Upload, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, Check, Clock, ExternalLink, ImagePlus, Plus, Star, Trash2, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,11 @@ import {
   formatDuration,
   formatMoney,
   isAnswered,
+  recommendArtist,
   visibleQuestions,
 } from "@/lib/nook/engine";
 import type { Slot } from "@/lib/nook/engine";
-import type { Answers, BookingRequest, Question } from "@/lib/nook/types";
+import type { Answers, BookingRequest, Question, TeamMember } from "@/lib/nook/types";
 import { supabase } from "@/integrations/supabase/client";
 import botanical from "@/assets/flash-botanical.jpg";
 import moth from "@/assets/flash-moth.jpg";
@@ -56,12 +57,24 @@ function BookingFlow() {
   const [notes, setNotes] = useState("");
   const [flashDesignId, setFlashDesignId] = useState<string | undefined>();
   const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
+  const [artistChoice, setArtistChoice] = useState<string>("auto");
   const [done, setDone] = useState<null | { pending: boolean; date: string; time: string; who: string }>(null);
 
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
   if (!service) return <div className="p-8">No services are available.</div>;
   const questions = useMemo(() => visibleQuestions(service, answers), [service, answers]);
   const quote = useMemo(() => buildQuote(business, service, answers), [business, service, answers]);
+
+  const recommendation = useMemo(() => recommendArtist(quote), [quote]);
+  const chosenMember =
+    artistChoice === "auto"
+      ? recommendation?.member
+      : quote.eligibleTeam.find((m) => m.id === artistChoice) ?? recommendation?.member;
+  const calendarTeam = chosenMember ? [chosenMember] : quote.eligibleTeam;
+  const chooseArtist = (id: string) => {
+    setArtistChoice(id);
+    setSelected(null);
+  };
 
   const booked = useMemo(
     () =>
@@ -159,11 +172,11 @@ function BookingFlow() {
          <div className="nook-enter min-w-0 overflow-hidden" key={step}>
           {step === 0 && (
             <section>
-               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">What would you like to book?</h1>
+               <h1 className="display nook-title max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">What would you like to book?</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 {business.tagline}
               </p>
-               <div className="mt-9 grid gap-3 sm:grid-cols-3">
+               <div className="nook-stagger mt-9 grid gap-3 sm:grid-cols-3">
                 {business.services.map((s) => (
                   <button
                     key={s.id}
@@ -172,8 +185,9 @@ function BookingFlow() {
                       setServiceId(s.id);
                       setAnswers({});
                       setSelected(null);
+                      setArtistChoice("auto");
                     }}
-                      className={cn("nook-panel flex min-h-44 w-full flex-col justify-between p-5 text-left transition-colors hover:border-brand", serviceId === s.id && "border-primary bg-sand/35 ring-1 ring-primary")}
+                      className={cn("nook-panel nook-lift flex min-h-44 w-full flex-col justify-between p-5 text-left hover:border-brand", serviceId === s.id && "border-primary bg-sand/35 ring-1 ring-primary")}
                   >
                     <span
                       className={cn(
@@ -203,9 +217,16 @@ function BookingFlow() {
 
           {step === 1 && (
             <section>
-               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">How big is your tattoo?</h1>
+               <h1 className="display nook-title max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">How big is your tattoo?</h1>
                <p className="mt-3 max-w-lg text-sm text-muted-foreground">This helps us estimate time and price.</p>
               {service.id === "flash" && <FlashPicker selected={flashDesignId} onSelect={setFlashDesignId} />}
+              {service.id === "tattoo" && (
+                <div className="mt-8 max-w-2xl">
+                  <h2 className="text-base font-semibold">Reference pictures <span className="font-medium text-muted-foreground">(optional)</span></h2>
+                  <p className="mb-4 mt-1 text-sm text-muted-foreground">Sketches, photos or artwork you like — up to 5 images.</p>
+                  <ReferenceUpload files={referenceFiles} onChange={setReferenceFiles} />
+                </div>
+              )}
                <div className="mt-8 space-y-9">
                 {questions.map((q, i) => (
                   <QuestionBlock
@@ -221,16 +242,25 @@ function BookingFlow() {
             </section>
           )}
 
-          {step === 2 && <QuoteStep quote={quote} currency={business.policies.currency} service={service} />}
+          {step === 2 && (
+            <>
+              <QuoteStep quote={quote} currency={business.policies.currency} service={service} />
+              <ArtistPicker
+                team={quote.eligibleTeam}
+                recommendedId={recommendation?.member.id}
+                reason={recommendation?.reason}
+                choice={artistChoice}
+                onChoose={chooseArtist}
+              />
+            </>
+          )}
 
           {step === 3 && (
             <section>
-               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">Choose a date<br />and time</h1>
+               <h1 className="display nook-title max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">Choose a date<br />and time</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 Showing days with a free {formatDuration(quote.duration)} block for{" "}
-                {quote.eligibleTeam.length === business.team.length
-                  ? "the studio"
-                  : quote.eligibleTeam.map((m) => m.name.split(" ")[0]).join(" or ") || "no one yet"}
+                {chosenMember ? chosenMember.name : "no one yet"}
                 . Earliest is {business.policies.leadTimeDays} days out.
               </p>
               <div className="mt-8">
@@ -242,7 +272,7 @@ function BookingFlow() {
                 ) : (
                   <MonthCalendar
                     business={business}
-                    eligibleTeam={quote.eligibleTeam}
+                    eligibleTeam={calendarTeam}
                     duration={quote.duration}
                     booked={booked}
                     selected={selected}
@@ -256,7 +286,7 @@ function BookingFlow() {
           {step === 4 && (
             <section>
                <h1 className="display text-4xl leading-none sm:text-6xl lg:text-7xl">Almost done!</h1>
-               <h2 className="mt-4 text-base font-bold">Add a reference photo <span className="font-medium text-muted-foreground">(optional)</span></h2>
+               <h2 className="mt-4 text-base font-bold">{service.id === "tattoo" ? `Your details${referenceFiles.length ? ` · ${referenceFiles.length} reference ${referenceFiles.length === 1 ? "picture" : "pictures"} attached` : ""}` : "Add a reference photo"}</h2>
                <p className="mt-1 max-w-lg text-sm text-muted-foreground">
                 {quote.requiresReview
                   ? business.policies.reviewNote
@@ -264,18 +294,11 @@ function BookingFlow() {
               </p>
 
                <div className="mt-7 max-w-xl space-y-5">
-                 <Field label="Reference photos" optional={!quote.requiresPhotos}>
-                   <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
-                     <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-background text-center transition-colors hover:border-primary">
-                       <Upload className="size-6" /><span className="mt-3 text-xs font-medium">Drag & drop your image here</span><span className="mt-1 text-[11px] text-muted-foreground">or click to upload</span>
-                       <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(event) => setReferenceFiles(Array.from(event.target.files ?? []).slice(0, 5))} />
-                     </label>
-                     <div className="grid grid-cols-2 gap-2">
-                       {referenceFiles.slice(0, 3).map((file) => <div key={`${file.name}-${file.lastModified}`} className="group relative aspect-square overflow-hidden rounded-md border border-border"><img src={URL.createObjectURL(file)} alt="Reference preview" className="size-full object-cover"/><button type="button" aria-label={`Remove ${file.name}`} onClick={() => setReferenceFiles((files) => files.filter((candidate) => candidate !== file))} className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-card"><Trash2 className="size-3.5" /></button></div>)}
-                       {referenceFiles.length < 5 && <label className="flex aspect-square cursor-pointer items-center justify-center rounded-md border border-dashed border-border"><Plus className="size-5"/><input type="file" accept="image/*" className="sr-only" onChange={(event) => setReferenceFiles((files) => [...files, ...Array.from(event.target.files ?? [])].slice(0, 5))}/></label>}
-                     </div>
-                   </div>
-                 </Field>
+                 {service.id !== "tattoo" && (
+                   <Field label="Reference photos" optional={!quote.requiresPhotos}>
+                     <ReferenceUpload files={referenceFiles} onChange={setReferenceFiles} />
+                   </Field>
+                 )}
                 <Field label="Your name">
                   <input
                     value={name}
@@ -306,7 +329,7 @@ function BookingFlow() {
                   <div className="flex items-start gap-3 rounded-sm border border-brand/40 bg-brand-soft/40 p-4 text-sm">
                     <Camera className="mt-0.5 size-4 shrink-0 text-brand" />
                     <p>
-                      Reference photos are required for this request. Add at least one above.
+                      Reference photos are required for this request. Add at least one{service.id === "tattoo" ? " on the size step" : " above"}.
                     </p>
                   </div>
                 )}
@@ -367,7 +390,7 @@ function BookingFlow() {
 function BookingHeader({ step, onBack }: { step: number; onBack: () => void }) {
   return <header className="grid min-h-20 grid-cols-[1fr_auto] items-center gap-5 border-b border-border/60 px-5 sm:grid-cols-[1fr_auto_1fr] sm:px-10 lg:px-12">
     <div className="flex items-center gap-8"><Link to="/" className="text-2xl font-semibold">Nook</Link>{step > 0 && <button type="button" onClick={onBack} className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"><ArrowLeft className="size-3"/> Back</button>}</div>
-    <div className="hidden items-center gap-2 sm:flex"><span className="mr-2 text-[10px] text-muted-foreground">Step {step + 1} of 5</span>{stepNames.map((name, index) => <span key={name} aria-label={name} className={cn("h-1 w-10 rounded-full", index <= step ? "bg-primary" : "bg-secondary")}/>)}</div>
+    <div className="hidden items-center gap-2 sm:flex"><span className="mr-2 text-[10px] text-muted-foreground">Step {step + 1} of 5</span>{stepNames.map((name, index) => <span key={name} aria-label={name} className="relative h-1 w-10 overflow-hidden rounded-full bg-secondary"><span className={cn("absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-500 ease-out", index < step ? "w-full bg-brand" : index === step ? "w-full" : "w-0")}/></span>)}</div>
     <span className="text-right text-[10px] text-muted-foreground sm:hidden">{step + 1} / 5</span>
   </header>;
 }
@@ -380,7 +403,7 @@ const bookingFlashDesigns = [
 ];
 
 function FlashPicker({ selected, onSelect }: { selected: string | undefined; onSelect: (id: string) => void }) {
-  return <div className="mt-8"><div className="flex items-center gap-2"><ImagePlus className="size-4 text-brand"/><h2 className="font-semibold">Choose a flash design</h2></div><p className="mt-1 text-sm text-muted-foreground">Each design is tattooed once. Select one to reserve it with your request.</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{bookingFlashDesigns.map((design) => <button key={design.id} type="button" onClick={() => onSelect(design.id)} className={cn("overflow-hidden rounded-sm border bg-card text-left transition-colors", selected === design.id ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-brand")}><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><span className="block p-3"><span className="block text-sm font-semibold">{design.title}</span><span className="mt-1 block text-xs text-muted-foreground">{design.detail}</span></span></button>)}</div></div>;
+  return <div className="mt-8"><div className="flex items-center gap-2"><ImagePlus className="size-4 text-brand"/><h2 className="font-semibold">Choose a flash design</h2></div><p className="mt-1 text-sm text-muted-foreground">Each design is tattooed once. Select one to reserve it with your request.</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{bookingFlashDesigns.map((design) => <button key={design.id} type="button" onClick={() => onSelect(design.id)} className={cn("nook-lift overflow-hidden rounded-sm border bg-card text-left", selected === design.id ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-brand")}><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><span className="block p-3"><span className="block text-sm font-semibold">{design.title}</span><span className="mt-1 block text-xs text-muted-foreground">{design.detail}</span></span></button>)}</div></div>;
 }
 
 function Field({
@@ -429,7 +452,7 @@ function QuestionBlock({
           <div className="mt-4">
             {question.type === "scale" && (
               <div className="grid max-w-2xl grid-cols-1 gap-2 min-[360px]:grid-cols-3">
-                {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <button key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("overflow-hidden rounded-md border bg-card text-left transition-colors", value === size.value ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></button>)}
+                {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <button key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("nook-lift overflow-hidden rounded-md border bg-card text-left", value === size.value ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></button>)}
               </div>
             )}
 
@@ -707,6 +730,106 @@ function Confirmation({
           </Link>
         </div>
       </main>
+    </div>
+  );
+}
+
+function ReferenceUpload({ files, onChange }: { files: File[]; onChange: (files: File[]) => void }) {
+  const previews = useMemo(() => files.map((file) => ({ file, url: URL.createObjectURL(file) })), [files]);
+  const add = (list: FileList | null) => onChange([...files, ...Array.from(list ?? [])].slice(0, 5));
+  return (
+    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
+      <label
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          add(event.dataTransfer.files);
+        }}
+        className="nook-lift group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-background text-center hover:border-brand"
+      >
+        <Upload className="size-6 transition-transform duration-300 group-hover:-translate-y-1 group-hover:text-brand" />
+        <span className="mt-3 text-xs font-medium">Drag & drop your images here</span>
+        <span className="mt-1 text-[11px] text-muted-foreground">or click to upload · JPG, PNG, WebP</span>
+        <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(event) => add(event.target.files)} />
+      </label>
+      <div className="nook-stagger grid grid-cols-2 content-start gap-2">
+        {previews.map(({ file, url }) => (
+          <div key={`${file.name}-${file.lastModified}`} className="relative aspect-square overflow-hidden rounded-md border border-border">
+            <img src={url} alt={`Reference ${file.name}`} className="size-full object-cover" />
+            <button type="button" aria-label={`Remove ${file.name}`} onClick={() => onChange(files.filter((candidate) => candidate !== file))} className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-card">
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
+        ))}
+        {files.length < 5 && (
+          <label className="flex aspect-square cursor-pointer items-center justify-center rounded-md border border-dashed border-border transition-colors hover:border-brand">
+            <Plus className="size-5" />
+            <span className="sr-only">Add another picture</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(event) => add(event.target.files)} />
+          </label>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ArtistPicker({
+  team,
+  recommendedId,
+  reason,
+  choice,
+  onChoose,
+}: {
+  team: TeamMember[];
+  recommendedId: string | undefined;
+  reason: string | undefined;
+  choice: string;
+  onChoose: (id: string) => void;
+}) {
+  if (team.length === 0) return null;
+  const activeId = choice === "auto" ? recommendedId : choice;
+  return (
+    <div className="mt-10">
+      <p className="eyebrow">Your artist</p>
+      <h2 className="mt-2 text-xl font-bold">We matched you with the best fit</h2>
+      <p className="mt-1 max-w-lg text-sm text-muted-foreground">Based on your style, placement and sitting length. Prefer someone else? Pick them instead.</p>
+      <div className="nook-stagger mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {team.map((member) => {
+          const active = member.id === activeId;
+          const best = member.id === recommendedId;
+          return (
+            <div
+              key={member.id}
+              className={cn(
+                "nook-lift relative flex flex-col rounded-md border bg-card p-4",
+                active ? "border-primary ring-1 ring-primary" : "border-border hover:border-brand",
+              )}
+            >
+              <button type="button" onClick={() => onChoose(best ? "auto" : member.id)} className="flex items-start gap-3 text-left" aria-pressed={active}>
+                <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors", active ? "bg-primary text-primary-foreground" : "bg-sand")}>
+                  {member.initials}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{member.name}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{member.role}</span>
+                </span>
+                {active && <Check className="nook-pop size-4 shrink-0" />}
+              </button>
+              {best && (
+                <p className="mt-3 flex items-start gap-1.5 rounded-sm bg-brand-soft/60 px-2.5 py-2 text-xs">
+                  <Star className="mt-0.5 size-3 shrink-0 fill-brand text-brand" />
+                  <span><strong className="font-semibold">Best match.</strong> {reason}</span>
+                </p>
+              )}
+              {member.portfolioUrl && (
+                <a href={member.portfolioUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 self-start text-xs font-medium underline-offset-4 hover:text-brand hover:underline">
+                  See their work <ExternalLink className="size-3" />
+                </a>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
