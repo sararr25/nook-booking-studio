@@ -199,7 +199,7 @@ export const slotsForDay = (
 /** Picks the strongest fit: covers the required skills, specialises in them, and has room to spare. */
 export const recommendArtist = (quote: Quote): { member: TeamMember; reason: string } | null => {
   const scored = quote.eligibleTeam.map((member) => {
-    const lead = member.skills.slice(0, 2).filter((s) => quote.requiredSkills.includes(s)).length;
+    const lead = member.skills.slice(0, 2).reduce((sum, skill, index) => sum + (quote.requiredSkills.includes(skill) ? 2 - index : 0), 0);
     const focus = quote.requiredSkills.length / Math.max(1, member.skills.length);
     const headroom = Math.min(1, (member.maxSession - quote.duration) / 120);
     return { member, lead, score: lead * 3 + focus * 2 + headroom };
