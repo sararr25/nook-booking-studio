@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, RotateCcw, X } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CalendarDays, Check, ImagePlus, LogOut, RotateCcw, Unplug, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/nook/site-header";
 import { useNook } from "@/lib/nook/store";
 import { formatDuration, formatMoney } from "@/lib/nook/engine";
 import type { BookingRequest, BusinessConfig } from "@/lib/nook/types";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import botanical from "@/assets/flash-botanical.jpg";
+import moth from "@/assets/flash-moth.jpg";
+import sun from "@/assets/flash-sun.jpg";
+import swallow from "@/assets/flash-swallow.jpg";
 
 export const Route = createFileRoute("/_authenticated/owner")({
   head: () => ({
@@ -27,14 +33,15 @@ export const Route = createFileRoute("/_authenticated/owner")({
   component: OwnerPage,
 });
 
-const tabs = ["Requests", "Services", "Questions", "Team", "Policies"] as const;
+const tabs = ["Overview", "Bookings", "Availability", "Services", "Questions", "Team", "Flash", "Policies"] as const;
 type Tab = (typeof tabs)[number];
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function OwnerPage() {
   const { business, requests, resetAll } = useNook();
-  const [tab, setTab] = useState<Tab>("Requests");
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>("Overview");
   const pending = requests.filter((r) => r.status === "pending").length;
 
   return (
@@ -52,7 +59,7 @@ function OwnerPage() {
                 : "Nothing waiting. The book runs itself today."}
             </p>
           </div>
-          <button
+          <div className="flex gap-2"><button
             type="button"
             onClick={() => {
               resetAll();
@@ -61,7 +68,7 @@ function OwnerPage() {
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-sm transition-colors hover:bg-secondary"
           >
             <RotateCcw className="size-3.5" /> Reset demo
-          </button>
+          </button><Button variant="outline" className="h-11 rounded-full" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", replace: true }); }}><LogOut /> Sign out</Button></div>
         </div>
 
         <div className="mt-8 flex gap-1 overflow-x-auto border-b border-border">
@@ -78,7 +85,7 @@ function OwnerPage() {
               )}
             >
               {t}
-              {t === "Requests" && pending > 0 && (
+              {t === "Bookings" && pending > 0 && (
                 <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-brand-foreground">
                   {pending}
                 </span>
@@ -88,10 +95,13 @@ function OwnerPage() {
         </div>
 
         <div className="py-8">
-          {tab === "Requests" && <RequestsTab />}
+          {tab === "Overview" && <OverviewTab onOpen={setTab} />}
+          {tab === "Bookings" && <RequestsTab />}
+          {tab === "Availability" && <AvailabilityTab />}
           {tab === "Services" && <ServicesTab />}
           {tab === "Questions" && <QuestionsTab />}
           {tab === "Team" && <TeamTab />}
+          {tab === "Flash" && <FlashTab />}
           {tab === "Policies" && <PoliciesTab />}
         </div>
       </main>
