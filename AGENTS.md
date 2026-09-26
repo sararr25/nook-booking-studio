@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Nook uses crisp ivory paper surfaces, deep ink, punchy terracotta and sage accents, Manrope body copy, Space Grotesk headings, and open hairline-divided editorial grids; this makes customer and owner screens feel like a cohesive studio publication rather than a card dashboard.
+- Keep NookProvider alongside each Nook content route rather than in the root layout, so a hot-reloaded route and its store consumer share the same context instance.

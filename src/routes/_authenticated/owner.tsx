@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CalendarDays, CalendarRange, Check, ChevronRight, Clock3, Home, ImagePlus, Images, LogOut, RotateCcw, Settings, Unplug, Upload, UsersRound, WandSparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useNook } from "@/lib/nook/store";
+import { NookProvider, useNook } from "@/lib/nook/store";
 import { formatDuration, formatMoney } from "@/lib/nook/engine";
 import type { BookingRequest, BusinessConfig } from "@/lib/nook/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,8 +31,12 @@ export const Route = createFileRoute("/_authenticated/owner")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: OwnerPage,
+  component: OwnerRoute,
 });
+
+function OwnerRoute() {
+  return <NookProvider><OwnerPage /></NookProvider>;
+}
 
 const tabs = ["Overview", "Bookings", "Availability", "Services", "Questions", "Team", "Flash", "Policies"] as const;
 type Tab = (typeof tabs)[number];

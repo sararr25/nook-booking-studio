@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/nook/site-header";
 import { MonthCalendar } from "@/components/nook/month-calendar";
-import { useNook } from "@/lib/nook/store";
+import { NookProvider, useNook } from "@/lib/nook/store";
 import {
   buildQuote,
   formatDuration,
@@ -41,8 +41,12 @@ export const Route = createFileRoute("/book")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: BookingFlow,
+  component: BookingPage,
 });
+
+function BookingPage() {
+  return <NookProvider><BookingFlow /></NookProvider>;
+}
 
 const stepNames = ["Style", "Size", "Placement", "Photo", "Date & time"];
 

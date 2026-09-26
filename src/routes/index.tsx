@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { SiteHeader } from "@/components/nook/site-header";
-import { useNook } from "@/lib/nook/store";
+import { NookProvider, useNook } from "@/lib/nook/store";
 import { otherArchetypes } from "@/lib/nook/config";
 import studioImage from "@/assets/studio.jpg";
 
@@ -24,8 +24,12 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Landing,
+  component: LandingPage,
 });
+
+function LandingPage() {
+  return <NookProvider><Landing /></NookProvider>;
+}
 
 const steps = [
   {
