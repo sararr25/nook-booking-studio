@@ -165,20 +165,22 @@ function BookingFlow() {
     (step === 4 && (!quote.requiresPhotos || referenceFiles.length > 0));
 
   return (
-    <div className="min-h-screen bg-background px-3 py-3 sm:px-5 sm:py-6">
-      <main className="mx-auto w-full max-w-7xl overflow-hidden rounded-lg border border-border bg-card nook-shadow lg:min-h-[44rem]">
+    <div className="min-h-screen bg-background">
+      <main className="mx-auto w-full max-w-7xl border-x border-border bg-card lg:min-h-screen">
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
-        <div className="grid gap-8 px-5 pb-7 pt-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-12 lg:px-12 lg:pb-9 lg:pt-8">
-         <div className="nook-enter min-w-0 overflow-hidden" key={step}>
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_19rem]">
+          <div className="nook-enter min-w-0 overflow-hidden px-5 pb-10 pt-8 sm:px-10 sm:pt-12 lg:min-h-[38rem] lg:px-12" key={step}>
+           <p className="mb-6 flex items-center gap-4 border-b border-border pb-3 text-[11px] font-semibold uppercase text-brand"><span className="font-display text-lg tabular-nums">{String(step + 1).padStart(2, "0")}</span><span>{stepNames[step]}</span></p>
           {step === 0 && (
             <section>
                <h1 className="display nook-title max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">What would you like to book?</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 {business.tagline}
               </p>
-               <div className="nook-stagger mt-9 grid gap-3 sm:grid-cols-3">
-                {business.services.map((s) => (
-                  <button
+               <div className="nook-stagger mt-9 grid border-t border-border sm:grid-cols-3">
+                 {business.services.map((s, serviceIndex) => (
+                   <Button
+                     variant="ghost"
                     key={s.id}
                     type="button"
                     onClick={() => {
@@ -187,16 +189,9 @@ function BookingFlow() {
                       setSelected(null);
                       setArtistChoice("auto");
                     }}
-                      className={cn("nook-panel nook-lift flex min-h-44 w-full flex-col justify-between p-5 text-left hover:border-brand", serviceId === s.id && "border-primary bg-sand/35 ring-1 ring-primary")}
+                      className={cn("nook-lift flex h-auto min-h-52 w-full flex-col items-start justify-between whitespace-normal rounded-none border-b border-border p-5 text-left hover:bg-brand-soft/30 sm:border-r", serviceId === s.id && "bg-brand-soft/35")}
                   >
-                    <span
-                      className={cn(
-                         "flex size-5 shrink-0 items-center justify-center rounded-full border",
-                         serviceId === s.id ? "border-primary bg-primary text-primary-foreground" : "border-border",
-                      )}
-                    >
-                      {serviceId === s.id && <Check className="size-3" />}
-                    </span>
+                     <span className="flex w-full justify-between text-xs font-semibold tabular-nums text-brand"><span>{String(serviceIndex + 1).padStart(2, "0")}</span>{serviceId === s.id && <Check className="size-4" />}</span>
                      <span className="mt-6 flex-1">
                        <span className="block text-base font-bold">{s.name}</span>
                       <span className="mt-1 block text-sm text-muted-foreground">{s.blurb}</span>
@@ -209,7 +204,7 @@ function BookingFlow() {
                         {formatDuration(s.baseDuration)}+
                       </span>
                     </span>
-                  </button>
+                   </Button>
                 ))}
               </div>
             </section>
@@ -338,16 +333,17 @@ function BookingFlow() {
           )}
         </div>
 
-         <aside className="self-start lg:sticky lg:top-6">
+          <aside className="border-t border-border lg:sticky lg:top-0 lg:self-start lg:border-l lg:border-t-0">
           <SummaryPanel
             quote={quote}
             currency={business.policies.currency}
             serviceName={service.name}
             selected={selected}
             currentStep={step}
+             artistName={chosenMember?.name}
           />
         </aside>
-         <div className="col-span-full flex items-center justify-between gap-4 border-t border-border pt-5 lg:col-span-1 lg:border-0 lg:pt-0">
+          <div className="col-span-full flex items-center justify-between gap-4 border-t border-border px-5 py-5 sm:px-10 lg:px-12">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
               {service.basePrice === 0
@@ -364,7 +360,7 @@ function BookingFlow() {
                <Button variant="outline"
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
-                 className="min-h-11 rounded-md px-4"
+                  className="min-h-11 px-4"
               >
                 <ArrowLeft className="size-4" />
                 <span className="hidden sm:inline">Back</span>
@@ -374,7 +370,7 @@ function BookingFlow() {
               type="button"
               disabled={!canContinue}
               onClick={() => (step === 4 ? submit() : setStep((s) => s + 1))}
-               className="min-h-11 min-w-40 rounded-md px-5"
+                className="min-h-11 min-w-32 px-5 sm:min-w-40"
             >
               {step === 4 ? (quote.requiresReview ? "Send request" : "Confirm booking") : "Continue"}
               {step < 4 && <ArrowRight className="size-4" />}
