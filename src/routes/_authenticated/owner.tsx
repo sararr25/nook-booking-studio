@@ -46,16 +46,17 @@ function OwnerPage() {
   const pending = requests.filter((r) => r.status === "pending").length;
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-5">
-      <div className="mx-auto grid min-h-[calc(100vh-2.5rem)] max-w-7xl overflow-hidden rounded-lg border border-border bg-card nook-shadow lg:grid-cols-[13rem_1fr]">
-      <aside className="border-b border-border bg-secondary/65 p-4 lg:border-b-0 lg:border-r lg:p-5">
-        <div className="flex items-center justify-between lg:block"><span className="text-2xl font-semibold">Nook</span><Button variant="ghost" size="icon" className="lg:hidden" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }}><LogOut/><span className="sr-only">Sign out</span></Button></div>
-        <nav className="mt-4 flex gap-1 overflow-x-auto lg:mt-8 lg:block lg:space-y-1">{tabs.map((item) => { const Icon = tabIcons[item]; return <button key={item} type="button" onClick={() => setTab(item)} className={cn("flex min-h-10 shrink-0 items-center gap-3 rounded-md px-3 text-xs transition-colors lg:w-full", tab === item ? "bg-secondary font-semibold" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}><Icon className="size-4"/>{item}{item === "Bookings" && pending > 0 && <span className="ml-auto rounded-full bg-primary px-1.5 text-[9px] text-primary-foreground">{pending}</span>}</button>; })}</nav>
-        <button type="button" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }} className="mt-8 hidden min-h-10 w-full items-center gap-3 rounded-md px-3 text-xs text-muted-foreground hover:bg-secondary lg:flex"><LogOut className="size-4"/>Sign out</button>
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto grid min-h-screen max-w-7xl border-x border-border bg-card lg:grid-cols-[13rem_1fr]">
+      <aside className="border-b border-border bg-secondary/40 p-4 lg:border-b-0 lg:border-r lg:p-5">
+        <div className="flex items-center justify-between lg:block"><span className="font-display text-2xl font-bold">Nook<span className="text-brand">.</span></span><Button variant="ghost" size="icon" className="lg:hidden" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }}><LogOut/><span className="sr-only">Sign out</span></Button></div>
+        <p className="mt-7 hidden border-b border-foreground pb-3 text-[10px] font-bold uppercase text-brand lg:block">Studio index / 01</p>
+        <nav className="mt-4 flex gap-1 overflow-x-auto lg:mt-3 lg:block lg:space-y-0">{tabs.map((item, index) => { const Icon = tabIcons[item]; return <Button key={item} variant="ghost" type="button" onClick={() => setTab(item)} className={cn("flex h-11 shrink-0 items-center justify-start gap-2 rounded-none border-b border-border px-2 text-xs transition-colors lg:w-full", tab === item ? "border-l-2 border-l-brand bg-brand-soft/40 font-semibold text-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}><span className="hidden w-5 font-display text-[10px] tabular-nums text-brand lg:inline">{String(index + 1).padStart(2, "0")}</span><Icon className="size-4"/>{item}{item === "Bookings" && pending > 0 && <span className="ml-auto bg-primary px-1.5 text-[9px] text-primary-foreground">{pending}</span>}</Button>; })}</nav>
+        <Button variant="ghost" type="button" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }} className="mt-8 hidden min-h-10 w-full items-center justify-start gap-3 rounded-none px-2 text-xs text-muted-foreground lg:flex"><LogOut className="size-4"/>Sign out</Button>
       </aside>
 
-      <main className="min-w-0 px-5 py-7 sm:px-8 lg:px-9">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+       <main className="min-w-0 px-5 py-7 sm:px-8 lg:px-12 lg:py-10">
+         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-foreground pb-8">
           <div>
              <p className="eyebrow">Owner dashboard · {business.name}</p>
              <h1 className="display mt-2 text-3xl sm:text-5xl">Good morning, Alex</h1>
@@ -65,13 +66,13 @@ function OwnerPage() {
                 : "Nothing waiting. The book runs itself today."}
             </p>
           </div>
-           <div className="flex items-center gap-3"><span aria-hidden="true" className="flex size-10 items-center justify-center rounded-full bg-highlight-soft text-sm font-bold text-highlight">AR</span><Button variant="outline"
+           <div className="flex items-center gap-3"><span aria-hidden="true" className="flex size-10 items-center justify-center bg-highlight-soft font-display text-sm font-bold text-highlight">AR</span><Button variant="outline"
             type="button"
             onClick={() => {
               resetAll();
               toast.success("Demo data reset");
             }}
-             className="min-h-10 rounded-md"
+              className="min-h-10"
           >
             <RotateCcw className="size-3.5" /> Reset demo
            </Button></div>
@@ -114,8 +115,8 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
     { title: "Flash book", count: "4", detail: "Designs ready to book", tab: "Flash" },
   ];
   return <div>
-    <p className="text-sm text-muted-foreground">{pending.length} thing{pending.length === 1 ? "" : "s"} need your attention today.</p>
-     <div className="mt-6 grid gap-3 md:grid-cols-3">{panels.map((panel, index) => <button key={panel.title} type="button" onClick={() => onOpen(panel.tab)} className={cn("nook-panel p-4 text-left transition-colors hover:border-primary", index === 0 && "bg-brand-soft/35", index === 1 && "bg-highlight-soft/45")}><div className="flex items-center justify-between"><span><span className="block text-xs font-bold">{panel.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{panel.count} {panel.title === "Today" ? "appointments" : panel.title === "Flash book" ? "designs" : "requests"}</span></span><span className="flex size-7 items-center justify-center rounded-full border border-border bg-card"><ChevronRight className="size-3.5"/></span></div><div className="mt-5 flex items-center gap-3 border-t border-border pt-4"><img src={index === 0 ? moth : index === 1 ? botanical : sun} alt="" aria-hidden="true" className="size-12 rounded-md object-cover"/><span><span className="block text-xs font-semibold">{panel.detail}</span><span className="mt-1 block text-[10px] text-muted-foreground">{panel.title === "Needs your review" ? "Cover-up · €250–320" : panel.title === "Today" ? "Fine line tattoo" : "Ready for the gallery"}</span></span></div><span className="mt-4 flex min-h-9 w-full items-center justify-center rounded-md border border-border bg-card/75 text-xs font-semibold">{panel.title === "Needs your review" ? "Review" : "View"}</span></button>)}</div>
+     <p className="text-sm text-muted-foreground">{pending.length} thing{pending.length === 1 ? "" : "s"} need your attention today.</p>
+      <div className="mt-6 grid border-t border-border md:grid-cols-3">{panels.map((panel, index) => <Button key={panel.title} variant="ghost" type="button" onClick={() => onOpen(panel.tab)} className={cn("nook-lift flex h-auto min-h-56 flex-col items-start justify-between whitespace-normal rounded-none border-b border-border p-5 text-left md:border-r", index === 0 && "bg-brand-soft/25", index === 1 && "bg-highlight-soft/30")}><span className="flex w-full items-center justify-between text-[10px] font-bold uppercase text-brand">{String(index + 1).padStart(2, "0")} / {panel.title}<ChevronRight className="size-4"/></span><span className="font-display text-6xl font-bold tabular-nums">{panel.count}</span><span className="flex w-full items-center gap-3 border-t border-border pt-3"><img src={index === 0 ? moth : index === 1 ? botanical : sun} alt="" aria-hidden="true" className="size-10 object-cover"/><span className="text-xs font-semibold">{panel.detail}</span></span></Button>)}</div>
     <div className="mt-10 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]"><div><p className="eyebrow">Next in the book</p><div className="mt-3 divide-y divide-border border-y border-border">{requests.slice(0, 4).map((request) => <div key={request.id} className="flex items-center justify-between gap-4 py-4"><span><strong className="block text-sm">{request.time} · {request.customerName}</strong><span className="text-xs text-muted-foreground">{business.services.find((service) => service.id === request.serviceId)?.name}</span></span><StatusPill status={request.status} /></div>)}</div></div><div className="border-l border-border pl-0 lg:pl-8"><p className="eyebrow">Studio status</p><dl className="mt-3 space-y-4 text-sm"><div className="flex justify-between"><dt className="text-muted-foreground">Professionals</dt><dd>{business.team.length}</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Calendar</dt><dd className="text-brand">Not connected</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Auto-approval</dt><dd>Under {formatMoney(business.policies.autoApproveUnder, business.policies.currency)}</dd></div></dl></div></div>
   </div>;
 }
