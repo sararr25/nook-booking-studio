@@ -154,5 +154,34 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv05";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: var(--brand-soft);
+    color: var(--ink);
   }
 }
+
+@utility display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 20, "WONK" 1;
+  letter-spacing: -0.02em;
+}
+
+@utility eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+@utility rule-grid {
+  background-image: linear-gradient(var(--border) 1px, transparent 1px);
+  background-size: 100% 2rem;
+}
+
