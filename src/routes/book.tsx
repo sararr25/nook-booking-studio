@@ -14,7 +14,7 @@ import {
   visibleQuestions,
 } from "@/lib/nook/engine";
 import type { Slot } from "@/lib/nook/engine";
-import type { Answers, Question } from "@/lib/nook/types";
+import type { Answers, BookingRequest, Question } from "@/lib/nook/types";
 import { supabase } from "@/integrations/supabase/client";
 import botanical from "@/assets/flash-botanical.jpg";
 import moth from "@/assets/flash-moth.jpg";
@@ -35,6 +35,8 @@ export const Route = createFileRoute("/book")({
         property: "og:description",
         content: "A short questionnaire, an honest quote, then real availability.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: BookingFlow,
@@ -99,7 +101,7 @@ function BookingFlow() {
       if (error) { toast.error(`Could not upload ${file.name}`); return; }
       uploadedPaths.push(path);
     }
-    const request = {
+    const request: BookingRequest = {
       id: requestId,
       createdAt: new Date().toISOString(),
       customerName: name.trim(),
@@ -378,6 +380,17 @@ function BookingFlow() {
       </div>
     </div>
   );
+}
+
+const bookingFlashDesigns = [
+  { id: "botanical", title: "Wildflower stem", detail: "Fine line · €160", image: botanical },
+  { id: "moth", title: "Night moth", detail: "Fine line · €220", image: moth },
+  { id: "sun", title: "Ornamental sun", detail: "Blackwork · €190", image: sun },
+  { id: "swallow", title: "Fine-line swallow", detail: "Fine line · €180", image: swallow },
+];
+
+function FlashPicker({ selected, onSelect }: { selected?: string; onSelect: (id: string) => void }) {
+  return <div className="mt-8"><div className="flex items-center gap-2"><ImagePlus className="size-4 text-brand"/><h2 className="font-semibold">Choose a flash design</h2></div><p className="mt-1 text-sm text-muted-foreground">Each design is tattooed once. Select one to reserve it with your request.</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{bookingFlashDesigns.map((design) => <button key={design.id} type="button" onClick={() => onSelect(design.id)} className={cn("overflow-hidden rounded-sm border bg-card text-left transition-colors", selected === design.id ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-brand")}><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><span className="block p-3"><span className="block text-sm font-semibold">{design.title}</span><span className="mt-1 block text-xs text-muted-foreground">{design.detail}</span></span></button>)}</div></div>;
 }
 
 function Field({

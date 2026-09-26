@@ -20,6 +20,8 @@ export const Route = createFileRoute("/")({
         content:
           "A short adaptive questionnaire, a real quote, then only the dates that actually work.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Landing,
@@ -134,7 +136,7 @@ function Landing() {
         <footer className="border-t border-border">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-5 py-10 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <span className="display text-base text-foreground">Nook</span>
-            <span>A design exploration. Bookings are stored in this browser only.</span>
+            <span>Thoughtful booking for work that needs a little context.</span>
           </div>
         </footer>
       </main>

@@ -28,6 +28,8 @@ export const Route = createFileRoute("/_authenticated/owner")({
         property: "og:description",
         content: "Approve or edit requests, and decide what each answer does to price and time.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: OwnerPage,
