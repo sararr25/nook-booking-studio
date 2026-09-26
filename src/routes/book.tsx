@@ -321,6 +321,7 @@ function BookingFlow() {
             currency={business.policies.currency}
             serviceName={service.name}
             selected={selected}
+            currentStep={step}
           />
         </aside>
          <div className="col-span-full flex items-center justify-between gap-4 border-t border-border pt-5 lg:col-span-1 lg:border-0 lg:pt-0">
@@ -587,11 +588,13 @@ function SummaryPanel({
   currency,
   serviceName,
   selected,
+  currentStep,
 }: {
   quote: ReturnType<typeof buildQuote>;
   currency: string;
   serviceName: string;
   selected: { date: string; slot: Slot } | null;
+  currentStep: number;
 }) {
   return (
      <div className="nook-panel p-4 sm:p-5">
@@ -605,7 +608,7 @@ function SummaryPanel({
        </p></div><div><span className="block text-[10px] text-muted-foreground">Estimated time</span><p className="mt-1 text-sm font-bold">~ {formatDuration(quote.duration)}</p></div></div>
 
        <dl className="mt-5 space-y-3 border-t border-border pt-5 text-xs">
-         {stepNames.map((name, index) => <div key={name} className="flex items-center gap-3"><span className={cn("flex size-5 items-center justify-center rounded-full border", index < (selected ? 5 : 3) ? "border-primary bg-primary text-primary-foreground" : "border-border")} >{index < (selected ? 5 : 3) ? <Check className="size-3"/> : <span className="size-1 rounded-full bg-border"/>}</span><span>{name}</span></div>)}
+         {stepNames.map((name, index) => <div key={name} className="flex items-center gap-3"><span className={cn("flex size-5 items-center justify-center rounded-full border", index < currentStep ? "border-primary bg-primary text-primary-foreground" : "border-border")} >{index < currentStep ? <Check className="size-3"/> : <span className="size-1 rounded-full bg-border"/>}</span><span>{name}</span></div>)}
          <div className="hidden">
         <div className="flex items-start justify-between gap-3">
           <dt className="text-muted-foreground">Artists</dt>
