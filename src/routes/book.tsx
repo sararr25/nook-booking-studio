@@ -156,7 +156,7 @@ function BookingFlow() {
       <main className="mx-auto w-full max-w-7xl overflow-hidden rounded-lg border border-border bg-card nook-shadow lg:min-h-[44rem]">
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
         <div className="grid gap-8 px-5 pb-7 pt-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-12 lg:px-12 lg:pb-9 lg:pt-8">
-        <div className="nook-enter min-w-0" key={step}>
+         <div className="nook-enter min-w-0 overflow-hidden" key={step}>
           {step === 0 && (
             <section>
                <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">What would you like to book?</h1>
@@ -422,13 +422,13 @@ function QuestionBlock({
     <div>
       <div className="flex gap-3">
         <span className="display mt-0.5 text-sm text-brand">{String(index).padStart(2, "0")}</span>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold">{question.label}</h2>
           {question.help && <p className="mt-1 text-sm text-muted-foreground">{question.help}</p>}
 
           <div className="mt-4">
             {question.type === "scale" && (
-              <div className="grid max-w-2xl grid-cols-3 gap-2">
+              <div className="grid max-w-2xl grid-cols-1 gap-2 min-[360px]:grid-cols-3">
                 {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <button key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("overflow-hidden rounded-md border bg-card text-left transition-colors", value === size.value ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></button>)}
               </div>
             )}
@@ -444,7 +444,7 @@ function QuestionBlock({
             )}
 
             {(question.type === "single" || question.type === "boolean" || question.type === "multi") && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex min-w-0 flex-wrap gap-2">
                 {question.options?.map((option) => {
                   const active =
                     question.type === "multi"
@@ -460,7 +460,7 @@ function QuestionBlock({
                           : onSet(question.id, option.id)
                       }
                       className={cn(
-                         "min-h-11 rounded-md border px-4 py-2.5 text-left text-sm transition-colors",
+                         "min-h-11 max-w-full whitespace-normal rounded-md border px-4 py-2.5 text-left text-sm transition-colors",
                         active
                            ? "border-primary bg-primary text-primary-foreground"
                            : "border-border bg-card hover:border-primary",
