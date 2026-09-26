@@ -9,4 +9,4 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Nook uses a monochrome warm-neutral design system with Manrope typography and compact bordered controls, matching the approved editorial reference; this keeps customer and owner experiences visually consistent.
+- Nook uses warm ivory surfaces, charcoal controls, muted terracotta and sage accents, Manrope typography, and compact bordered layouts matching the approved editorial reference; this adds contrast while keeping customer and owner experiences restrained and consistent.

@@ -152,14 +152,14 @@ function BookingFlow() {
     (step === 4 && (!quote.requiresPhotos || referenceFiles.length > 0));
 
   return (
-    <div className="min-h-screen bg-secondary px-3 py-3 sm:px-5 sm:py-6">
-      <main className="mx-auto min-h-[calc(100vh-3rem)] w-full max-w-7xl overflow-hidden rounded-lg border border-border bg-card nook-shadow">
+    <div className="min-h-screen bg-background px-3 py-3 sm:px-5 sm:py-6">
+      <main className="mx-auto w-full max-w-7xl overflow-hidden rounded-lg border border-border bg-card nook-shadow lg:min-h-[44rem]">
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
-        <div className="grid gap-8 px-5 pb-7 pt-8 sm:px-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10 lg:px-12 lg:pb-10 lg:pt-12">
+        <div className="grid gap-8 px-5 pb-7 pt-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-12 lg:px-12 lg:pb-9 lg:pt-8">
         <div className="nook-enter min-w-0" key={step}>
           {step === 0 && (
             <section>
-               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl">What would you like to book?</h1>
+               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">What would you like to book?</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 {business.tagline}
               </p>
@@ -173,7 +173,7 @@ function BookingFlow() {
                       setAnswers({});
                       setSelected(null);
                     }}
-                     className={cn("nook-panel flex min-h-44 w-full flex-col justify-between p-5 text-left transition-colors hover:border-primary", serviceId === s.id && "border-primary ring-1 ring-primary")}
+                      className={cn("nook-panel flex min-h-44 w-full flex-col justify-between p-5 text-left transition-colors hover:border-brand", serviceId === s.id && "border-primary bg-sand/35 ring-1 ring-primary")}
                   >
                     <span
                       className={cn(
@@ -203,7 +203,7 @@ function BookingFlow() {
 
           {step === 1 && (
             <section>
-               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl">How big is your tattoo?</h1>
+               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">How big is your tattoo?</h1>
                <p className="mt-3 max-w-lg text-sm text-muted-foreground">This helps us estimate time and price.</p>
               {service.id === "flash" && <FlashPicker selected={flashDesignId} onSelect={setFlashDesignId} />}
                <div className="mt-8 space-y-9">
@@ -225,7 +225,7 @@ function BookingFlow() {
 
           {step === 3 && (
             <section>
-               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl">Choose a date<br />and time</h1>
+               <h1 className="display max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">Choose a date<br />and time</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 Showing days with a free {formatDuration(quote.duration)} block for{" "}
                 {quote.eligibleTeam.length === business.team.length
@@ -255,7 +255,7 @@ function BookingFlow() {
 
           {step === 4 && (
             <section>
-               <h1 className="display text-4xl leading-none sm:text-6xl">Almost done!</h1>
+               <h1 className="display text-4xl leading-none sm:text-6xl lg:text-7xl">Almost done!</h1>
                <h2 className="mt-4 text-base font-bold">Add a reference photo <span className="font-medium text-muted-foreground">(optional)</span></h2>
                <p className="mt-1 max-w-lg text-sm text-muted-foreground">
                 {quote.requiresReview
@@ -315,7 +315,7 @@ function BookingFlow() {
           )}
         </div>
 
-        <aside className="lg:sticky lg:top-6">
+         <aside className="self-start lg:sticky lg:top-6">
           <SummaryPanel
             quote={quote}
             currency={business.policies.currency}
@@ -365,7 +365,7 @@ function BookingFlow() {
 }
 
 function BookingHeader({ step, onBack }: { step: number; onBack: () => void }) {
-  return <header className="grid min-h-20 grid-cols-[1fr_auto] items-center gap-5 px-5 sm:grid-cols-[1fr_auto_1fr] sm:px-10 lg:px-12">
+  return <header className="grid min-h-20 grid-cols-[1fr_auto] items-center gap-5 border-b border-border/60 px-5 sm:grid-cols-[1fr_auto_1fr] sm:px-10 lg:px-12">
     <div className="flex items-center gap-8"><Link to="/" className="text-2xl font-semibold">Nook</Link>{step > 0 && <button type="button" onClick={onBack} className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"><ArrowLeft className="size-3"/> Back</button>}</div>
     <div className="hidden items-center gap-2 sm:flex"><span className="mr-2 text-[10px] text-muted-foreground">Step {step + 1} of 5</span>{stepNames.map((name, index) => <span key={name} aria-label={name} className={cn("h-1 w-10 rounded-full", index <= step ? "bg-primary" : "bg-secondary")}/>)}</div>
     <span className="text-right text-[10px] text-muted-foreground sm:hidden">{step + 1} / 5</span>
@@ -597,7 +597,7 @@ function SummaryPanel({
   currentStep: number;
 }) {
   return (
-     <div className="nook-panel p-4 sm:p-5">
+     <div className="nook-panel bg-background/50 p-4 sm:p-5">
        <p className="text-xs font-bold">Your booking</p>
        <div className="mt-4 flex gap-3"><img src={botanical} alt="Selected floral tattoo design" className="size-16 rounded-md object-cover"/><div className="flex flex-wrap content-start gap-1"><span className="rounded bg-secondary px-2 py-1 text-[9px]">Medium size</span><span className="rounded bg-secondary px-2 py-1 text-[9px]">Fine line · Black & grey</span></div></div>
        <div className="mt-4 grid grid-cols-2 gap-4">
