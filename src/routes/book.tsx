@@ -164,7 +164,7 @@ function BookingFlow() {
     <div className="min-h-screen bg-background">
       <main className="mx-auto w-full max-w-7xl border-x border-border bg-card lg:min-h-screen">
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div className="nook-enter min-w-0 overflow-hidden px-5 pb-10 pt-8 sm:px-10 sm:pt-12 lg:min-h-[38rem] lg:px-12" key={step}>
            <p className="mb-6 flex items-center gap-4 border-b border-border pb-3 text-[11px] font-semibold uppercase text-brand"><span className="font-display text-lg tabular-nums">{String(step + 1).padStart(2, "0")}</span><span>{stepNames[step]}</span></p>
           {step === 0 && (
@@ -329,7 +329,7 @@ function BookingFlow() {
           )}
         </div>
 
-          <aside className="border-t border-border lg:sticky lg:top-0 lg:self-start lg:border-l lg:border-t-0">
+          <aside className="min-w-0 border-t border-border lg:sticky lg:top-0 lg:self-start lg:border-l lg:border-t-0">
           <SummaryPanel
             quote={quote}
             currency={business.policies.currency}
@@ -339,7 +339,7 @@ function BookingFlow() {
              artistName={chosenMember?.name}
           />
         </aside>
-          <div className="col-span-full flex items-center justify-between gap-4 border-t border-border px-5 py-5 sm:px-10 lg:px-12">
+          <div className="col-span-full flex min-w-0 items-center justify-between gap-4 border-t border-border px-5 py-5 sm:px-10 lg:px-12">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
               {service.basePrice === 0
