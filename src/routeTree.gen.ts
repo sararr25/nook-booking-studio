@@ -11,7 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BookRouteImport } from './routes/book'
-import { Route as OwnerRouteImport } from './routes/owner'
+import { Route as AuthenticatedOwnerRouteImport } from './routes/_authenticated/owner'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,8 +23,8 @@ const BookRoute = BookRouteImport.update({
   path: '/book',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OwnerRoute = OwnerRouteImport.update({
-  id: '/owner',
+const AuthenticatedOwnerRoute = AuthenticatedOwnerRouteImport.update({
+  id: '/_authenticated/owner',
   path: '/owner',
   getParentRoute: () => rootRouteImport,
 } as any)
@@ -32,31 +32,31 @@ const OwnerRoute = OwnerRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/book': typeof BookRoute
-  '/owner': typeof OwnerRoute
+  '/owner': typeof AuthenticatedOwnerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/book': typeof BookRoute
-  '/owner': typeof OwnerRoute
+  '/owner': typeof AuthenticatedOwnerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/book': typeof BookRoute
-  '/owner': typeof OwnerRoute
+  '/_authenticated/owner': typeof AuthenticatedOwnerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths: '/' | '/book' | '/owner'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/book' | '/owner'
-  id: '__root__' | '/' | '/book' | '/owner'
+  id: '__root__' | '/' | '/book' | '/_authenticated/owner'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BookRoute: typeof BookRoute
-  OwnerRoute: typeof OwnerRoute
+  AuthenticatedOwnerRoute: typeof AuthenticatedOwnerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,11 +75,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/owner': {
-      id: '/owner'
+    '/_authenticated/owner': {
+      id: '/_authenticated/owner'
       path: '/owner'
       fullPath: '/owner'
-      preLoaderRoute: typeof OwnerRouteImport
+      preLoaderRoute: typeof AuthenticatedOwnerRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -88,7 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BookRoute: BookRoute,
-  OwnerRoute: OwnerRoute,
+  AuthenticatedOwnerRoute: AuthenticatedOwnerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

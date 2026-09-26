@@ -8,7 +8,7 @@ import { useNook } from "@/lib/nook/store";
 import { formatDuration, formatMoney } from "@/lib/nook/engine";
 import type { BookingRequest, BusinessConfig } from "@/lib/nook/types";
 
-export const Route = createFileRoute("/owner")({
+export const Route = createFileRoute("/_authenticated/owner")({
   head: () => ({
     meta: [
       { title: "Studio settings — Nook" },
