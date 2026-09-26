@@ -615,7 +615,7 @@ function SummaryPanel({
   serviceName: string;
   selected: { date: string; slot: Slot } | null;
   currentStep: number;
-  artistName?: string;
+  artistName: string | undefined;
 }) {
   return (
       <div className="bg-secondary/40 px-5 py-7 sm:px-8 lg:min-h-[38rem]">
