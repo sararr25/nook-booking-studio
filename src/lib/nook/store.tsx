@@ -1,8 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { defaultBusiness } from "./config";
 import type { BookingRequest, BusinessConfig } from "./types";
 
-const CONFIG_KEY = "nook.business.v2";
+const CONFIG_KEY = "nook.business.v3";
 const REQUESTS_KEY = "nook.requests.v1";
 
 const seedRequests = (): BookingRequest[] => {
@@ -28,7 +36,10 @@ const seedRequests = (): BookingRequest[] => {
         duration: 330,
         deposit: 210,
         requiresReview: true,
-        reviewReasons: ["Yes — is this covering or reworking existing ink?", "Above the auto-approval price ceiling"],
+        reviewReasons: [
+          "Yes — is this covering or reworking existing ink?",
+          "Above the auto-approval price ceiling",
+        ],
         lines: [
           { label: "Custom tattoo base", detail: "€180 · 1 hr 30 min" },
           { label: "24cm piece", detail: "+€336 · +3 hr 9 min" },
@@ -114,7 +125,15 @@ export function NookProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ business, requests, updateBusiness, addRequest, setRequestStatus, updateRequest, resetAll }),
+    () => ({
+      business,
+      requests,
+      updateBusiness,
+      addRequest,
+      setRequestStatus,
+      updateRequest,
+      resetAll,
+    }),
     [business, requests, updateBusiness, addRequest, setRequestStatus, updateRequest, resetAll],
   );
 

@@ -114,7 +114,12 @@ export const defaultBusiness: BusinessConfig = {
           type: "multi",
           optional: true,
           options: [
-            { id: "design", label: "Extra design round", hint: "A second sketch pass", priceDelta: 70 },
+            {
+              id: "design",
+              label: "Extra design round",
+              hint: "A second sketch pass",
+              priceDelta: 70,
+            },
             { id: "evening", label: "Evening sitting", hint: "After 18:00", priceDelta: 40 },
             { id: "numbing", label: "Numbing cream", priceDelta: 25, durationDelta: 20 },
             {
@@ -150,16 +155,6 @@ export const defaultBusiness: BusinessConfig = {
       depositPercent: 25,
       questions: [
         {
-          id: "sheet",
-          label: "Which sheet caught your eye?",
-          type: "single",
-          options: [
-            { id: "botanical", label: "Botanical", requiresSkills: ["fineline"] },
-            { id: "folk", label: "Folk & symbols", priceDelta: 20, requiresSkills: ["blackwork"] },
-            { id: "type", label: "Type & numerals", requiresSkills: ["lettering"] },
-          ],
-        },
-        {
           id: "sizeflash",
           label: "Size",
           type: "single",
@@ -190,7 +185,8 @@ export const defaultBusiness: BusinessConfig = {
     {
       id: "consult",
       name: "Consultation",
-      blurb: "Twenty minutes to talk through a bigger project. Free, and counts toward your deposit.",
+      blurb:
+        "Twenty minutes to talk through a bigger project. Free, and counts toward your deposit.",
       basePrice: 0,
       baseDuration: 20,
       depositPercent: 0,
