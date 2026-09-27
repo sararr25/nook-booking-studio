@@ -195,12 +195,25 @@ function BookingFlow() {
 
   if (done) return <Confirmation done={done} />;
 
+  const needsFlashPick = service.id === "flash" && !flashDesignId;
   const canContinue =
     (step === 0 && Boolean(service)) ||
-    (step === 1 && allAnswered && (service.id !== "flash" || Boolean(flashDesignId))) ||
+    (step === 1 && allAnswered && !needsFlashPick) ||
     step === 2 ||
     (step === 3 && Boolean(selected)) ||
     (step === 4 && (!quote.requiresPhotos || referenceFiles.length > 0));
+
+  const blockedReason = canContinue
+    ? null
+    : step === 1
+      ? needsFlashPick
+        ? "Pick a flash design to continue."
+        : "Answer the question above to continue."
+      : step === 3
+        ? "Pick a date and time to continue."
+        : step === 4 && quote.requiresPhotos && referenceFiles.length === 0
+          ? "Add at least one reference photo to continue."
+          : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -331,16 +344,13 @@ function BookingFlow() {
                   and time
                 </h1>
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">
-                  Showing days with a free {formatDuration(quote.duration)} block for{" "}
-                  {chosenMember ? chosenMember.name : "no one yet"}. Earliest is{" "}
-                  {business.policies.leadTimeDays} days out.
+                  {quote.eligibleTeam.length === 0
+                    ? `No one on the team is matched yet, so tell us when you'd like to come in. Earliest is ${business.policies.leadTimeDays} days out.`
+                    : `Showing days with a free ${formatDuration(quote.duration)} block for ${chosenMember ? chosenMember.name : "no one yet"}. Earliest is ${business.policies.leadTimeDays} days out.`}
                 </p>
                 <div className="mt-8">
                   {quote.eligibleTeam.length === 0 ? (
-                    <p className="rounded-sm border border-border bg-sand/60 p-5 text-sm">
-                      Nobody in the studio matches this combination right now. Continue anyway and
-                      Ines will come back to you with options.
-                    </p>
+                    <NoMatchPicker business={business} selected={selected} onSelect={setSelected} />
                   ) : (
                     <MonthCalendar
                       business={business}
@@ -425,7 +435,7 @@ function BookingFlow() {
               artistName={chosenMember?.name}
             />
           </aside>
-          <div className="col-span-full flex min-w-0 items-center justify-between gap-4 border-t border-border px-5 py-5 sm:px-10 lg:px-12">
+          <div className="col-span-full flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border px-5 py-5 sm:px-10 lg:px-12">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">
                 {service.basePrice === 0
@@ -436,6 +446,11 @@ function BookingFlow() {
                 {formatDuration(quote.duration)}
                 {quote.requiresReview ? " · needs a quick review" : " · confirms instantly"}
               </p>
+              {blockedReason && (
+                <p className="mt-1 truncate text-xs font-medium text-destructive">
+                  {blockedReason}
+                </p>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {step > 0 && (
@@ -453,7 +468,7 @@ function BookingFlow() {
                 type="button"
                 disabled={!canContinue}
                 onClick={() => (step === 4 ? submit() : setStep((s) => s + 1))}
-                className="min-h-11 min-w-32 px-5 sm:min-w-40"
+                className="min-h-11 min-w-32 px-5 disabled:opacity-30 sm:min-w-40"
               >
                 {step === 4
                   ? quote.requiresReview
@@ -466,6 +481,96 @@ function BookingFlow() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+const timeOfDayOptions = [
+  { id: "morning", label: "Morning", time: "10:00" },
+  { id: "afternoon", label: "Afternoon", time: "14:00" },
+  { id: "evening", label: "Evening", time: "17:00" },
+];
+
+function NoMatchPicker({
+  business,
+  selected,
+  onSelect,
+}: {
+  business: { policies: { leadTimeDays: number } };
+  selected: { date: string; slot: Slot } | null;
+  onSelect: (value: { date: string; slot: Slot }) => void;
+}) {
+  const earliest = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + business.policies.leadTimeDays);
+    return d;
+  }, [business.policies.leadTimeDays]);
+  const minDate = earliest.toISOString().slice(0, 10);
+  const [date, setDate] = useState(selected?.date ?? "");
+  const [timeOfDay, setTimeOfDay] = useState(
+    timeOfDayOptions.find((t) => t.time === selected?.slot.time)?.id ?? "",
+  );
+
+  const commit = (nextDate: string, nextTimeOfDay: string) => {
+    const option = timeOfDayOptions.find((t) => t.id === nextTimeOfDay);
+    if (!nextDate || !option) return;
+    onSelect({
+      date: nextDate,
+      slot: { time: option.time, memberId: "unassigned", memberName: "To be matched" },
+    });
+  };
+
+  return (
+    <div className="rounded-sm border border-border bg-sand/60 p-5">
+      <p className="text-sm">
+        Nobody on the team matches this combination yet. Tell us a date and time you'd prefer and
+        Ines will follow up to confirm or offer alternatives — your request still goes in.
+      </p>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <Field label="Preferred date">
+          <input
+            type="date"
+            min={minDate}
+            value={date}
+            onChange={(e) => {
+              setDate(e.target.value);
+              commit(e.target.value, timeOfDay);
+            }}
+            className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
+          />
+        </Field>
+        <Field label="Preferred time">
+          <div className="flex flex-wrap gap-2">
+            {timeOfDayOptions.map((option) => (
+              <Button
+                variant="outline"
+                key={option.id}
+                type="button"
+                aria-pressed={timeOfDay === option.id}
+                onClick={() => {
+                  setTimeOfDay(option.id);
+                  commit(date, option.id);
+                }}
+                className={cn(
+                  "min-h-11 border px-4 text-sm",
+                  timeOfDay === option.id
+                    ? "border-brand bg-brand-soft text-foreground"
+                    : "border-border bg-secondary/60 hover:border-brand",
+                )}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </Field>
+      </div>
+      {!date && (
+        <p className="mt-4 text-xs text-muted-foreground">
+          Earliest available from{" "}
+          {earliest.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}.
+        </p>
+      )}
     </div>
   );
 }
@@ -628,13 +733,19 @@ function QuestionBlock({
   onToggle: (id: string, optionId: string) => void;
 }) {
   const value = answers[question.id];
+  const answered = isAnswered(question, answers);
+  const textValue = typeof value === "string" ? value : "";
+  const showTextHint = question.type === "text" && !question.optional;
 
   return (
     <div>
       <div className="flex gap-3">
         <span className="display mt-0.5 text-sm text-brand">{String(index).padStart(2, "0")}</span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold">{question.label}</h2>
+          <h2 className="text-base font-semibold">
+            {question.label}
+            {!question.optional && <span className="ml-1 text-brand">*</span>}
+          </h2>
           {question.help && <p className="mt-1 text-sm text-muted-foreground">{question.help}</p>}
 
           <div className="mt-4">
@@ -697,13 +808,38 @@ function QuestionBlock({
             )}
 
             {question.type === "text" && (
-              <textarea
-                rows={3}
-                value={typeof value === "string" ? value : ""}
-                onChange={(e) => onSet(question.id, e.target.value)}
-                placeholder="A few words is plenty"
-                className="w-full max-w-lg rounded-sm border border-border bg-card p-3 text-sm outline-none focus:border-brand"
-              />
+              <div className="max-w-lg">
+                <textarea
+                  rows={3}
+                  value={textValue}
+                  onChange={(e) => onSet(question.id, e.target.value)}
+                  placeholder="A few words is plenty"
+                  aria-required={!question.optional}
+                  aria-invalid={showTextHint && !answered}
+                  className={cn(
+                    "w-full rounded-sm border bg-card p-3 text-sm outline-none focus:border-brand",
+                    showTextHint && !answered && textValue.length > 0
+                      ? "border-destructive/60"
+                      : "border-border",
+                  )}
+                />
+                {showTextHint && (
+                  <p
+                    className={cn(
+                      "mt-1.5 text-xs",
+                      answered
+                        ? "text-muted-foreground"
+                        : textValue.length > 0
+                          ? "text-destructive"
+                          : "text-muted-foreground",
+                    )}
+                  >
+                    {answered
+                      ? "Looks good."
+                      : "A few words needed here before you can continue (at least 3 characters)."}
+                  </p>
+                )}
+              </div>
             )}
 
             {(question.type === "single" ||
