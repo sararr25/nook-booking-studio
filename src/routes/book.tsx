@@ -67,7 +67,10 @@ function BookingFlow() {
 
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
   const questions = service ? visibleQuestions(service, answers) : [];
-  const quote = service ? buildQuote(business, service, answers) : null;
+  const flashDesign = bookingFlashDesigns.find((d) => d.id === flashDesignId);
+  const quote = service
+    ? buildQuote(business, service, answers, flashDesign?.skills)
+    : null;
   if (!service) return <div className="p-8">No services are available.</div>;
   if (!quote) return <div className="p-8">No quote is available.</div>;
   const recommendation = recommendArtist(quote);
@@ -393,10 +396,10 @@ function BookingHeader({ step, onBack }: { step: number; onBack: () => void }) {
 }
 
 const bookingFlashDesigns = [
-  { id: "botanical", title: "Wildflower stem", detail: "Fine line · €160", image: botanical },
-  { id: "moth", title: "Night moth", detail: "Fine line · €220", image: moth },
-  { id: "sun", title: "Ornamental sun", detail: "Blackwork · €190", image: sun },
-  { id: "swallow", title: "Fine-line swallow", detail: "Fine line · €180", image: swallow },
+  { id: "botanical", title: "Wildflower stem", detail: "Fine line · €160", skills: ["fineline"], image: botanical },
+  { id: "moth", title: "Night moth", detail: "Fine line · €220", skills: ["fineline"], image: moth },
+  { id: "sun", title: "Ornamental sun", detail: "Blackwork · €190", skills: ["blackwork"], image: sun },
+  { id: "swallow", title: "Fine-line swallow", detail: "Fine line · €180", skills: ["fineline"], image: swallow },
 ];
 
 function FlashPicker({ selected, onSelect }: { selected: string | undefined; onSelect: (id: string) => void }) {

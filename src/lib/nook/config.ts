@@ -150,16 +150,6 @@ export const defaultBusiness: BusinessConfig = {
       depositPercent: 25,
       questions: [
         {
-          id: "sheet",
-          label: "Which sheet caught your eye?",
-          type: "single",
-          options: [
-            { id: "botanical", label: "Botanical", requiresSkills: ["fineline"] },
-            { id: "folk", label: "Folk & symbols", priceDelta: 20, requiresSkills: ["blackwork"] },
-            { id: "type", label: "Type & numerals", requiresSkills: ["lettering"] },
-          ],
-        },
-        {
           id: "sizeflash",
           label: "Size",
           type: "single",

@@ -54,6 +54,7 @@ export const buildQuote = (
   business: BusinessConfig,
   service: Service,
   answers: Answers,
+  extraSkills?: string[],
 ): Quote => {
   let price = service.basePrice;
   let duration = service.baseDuration;
@@ -110,7 +111,7 @@ export const buildQuote = (
   }
 
   duration = Math.max(service.baseDuration, Math.round(duration / 15) * 15);
-  const uniqueSkills = Array.from(new Set(requiredSkills));
+  const uniqueSkills = Array.from(new Set([...requiredSkills, ...(extraSkills ?? [])]));
   const eligibleTeam = business.team.filter(
     (m) => uniqueSkills.every((s) => m.skills.includes(s)) && m.maxSession >= duration,
   );
