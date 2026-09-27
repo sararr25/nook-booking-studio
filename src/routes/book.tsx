@@ -208,10 +208,13 @@ function BookingFlow() {
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div
-            className="nook-enter min-w-0 overflow-hidden px-5 pb-10 pt-8 sm:px-10 sm:pt-12 lg:min-h-[38rem] lg:px-12"
+            className={cn(
+              "nook-enter min-w-0 overflow-hidden px-5 pb-10 pt-8 sm:px-10 sm:pt-12 lg:min-h-[38rem] lg:px-12",
+              service.id === "flash" && "max-[359px]:px-4 max-[359px]:pt-6",
+            )}
             key={step}
           >
-            <p className="mb-6 flex items-center gap-4 border-b border-border pb-3 text-[11px] font-semibold uppercase text-brand">
+            <p className="mb-5 flex items-center gap-4 border-b border-border pb-3 text-[11px] font-semibold uppercase text-brand sm:mb-6">
               <span className="font-display text-lg tabular-nums">
                 {String(step + 1).padStart(2, "0")}
               </span>
@@ -266,7 +269,7 @@ function BookingFlow() {
 
             {step === 1 && (
               <section>
-                <h1 className="display nook-title max-w-xl text-4xl sm:text-6xl lg:text-7xl">
+                <h1 className="display nook-title max-w-xl text-[2rem] leading-[1.12] sm:text-6xl lg:text-7xl">
                   How big is your tattoo?
                 </h1>
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">
@@ -287,7 +290,7 @@ function BookingFlow() {
                     <ReferenceUpload files={referenceFiles} onChange={setReferenceFiles} />
                   </div>
                 )}
-                <div className="mt-8 space-y-9">
+                <div className={cn("mt-8 space-y-9", service.id === "flash" && "mt-7 space-y-7 sm:mt-8 sm:space-y-9")}>
                   {questions.map((q, i) => (
                     <QuestionBlock
                       key={q.id}
@@ -317,7 +320,7 @@ function BookingFlow() {
 
             {step === 3 && (
               <section>
-                <h1 className="display nook-title max-w-xl text-4xl sm:text-6xl lg:text-7xl">
+                <h1 className="display nook-title max-w-xl text-[2rem] leading-[1.12] sm:text-6xl lg:text-7xl">
                   Choose a date
                   <br />
                   and time
@@ -548,7 +551,7 @@ function FlashPicker({
       <p className="mt-1 text-sm text-muted-foreground">
         Each design is tattooed once. Select one to reserve it with your request.
       </p>
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
         {bookingFlashDesigns.map((design) => (
           <Button
             variant="ghost"
@@ -571,9 +574,9 @@ function FlashPicker({
               height={1104}
               className="aspect-[4/5] w-full object-cover"
             />
-            <span className="block p-3">
-              <span className="block text-sm font-semibold">{design.title}</span>
-              <span className="mt-1 block text-xs text-muted-foreground">{design.detail}</span>
+            <span className="block min-w-0 px-2.5 py-3 sm:p-3">
+              <span className="block text-[13px] font-semibold leading-snug sm:text-sm">{design.title}</span>
+              <span className="mt-1 block text-xs leading-snug text-muted-foreground">{design.detail}</span>
             </span>
           </Button>
         ))}
@@ -750,7 +753,7 @@ function QuoteStep({
   return (
     <section>
       <p className="eyebrow">Estimate</p>
-      <h1 className="display mt-3 text-4xl sm:text-5xl">
+      <h1 className="display mt-3 text-[2rem] leading-[1.12] sm:text-5xl">
         {quote.high === 0 ? (
           "No charge"
         ) : (
@@ -1085,7 +1088,7 @@ function ArtistPicker({
   return (
     <div className="mt-10">
       <p className="eyebrow">Your artist</p>
-      <h2 className="mt-2 text-xl font-bold">We matched you with the best fit</h2>
+      <h2 className="mt-2 text-lg font-bold leading-snug sm:text-xl">We matched you with the best fit</h2>
       <p className="mt-1 max-w-lg text-sm text-muted-foreground">
         Based on your style, placement and sitting length. Prefer someone else? Pick them instead.
       </p>
