@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/nook/site-header";
 import { MonthCalendar } from "@/components/nook/month-calendar";
+import { BookingTicket } from "@/components/nook/booking-ticket";
+import { Wordmark } from "@/components/nook/wordmark";
 import { NookProvider, useNook } from "@/lib/nook/store";
 import {
   buildQuote,
@@ -40,13 +42,13 @@ import swallow from "@/assets/flash-swallow.jpg";
 export const Route = createFileRoute("/book")({
   head: () => ({
     meta: [
-      { title: "Book a sitting — Ember & Thread on Nook" },
+      { title: "Book a sitting | Ember & Thread on Nook" },
       {
         name: "description",
         content:
           "Answer a few questions about your piece, see a price range and sitting length, then pick from dates that fit.",
       },
-      { property: "og:title", content: "Book a sitting — Ember & Thread" },
+      { property: "og:title", content: "Book a sitting | Ember & Thread" },
       {
         property: "og:description",
         content: "A short questionnaire, an honest quote, then real availability.",
@@ -66,7 +68,7 @@ function BookingPage() {
   );
 }
 
-const stepNames = ["Style", "Size", "Placement", "Photo", "Date & time"];
+const stepNames = ["Service", "Details", "Quote", "Date & time", "Your details"];
 
 function BookingFlow() {
   const { business, requests, addRequest } = useNook();
@@ -217,9 +219,10 @@ function BookingFlow() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto w-full max-w-7xl border-x border-border bg-card lg:min-h-screen">
+      <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col border-x border-border bg-card">
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_19rem]">
+        {/* Content row stretches so the action bar sits at the bottom even on short steps. */}
+        <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[1fr_auto] lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div
             className={cn(
               "nook-enter min-w-0 overflow-hidden px-5 pb-10 pt-8 sm:px-10 sm:pt-12 lg:min-h-[38rem] lg:px-12",
@@ -227,12 +230,6 @@ function BookingFlow() {
             )}
             key={step}
           >
-            <p className="mb-5 flex items-center gap-4 border-b border-border pb-3 text-[11px] font-semibold uppercase text-brand sm:mb-6">
-              <span className="font-display text-lg tabular-nums">
-                {String(step + 1).padStart(2, "0")}
-              </span>
-              <span>{stepNames[step]}</span>
-            </p>
             {step === 0 && (
               <section>
                 <h1 className="display nook-title max-w-xl text-4xl sm:text-6xl lg:text-7xl">
@@ -240,7 +237,7 @@ function BookingFlow() {
                 </h1>
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">{business.tagline}</p>
                 <div className="nook-stagger mt-9 grid gap-3 sm:grid-cols-3">
-                  {business.services.map((s, serviceIndex) => (
+                  {business.services.map((s) => (
                     <Button
                       variant="ghost"
                       key={s.id}
@@ -252,25 +249,27 @@ function BookingFlow() {
                         setArtistChoice("auto");
                       }}
                       className={cn(
-                        "nook-choice nook-lift flex h-auto min-h-52 w-full flex-col items-start justify-between whitespace-normal border border-border bg-secondary/60 p-5 text-left hover:border-brand hover:bg-brand-soft/50",
-                        serviceId === s.id && "border-brand bg-brand-soft",
+                        "nook-choice nook-lift flex h-auto min-h-52 w-full flex-col items-start justify-between whitespace-normal border border-border p-5 text-left",
+                        serviceId === s.id && "nook-selected",
                       )}
+                      aria-pressed={serviceId === s.id}
                     >
-                      <span className="flex w-full justify-between text-xs font-semibold tabular-nums text-brand">
-                        <span>{String(serviceIndex + 1).padStart(2, "0")}</span>
-                        {serviceId === s.id && <Check className="size-4" />}
+                      <span className="flex w-full items-start justify-between gap-3">
+                        <span className="block font-display text-xl font-semibold">{s.name}</span>
+                        {serviceId === s.id && (
+                          <Check className="nook-pop size-4 shrink-0 text-brand" />
+                        )}
                       </span>
-                      <span className="mt-6 flex-1">
-                        <span className="block text-base font-bold">{s.name}</span>
+                      <span className="mt-2 flex-1">
                         <span className="mt-1 block text-sm text-muted-foreground">{s.blurb}</span>
                       </span>
                       <span className="mt-5 block shrink-0 text-sm">
-                        <span className="block font-medium">
+                        <span className="block font-mono font-medium tabular-nums">
                           {s.basePrice === 0
                             ? "Free"
                             : `from ${formatMoney(s.basePrice, business.policies.currency)}`}
                         </span>
-                        <span className="block text-xs text-muted-foreground">
+                        <span className="block font-mono text-xs text-muted-foreground">
                           {formatDuration(s.baseDuration)}+
                         </span>
                       </span>
@@ -298,7 +297,7 @@ function BookingFlow() {
                       <span className="font-medium text-muted-foreground">(optional)</span>
                     </h2>
                     <p className="mb-4 mt-1 text-sm text-muted-foreground">
-                      Sketches, photos or artwork you like — up to 5 images.
+                      Sketches, photos or artwork you like. Up to 5 images.
                     </p>
                     <ReferenceUpload files={referenceFiles} onChange={setReferenceFiles} />
                   </div>
@@ -338,10 +337,8 @@ function BookingFlow() {
 
             {step === 3 && (
               <section>
-                <h1 className="display nook-title max-w-xl text-[2rem] leading-[1.12] sm:text-6xl lg:text-7xl">
-                  Choose a date
-                  <br />
-                  and time
+                <h1 className="display nook-title max-w-xl text-balance text-[2rem] leading-[1.12] sm:text-6xl lg:text-7xl">
+                  Choose a date and time
                 </h1>
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                   {quote.eligibleTeam.length === 0
@@ -353,6 +350,7 @@ function BookingFlow() {
                     <NoMatchPicker business={business} selected={selected} onSelect={setSelected} />
                   ) : (
                     <MonthCalendar
+                      key={chosenMember?.id ?? "any"}
                       business={business}
                       eligibleTeam={calendarTeam}
                       duration={quote.duration}
@@ -425,27 +423,32 @@ function BookingFlow() {
             )}
           </div>
 
-          <aside className="min-w-0 border-t border-border lg:sticky lg:top-0 lg:self-start lg:border-l lg:border-t-0">
-            <SummaryPanel
-              quote={quote}
-              currency={business.policies.currency}
-              serviceName={service.name}
-              selected={selected}
-              currentStep={step}
-              artistName={chosenMember?.name}
-            />
+          {/* Desktop: ticket column. On mobile the sticky bar below carries the summary. */}
+          <aside className="hidden min-w-0 border-l border-border bg-background lg:block">
+            <div className="sticky top-0 p-6">
+              <SummaryPanel
+                quote={quote}
+                currency={business.policies.currency}
+                serviceName={service.name}
+                selected={selected}
+                artistName={chosenMember?.name}
+              />
+            </div>
           </aside>
-          <div className="col-span-full flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border px-5 py-5 sm:px-10 lg:px-12">
+          <div className="sticky bottom-0 z-20 col-span-full flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-foreground bg-card px-5 py-4 sm:px-10 lg:px-12">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">
-                {service.basePrice === 0
-                  ? "Free consultation"
-                  : `${formatMoney(quote.low, business.policies.currency)}–${formatMoney(quote.high, business.policies.currency)}`}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {formatDuration(quote.duration)}
-                {quote.requiresReview ? " · needs a quick review" : " · confirms instantly"}
-              </p>
+              {/* The price is already the headline on the quote step and in the desktop ticket. */}
+              <div className={cn("lg:hidden", step === 2 && "hidden")}>
+                <p className="truncate font-mono text-sm font-semibold tabular-nums">
+                  {service.basePrice === 0
+                    ? "Free consultation"
+                    : `${formatMoney(quote.low, business.policies.currency)}-${formatMoney(quote.high, business.policies.currency)}`}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {formatDuration(quote.duration)}
+                  {quote.requiresReview ? ", needs a quick review" : ", confirms instantly"}
+                </p>
+              </div>
               {blockedReason && (
                 <p className="mt-1 truncate text-xs font-medium text-destructive">
                   {blockedReason}
@@ -468,7 +471,7 @@ function BookingFlow() {
                 type="button"
                 disabled={!canContinue}
                 onClick={() => (step === 4 ? submit() : setStep((s) => s + 1))}
-                className="min-h-11 min-w-32 px-5 disabled:opacity-30 sm:min-w-40"
+                className="min-h-11 min-w-32 px-5 disabled:bg-secondary disabled:text-muted-foreground disabled:opacity-100 sm:min-w-40"
               >
                 {step === 4
                   ? quote.requiresReview
@@ -522,10 +525,10 @@ function NoMatchPicker({
   };
 
   return (
-    <div className="rounded-sm border border-border bg-sand/60 p-5">
+    <div className="rounded-sm border border-border bg-secondary p-5">
       <p className="text-sm">
         Nobody on the team matches this combination yet. Tell us a date and time you'd prefer and
-        Ines will follow up to confirm or offer alternatives — your request still goes in.
+        Ines will follow up to confirm or offer alternatives. Your request still goes in.
       </p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <Field label="Preferred date">
@@ -553,10 +556,8 @@ function NoMatchPicker({
                   commit(date, option.id);
                 }}
                 className={cn(
-                  "min-h-11 border px-4 text-sm",
-                  timeOfDay === option.id
-                    ? "border-brand bg-brand-soft text-foreground"
-                    : "border-border bg-secondary/60 hover:border-brand",
+                  "nook-choice min-h-11 border border-border px-4 text-sm",
+                  timeOfDay === option.id && "nook-selected",
                 )}
               >
                 {option.label}
@@ -579,37 +580,42 @@ function BookingHeader({ step, onBack }: { step: number; onBack: () => void }) {
   return (
     <header className="grid min-h-20 grid-cols-[1fr_auto] items-center gap-5 border-b border-border/60 px-5 sm:grid-cols-[1fr_auto_1fr] sm:px-10 lg:px-12">
       <div className="flex items-center gap-8">
-        <Link to="/" className="text-2xl font-semibold">
-          Nook
+        <Link to="/">
+          <Wordmark />
         </Link>
         {step > 0 && (
           <button
             type="button"
             onClick={onBack}
-            className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+            className="hidden items-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:flex"
           >
             <ArrowLeft className="size-3" /> Back
           </button>
         )}
       </div>
       <div className="hidden items-center gap-2 sm:flex">
-        <span className="mr-2 text-[10px] text-muted-foreground">Step {step + 1} of 5</span>
+        <span className="mr-2 text-xs text-muted-foreground">
+          Step {step + 1} of 5:{" "}
+          <span className="font-semibold text-foreground">{stepNames[step]}</span>
+        </span>
         {stepNames.map((name, index) => (
           <span
             key={name}
             aria-label={name}
-            className="relative h-1 w-10 overflow-hidden rounded-full bg-secondary"
+            className="relative h-1 w-8 overflow-hidden bg-secondary"
           >
             <span
               className={cn(
-                "absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-500 ease-out",
+                "absolute inset-y-0 left-0 bg-primary transition-[width] duration-500 ease-out",
                 index < step ? "w-full bg-brand" : index === step ? "w-full" : "w-0",
               )}
             />
           </span>
         ))}
       </div>
-      <span className="text-right text-[10px] text-muted-foreground sm:hidden">{step + 1} / 5</span>
+      <span className="text-right text-xs text-muted-foreground sm:hidden">
+        {step + 1}/5 <span className="font-semibold text-foreground">{stepNames[step]}</span>
+      </span>
     </header>
   );
 }
@@ -670,10 +676,8 @@ function FlashPicker({
             aria-pressed={selected === design.id}
             onClick={() => onSelect(design.id)}
             className={cn(
-              "nook-choice nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal border p-0 text-left",
-              selected === design.id
-                ? "border-brand bg-brand-soft"
-                : "border-border bg-secondary/60 hover:border-brand",
+              "nook-choice nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal border border-border p-0 text-left",
+              selected === design.id && "nook-selected",
             )}
           >
             <img
@@ -761,7 +765,7 @@ function QuestionBlock({
                   },
                   {
                     label: "Medium",
-                    hint: "5 – 15 cm",
+                    hint: "5-15 cm",
                     time: "~ 2 hours",
                     value: 12,
                     image: botanical,
@@ -781,10 +785,8 @@ function QuestionBlock({
                     aria-pressed={value === size.value}
                     onClick={() => onSet(question.id, size.value)}
                     className={cn(
-                      "nook-choice nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal border p-0 text-left",
-                      value === size.value
-                        ? "border-brand bg-brand-soft"
-                        : "border-border bg-secondary/60 hover:border-brand",
+                      "nook-choice nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal border border-border p-0 text-left",
+                      value === size.value && "nook-selected",
                     )}
                   >
                     <img
@@ -795,12 +797,8 @@ function QuestionBlock({
                     />
                     <span className="block p-3">
                       <strong className="block text-xs sm:text-sm">{size.label}</strong>
-                      <span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">
-                        {size.hint}
-                      </span>
-                      <span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">
-                        {size.time}
-                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">{size.hint}</span>
+                      <span className="mt-1 block text-xs text-muted-foreground">{size.time}</span>
                     </span>
                   </Button>
                 ))}
@@ -861,11 +859,10 @@ function QuestionBlock({
                           ? onToggle(question.id, option.id)
                           : onSet(question.id, option.id)
                       }
+                      aria-pressed={active}
                       className={cn(
-                        "nook-choice h-auto min-h-11 max-w-full flex-col items-start whitespace-normal border px-4 py-2.5 text-left text-sm transition-colors",
-                        active
-                          ? "border-brand bg-brand-soft text-foreground"
-                          : "border-border bg-secondary/60 hover:border-brand hover:bg-brand-soft/50",
+                        "nook-choice h-auto min-h-11 max-w-full flex-col items-start whitespace-normal border border-border px-4 py-2.5 text-left text-sm",
+                        active && "nook-selected",
                       )}
                     >
                       <span className="block font-medium">{option.label}</span>
@@ -898,20 +895,20 @@ function QuoteStep({
   return (
     <section>
       <p className="eyebrow">Estimate</p>
-      <h1 className="display mt-3 text-[2rem] leading-[1.12] sm:text-5xl">
+      <h1 className="mt-3 font-mono text-[2rem] font-semibold leading-[1.12] tabular-nums sm:text-5xl">
         {quote.high === 0 ? (
           "No charge"
         ) : (
           <>
             {formatMoney(quote.low, currency)}
-            <span className="text-muted-foreground"> – </span>
+            <span className="text-muted-foreground"> - </span>
             {formatMoney(quote.high, currency)}
           </>
         )}
       </h1>
       <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <Clock className="size-4" /> {formatDuration(quote.duration)} in the chair
+          <Clock className="size-4" /> {formatDuration(quote.duration)} session
         </span>
         {quote.deposit > 0 && (
           <span>
@@ -926,7 +923,7 @@ function QuoteStep({
             {quote.lines.map((line, i) => (
               <tr key={`${line.label}-${i}`}>
                 <td className="py-3 pr-4">{line.label}</td>
-                <td className="py-3 text-right tabular-nums text-muted-foreground">
+                <td className="py-3 text-right font-mono text-xs tabular-nums text-muted-foreground">
                   {line.detail}
                 </td>
               </tr>
@@ -939,7 +936,7 @@ function QuoteStep({
         <div className="rounded-sm border border-border bg-card p-5">
           <p className="eyebrow">Who can take it</p>
           {quote.eligibleTeam.length === 0 ? (
-            <p className="mt-2 text-sm">No one yet — Ines will find a way.</p>
+            <p className="mt-2 text-sm">No one yet. Ines will find someone for you.</p>
           ) : (
             <ul className="mt-3 space-y-2">
               {quote.eligibleTeam.map((m) => (
@@ -954,7 +951,7 @@ function QuoteStep({
                       className="size-8 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="flex size-8 items-center justify-center rounded-full bg-sand text-[11px] font-semibold">
+                    <span className="flex size-8 items-center justify-center rounded-full bg-sand text-xs font-semibold">
                       {m.initials}
                     </span>
                   )}
@@ -971,16 +968,16 @@ function QuoteStep({
         <div
           className={cn(
             "rounded-sm border p-5",
-            quote.requiresReview ? "border-brand/50 bg-brand-soft/40" : "border-border bg-card",
+            quote.requiresReview ? "border-brand bg-card" : "border-border bg-card",
           )}
         >
           <p className="eyebrow">Approval</p>
           {quote.requiresReview ? (
             <>
               <p className="mt-2 text-sm font-medium">Goes to Ines for a quick look</p>
-              <ul className="mt-2 space-y-1 text-xs text-foreground/75">
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-foreground/75">
                 {quote.reviewReasons.map((r) => (
-                  <li key={r}>— {r}</li>
+                  <li key={r}>{r}</li>
                 ))}
               </ul>
             </>
@@ -1005,82 +1002,39 @@ function SummaryPanel({
   currency,
   serviceName,
   selected,
-  currentStep,
   artistName,
 }: {
   quote: ReturnType<typeof buildQuote>;
   currency: string;
   serviceName: string;
   selected: { date: string; slot: Slot } | null;
-  currentStep: number;
   artistName: string | undefined;
 }) {
+  const rows = [
+    { label: "Length", value: formatDuration(quote.duration) },
+    { label: "With", value: artistName ?? "To be matched" },
+    {
+      label: "When",
+      value: selected
+        ? `${new Date(`${selected.date}T00:00:00`).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+          })}, ${selected.slot.time}`
+        : "Not chosen yet",
+    },
+  ];
   return (
-    <div className="bg-secondary/40 px-5 py-7 sm:px-8 lg:min-h-[38rem]">
-      <div className="flex items-center justify-between border-b border-foreground pb-4">
-        <p className="font-display text-lg font-bold">Sitting / spec</p>
-        <span className="text-xs font-semibold text-brand">NO. 0{currentStep + 1}</span>
-      </div>
-      <p className="mt-6 text-[10px] font-bold uppercase text-muted-foreground">01 / Service</p>
-      <p className="mt-1 font-display text-xl font-semibold">{serviceName}</p>
-      <div className="mt-6 border-t border-border py-4">
-        <p className="text-[10px] font-bold uppercase text-muted-foreground">
-          02 / Estimated quote
-        </p>
-        <p
-          key={`${quote.low}-${quote.high}`}
-          className="nook-enter mt-1 font-display text-2xl font-bold tabular-nums"
-        >
-          {quote.high === 0
-            ? "Free"
-            : `${formatMoney(quote.low, currency)}–${formatMoney(quote.high, currency)}`}
-        </p>
-      </div>
-      <div className="grid grid-cols-2 border-y border-border py-4">
-        <div>
-          <p className="text-[10px] font-bold uppercase text-muted-foreground">03 / Sitting</p>
-          <p key={quote.duration} className="nook-enter mt-1 font-display text-lg font-semibold">
-            {formatDuration(quote.duration)}
-          </p>
-        </div>
-        <div className="border-l border-border pl-4">
-          <p className="text-[10px] font-bold uppercase text-muted-foreground">04 / Artist</p>
-          <p key={artistName} className="nook-enter mt-1 font-display text-lg font-semibold">
-            {artistName ?? "To be matched"}
-          </p>
-        </div>
-      </div>
-      {selected && (
-        <div className="border-b border-border py-4">
-          <p className="text-[10px] font-bold uppercase text-muted-foreground">05 / Appointment</p>
-          <p className="mt-1 text-sm font-semibold">
-            {new Date(`${selected.date}T00:00:00`).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "long",
-            })}{" "}
-            · {selected.slot.time}
-          </p>
-        </div>
-      )}
-      <p className="mt-5 text-xs text-muted-foreground">
-        {quote.requiresReview ? "Pending studio review" : "Ready for confirmation"}
-        {quote.requiresPhotos ? " · Reference pictures required" : ""}
-      </p>
-      <div
-        className="mt-8 flex gap-1"
-        aria-label={`Step ${currentStep + 1} of ${stepNames.length}`}
-      >
-        {stepNames.map((name, index) => (
-          <span
-            key={name}
-            className={cn(
-              "h-1 flex-1 bg-border transition-colors duration-300",
-              index <= currentStep && "bg-brand",
-            )}
-          />
-        ))}
-      </div>
-    </div>
+    <BookingTicket
+      title={serviceName}
+      price={
+        quote.high === 0
+          ? "Free"
+          : `${formatMoney(quote.low, currency)}-${formatMoney(quote.high, currency)}`
+      }
+      rows={rows}
+      review={quote.requiresReview}
+      note={quote.requiresPhotos ? "Reference pictures required." : undefined}
+    />
   );
 }
 
@@ -1101,11 +1055,11 @@ function Confirmation({
       <main className="mx-auto w-full max-w-2xl px-5 py-20">
         <p className="eyebrow">{done.pending ? "Request sent" : "Booked"}</p>
         <h1 className="display mt-4 text-4xl sm:text-5xl">
-          {done.pending ? "Ines will come back to you." : "You're in the book."}
+          {done.pending ? "Ines will come back to you." : "You're booked."}
         </h1>
         <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
           {done.pending
-            ? "We've held this slot while your request is reviewed — usually within a day. You'll get an email either way."
+            ? "We've held this slot while your request is reviewed, usually within a day. You'll get an email either way."
             : "A confirmation is on its way, along with aftercare notes and how to find the studio."}
         </p>
 
@@ -1128,13 +1082,13 @@ function Confirmation({
         <div className="mt-10 flex flex-wrap gap-3">
           <Link
             to="/owner"
-            className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
+            className="inline-flex min-h-11 items-center rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
           >
             See it on the owner side
           </Link>
           <Link
             to="/"
-            className="inline-flex min-h-11 items-center rounded-full border border-border px-5 text-sm transition-colors hover:bg-secondary"
+            className="inline-flex min-h-11 items-center rounded-sm border border-border px-5 text-sm transition-colors hover:bg-secondary"
           >
             Back home
           </Link>
@@ -1165,11 +1119,11 @@ function ReferenceUpload({
           event.preventDefault();
           add(event.dataTransfer.files);
         }}
-        className="nook-lift group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-background text-center hover:border-brand"
+        className="nook-lift group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed border-input bg-background text-center hover:border-foreground"
       >
         <Upload className="size-6 transition-transform duration-300 group-hover:-translate-y-1 group-hover:text-brand" />
         <span className="mt-3 text-xs font-medium">Drag & drop your images here</span>
-        <span className="mt-1 text-[11px] text-muted-foreground">
+        <span className="mt-1 text-xs text-muted-foreground">
           or click to upload · JPG, PNG, WebP
         </span>
         <input
@@ -1184,7 +1138,7 @@ function ReferenceUpload({
         {previews.map(({ file, url }) => (
           <div
             key={`${file.name}-${file.lastModified}`}
-            className="relative aspect-square overflow-hidden rounded-md border border-border"
+            className="relative aspect-square overflow-hidden rounded-sm border border-border"
           >
             <img src={url} alt={`Reference ${file.name}`} className="size-full object-cover" />
             <button
@@ -1198,7 +1152,7 @@ function ReferenceUpload({
           </div>
         ))}
         {files.length < 5 && (
-          <label className="flex aspect-square cursor-pointer items-center justify-center rounded-md border border-dashed border-border transition-colors hover:border-brand">
+          <label className="flex aspect-square cursor-pointer items-center justify-center rounded-sm border border-dashed border-input transition-colors hover:border-foreground">
             <Plus className="size-5" />
             <span className="sr-only">Add another picture</span>
             <input
@@ -1232,8 +1186,7 @@ function ArtistPicker({
   const activeId = choice === "auto" ? recommendedId : choice;
   return (
     <div className="mt-10">
-      <p className="eyebrow">Your artist</p>
-      <h2 className="mt-2 text-lg font-bold leading-snug sm:text-xl">
+      <h2 className="font-display text-lg font-semibold leading-snug sm:text-xl">
         We matched you with the best fit
       </h2>
       <p className="mt-1 max-w-lg text-sm text-muted-foreground">
@@ -1247,10 +1200,8 @@ function ArtistPicker({
             <div
               key={member.id}
               className={cn(
-                "nook-choice nook-lift relative flex flex-col border p-4",
-                active
-                  ? "border-brand bg-brand-soft"
-                  : "border-border bg-secondary/60 hover:border-brand",
+                "nook-choice nook-lift relative flex flex-col border border-border p-4",
+                active && "nook-selected",
               )}
             >
               <Button
@@ -1278,10 +1229,10 @@ function ArtistPicker({
                   <span className="block font-semibold">{member.name}</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">{member.role}</span>
                 </span>
-                {active && <Check className="nook-pop size-4 shrink-0" />}
+                {active && <Check className="nook-pop size-4 shrink-0 text-brand" />}
               </Button>
               {best && (
-                <p className="mt-3 flex items-start gap-1.5 rounded-sm bg-brand-soft/60 px-2.5 py-2 text-xs">
+                <p className="mt-3 flex items-start gap-1.5 rounded-sm bg-secondary px-2.5 py-2 text-xs">
                   <Star className="mt-0.5 size-3 shrink-0 fill-brand text-brand" />
                   <span>
                     <strong className="font-semibold">Best match.</strong> {reason}

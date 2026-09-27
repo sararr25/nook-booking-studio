@@ -99,8 +99,7 @@ export const buildQuote = (
       if (option.durationFactor) duration *= option.durationFactor;
       if (option.requiresSkills) requiredSkills.push(...option.requiresSkills);
       if (option.requiresPhotos) requiresPhotos = true;
-      if (option.requiresReview)
-        reviewReasons.push(`${option.label} — ${question.label.toLowerCase()}`);
+      if (option.requiresReview) reviewReasons.push(`${question.label} ${option.label}`);
 
       const dp = price - before.price;
       const dd = duration - before.duration;
@@ -223,7 +222,7 @@ export const recommendArtist = (quote: Quote): { member: TeamMember; reason: str
   if (!best) return null;
   const reason =
     best.lead > 0
-      ? `${best.member.role} — closest match to your style and placement.`
+      ? `${best.member.role}. Closest match to your style and placement.`
       : `Covers everything this piece needs and has time for a ${formatDuration(quote.duration)} sitting.`;
   return { member: best.member, reason };
 };

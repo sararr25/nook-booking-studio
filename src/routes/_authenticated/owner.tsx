@@ -26,6 +26,7 @@ import type { BookingRequest, BusinessConfig } from "@/lib/nook/types";
 import { artistImage } from "@/lib/nook/artist-images";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Wordmark } from "@/components/nook/wordmark";
 import botanical from "@/assets/flash-botanical.jpg";
 import moth from "@/assets/flash-moth.jpg";
 import sun from "@/assets/flash-sun.jpg";
@@ -34,13 +35,13 @@ import swallow from "@/assets/flash-swallow.jpg";
 export const Route = createFileRoute("/_authenticated/owner")({
   head: () => ({
     meta: [
-      { title: "Studio settings — Nook" },
+      { title: "Studio settings | Nook" },
       {
         name: "description",
         content:
           "Review unusual requests and tune services, pricing rules, questions, team skills and booking policies.",
       },
-      { property: "og:title", content: "Studio settings — Nook" },
+      { property: "og:title", content: "Studio settings | Nook" },
       {
         property: "og:description",
         content: "Approve or edit requests, and decide what each answer does to price and time.",
@@ -85,9 +86,7 @@ function OwnerPage() {
       <div className="mx-auto grid min-h-screen max-w-7xl border-x border-border bg-card lg:grid-cols-[13rem_1fr]">
         <aside className="border-b border-border bg-secondary/40 p-4 lg:border-b-0 lg:border-r lg:p-5">
           <div className="flex items-center justify-between lg:block">
-            <span className="font-display text-2xl font-bold">
-              Nook<span className="text-brand">.</span>
-            </span>
+            <Wordmark />
             <Button
               variant="ghost"
               size="icon"
@@ -101,11 +100,8 @@ function OwnerPage() {
               <span className="sr-only">Sign out</span>
             </Button>
           </div>
-          <p className="mt-7 hidden border-b border-foreground pb-3 text-[10px] font-bold uppercase text-brand lg:block">
-            Studio index / 01
-          </p>
-          <nav className="mt-4 flex gap-1 overflow-x-auto lg:mt-3 lg:block lg:space-y-0">
-            {tabs.map((item, index) => {
+          <nav className="mt-4 flex gap-1 overflow-x-auto lg:mt-8 lg:block lg:space-y-0 lg:border-t lg:border-foreground">
+            {tabs.map((item) => {
               const Icon = tabIcons[item];
               return (
                 <Button
@@ -114,19 +110,16 @@ function OwnerPage() {
                   type="button"
                   onClick={() => setTab(item)}
                   className={cn(
-                    "flex h-11 shrink-0 items-center justify-start gap-2 rounded-none border-b border-border px-2 text-xs transition-colors lg:w-full",
+                    "flex h-11 shrink-0 items-center justify-start gap-2 rounded-none border-b border-border px-2 text-sm transition-colors lg:w-full",
                     tab === item
-                      ? "border-l-2 border-l-brand bg-brand-soft/40 font-semibold text-foreground"
+                      ? "border-l-2 border-l-brand bg-card font-semibold text-foreground"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                   )}
                 >
-                  <span className="hidden w-5 font-display text-[10px] tabular-nums text-brand lg:inline">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
                   <Icon className="size-4" />
                   {item}
                   {item === "Bookings" && pending > 0 && (
-                    <span className="ml-auto bg-primary px-1.5 text-[9px] text-primary-foreground">
+                    <span className="ml-auto rounded-full bg-primary px-1.5 font-mono text-xs text-primary-foreground">
                       {pending}
                     </span>
                   )}
@@ -156,7 +149,7 @@ function OwnerPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 {pending > 0
                   ? `${pending} request${pending > 1 ? "s" : ""} waiting on you.`
-                  : "Nothing waiting. The book runs itself today."}
+                  : "Nothing waiting for review."}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -240,23 +233,16 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
             onClick={() => onOpen(panel.tab)}
             className={cn(
               "nook-lift flex h-auto min-h-56 flex-col items-start justify-between whitespace-normal rounded-none border-b border-border p-5 text-left md:border-r",
-              index === 0 && "bg-brand-soft/25",
-              index === 1 && "bg-highlight-soft/30",
+              index === 0 && pending.length > 0 && "bg-card",
             )}
           >
-            <span className="flex w-full items-center justify-between text-[10px] font-bold uppercase text-brand">
-              {String(index + 1).padStart(2, "0")} / {panel.title}
+            <span className="flex w-full items-center justify-between text-sm font-semibold">
+              {panel.title}
               <ChevronRight className="size-4" />
             </span>
-            <span className="font-display text-6xl font-bold tabular-nums">{panel.count}</span>
-            <span className="flex w-full items-center gap-3 border-t border-border pt-3">
-              <img
-                src={index === 0 ? moth : index === 1 ? botanical : sun}
-                alt=""
-                aria-hidden="true"
-                className="size-10 object-cover"
-              />
-              <span className="text-xs font-semibold">{panel.detail}</span>
+            <span className="font-mono text-6xl font-semibold tabular-nums">{panel.count}</span>
+            <span className="w-full border-t border-border pt-3 text-xs text-muted-foreground">
+              {panel.detail}
             </span>
           </Button>
         ))}
@@ -309,8 +295,7 @@ function AvailabilityTab() {
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_18rem]">
       <section>
-        <p className="eyebrow">Weekly hours</p>
-        <h2 className="display mt-3 text-3xl">When the studio is open</h2>
+        <h2 className="display text-3xl">When the studio is open</h2>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
           Edit each professional’s working days and hours in Team. Nook uses them to find sessions
           long enough for each request.
@@ -385,8 +370,7 @@ function FlashTab() {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow">Pre-made tattoos</p>
-          <h2 className="display mt-3 text-3xl">The flash book</h2>
+          <h2 className="display text-3xl">The flash book</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Available designs can be selected directly during booking.
           </p>
@@ -470,8 +454,8 @@ function RequestsTab() {
                   at {r.time} · {member?.name ?? "unassigned"}
                 </p>
                 {r.memberId === "unassigned" && (
-                  <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand-soft/40 px-2.5 py-1 text-xs text-foreground/80">
-                    No artist matched automatically — date and time above are the customer's
+                  <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-sm border border-brand/40 bg-brand-soft/40 px-2.5 py-1 text-xs text-foreground/80">
+                    No artist matched automatically. The date and time above are the customer's
                     preference, not a held slot. Assign an artist and confirm a real time below.
                   </p>
                 )}
@@ -494,7 +478,7 @@ function RequestsTab() {
                 {r.quote.reviewReasons.map((reason) => (
                   <li
                     key={reason}
-                    className="rounded-full border border-brand/40 bg-brand-soft/40 px-3 py-1 text-xs"
+                    className="rounded-sm border border-brand/40 bg-brand-soft/40 px-3 py-1 text-xs"
                   >
                     {reason}
                   </li>
@@ -510,14 +494,14 @@ function RequestsTab() {
                     setRequestStatus(r.id, "confirmed");
                     toast.success(`${r.customerName} confirmed`);
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
                 >
                   <Check className="size-4" /> Approve
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(editing === r.id ? null : r.id)}
-                  className="min-h-11 rounded-full border border-border px-5 text-sm transition-colors hover:bg-secondary"
+                  className="min-h-11 rounded-sm border border-border px-5 text-sm transition-colors hover:bg-secondary"
                 >
                   Edit quote
                 </button>
@@ -527,7 +511,7 @@ function RequestsTab() {
                     setRequestStatus(r.id, "declined");
                     toast("Request declined");
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm text-muted-foreground transition-colors hover:text-destructive"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-sm px-4 text-sm text-muted-foreground transition-colors hover:text-destructive"
                 >
                   <X className="size-4" /> Decline
                 </button>
@@ -564,7 +548,7 @@ function EditQuote({
   );
 
   return (
-    <div className="mt-4 grid gap-4 rounded-sm border border-border bg-sand/50 p-5 sm:grid-cols-4">
+    <div className="mt-4 grid gap-4 rounded-sm border border-foreground bg-card p-5 sm:grid-cols-4">
       <NumberField label="Low" value={low} onChange={setLow} />
       <NumberField label="High" value={high} onChange={setHigh} />
       <NumberField label="Minutes" value={duration} step={15} onChange={setDuration} />
@@ -594,7 +578,7 @@ function EditQuote({
             toast.success("Quote updated and confirmed");
             onDone();
           }}
-          className="min-h-11 rounded-full bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
+          className="min-h-11 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
         >
           Save & confirm
         </button>
@@ -610,7 +594,7 @@ function StatusPill({ status }: { status: BookingRequest["status"] }) {
     declined: "border-border bg-transparent text-muted-foreground line-through",
   } as const;
   return (
-    <span className={cn("rounded-full border px-2.5 py-0.5 text-[11px] capitalize", map[status])}>
+    <span className={cn("rounded-full border px-2.5 py-0.5 text-xs capitalize", map[status])}>
       {status}
     </span>
   );
@@ -740,10 +724,8 @@ function QuestionsTab() {
             type="button"
             onClick={() => setServiceId(s.id)}
             className={cn(
-              "min-h-11 rounded-full border px-4 text-sm transition-colors",
-              s.id === serviceId
-                ? "border-brand bg-brand-soft/60"
-                : "border-border hover:bg-secondary",
+              "min-h-11 rounded-sm border px-4 text-sm transition-colors",
+              s.id === serviceId ? "nook-selected font-medium" : "border-border hover:bg-secondary",
             )}
           >
             {s.name}
@@ -818,7 +800,7 @@ function QuestionsTab() {
                           )}
                         </td>
                         <td className="py-2 pr-3 text-xs text-muted-foreground">
-                          {o.requiresSkills?.join(", ") ?? "—"}
+                          {o.requiresSkills?.join(", ") ?? "None"}
                         </td>
                         <td className="py-2">
                           <button
@@ -827,9 +809,9 @@ function QuestionsTab() {
                               patchOption(q.id, o.id, { requiresReview: !o.requiresReview })
                             }
                             className={cn(
-                              "min-h-9 rounded-full border px-3 text-xs transition-colors",
+                              "min-h-9 rounded-sm border px-3 text-xs transition-colors",
                               o.requiresReview
-                                ? "border-brand bg-brand-soft/60"
+                                ? "nook-selected font-medium"
                                 : "border-border text-muted-foreground hover:bg-secondary",
                             )}
                           >
@@ -892,7 +874,7 @@ function TeamTab() {
               value={m.portfolioUrl ?? ""}
               onChange={(e) => patchMember(m.id, { portfolioUrl: e.target.value })}
               placeholder="https://instagram.com/…"
-              className="min-h-10 w-full rounded-md border border-border bg-card px-3 text-sm outline-none focus:border-brand"
+              className="min-h-10 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
             />
           </label>
 
@@ -911,7 +893,7 @@ function TeamTab() {
                   className={cn(
                     "min-h-11 min-w-11 rounded-sm border px-2 text-xs transition-colors",
                     on
-                      ? "border-brand bg-brand-soft/60"
+                      ? "nook-selected font-medium"
                       : "border-border text-muted-foreground hover:bg-secondary",
                   )}
                 >
@@ -964,9 +946,9 @@ function TeamTab() {
                         })
                       }
                       className={cn(
-                        "min-h-9 rounded-full border px-3 text-xs transition-colors",
+                        "min-h-9 rounded-sm border px-3 text-xs transition-colors",
                         on
-                          ? "border-brand bg-brand-soft/60"
+                          ? "nook-selected font-medium"
                           : "border-border text-muted-foreground hover:bg-secondary",
                       )}
                     >

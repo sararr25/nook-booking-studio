@@ -37,7 +37,7 @@ const seedRequests = (): BookingRequest[] => {
         deposit: 210,
         requiresReview: true,
         reviewReasons: [
-          "Yes — is this covering or reworking existing ink?",
+          "Is this covering or reworking existing ink? Yes",
           "Above the auto-approval price ceiling",
         ],
         lines: [

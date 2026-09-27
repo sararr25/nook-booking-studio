@@ -4,7 +4,7 @@ export const defaultBusiness: BusinessConfig = {
   id: "ember-thread",
   name: "Ember & Thread",
   archetype: "Tattoo studio",
-  tagline: "Fine line, blackwork and cover-ups. Booked properly, once.",
+  tagline: "Fine line, blackwork and cover-ups.",
   location: "Ostergatan 14, Malmo",
   policies: {
     currency: "EUR",
@@ -28,7 +28,7 @@ export const defaultBusiness: BusinessConfig = {
         {
           id: "size",
           label: "Roughly how big is the piece?",
-          help: "Longest edge. An estimate is fine — we confirm at the studio.",
+          help: "Longest edge. An estimate is fine, we confirm at the studio.",
           type: "scale",
           min: 3,
           max: 40,
@@ -125,7 +125,7 @@ export const defaultBusiness: BusinessConfig = {
             {
               id: "companion",
               label: "Bring someone with me",
-              hint: "Small studio — we just need to know",
+              hint: "Small studio, we just need to know",
             },
           ],
         },
@@ -250,25 +250,170 @@ export const defaultBusiness: BusinessConfig = {
   ],
 };
 
-export const otherArchetypes = [
+/**
+ * Illustrative rules for the landing-page demo. They show how the same engine
+ * reads for different trades; each real business writes its own.
+ */
+export type TradeDemoOption = {
+  label: string;
+  price: string;
+  length: string;
+  who: string;
+  review: boolean;
+  note?: string;
+};
+
+export type TradeDemo = {
+  id: string;
+  name: string;
+  question: string;
+  options: TradeDemoOption[];
+};
+
+export const tradeDemos: TradeDemo[] = [
   {
+    id: "groomer",
     name: "Pet groomer",
-    question: "Coat type, matting, temperament",
-    effect: "Matted double coat adds 45 min and routes to the senior groomer",
+    question: "What's the coat like?",
+    options: [
+      {
+        label: "Short and tidy",
+        price: "€45-55",
+        length: "1 hr",
+        who: "Any groomer",
+        review: false,
+      },
+      {
+        label: "Long, a few tangles",
+        price: "€65-80",
+        length: "1 hr 30 min",
+        who: "Any groomer",
+        review: false,
+      },
+      {
+        label: "Matted double coat",
+        price: "€95-120",
+        length: "2 hr 15 min",
+        who: "Senior groomer",
+        review: true,
+        note: "Matting is checked before the appointment.",
+      },
+    ],
   },
   {
+    id: "photographer",
     name: "Photographer",
-    question: "Shoot type, location, people count",
-    effect: "Off-site shoots add travel time and a second shooter to the quote",
+    question: "Where is the shoot?",
+    options: [
+      {
+        label: "In the studio",
+        price: "€220-260",
+        length: "1 hr",
+        who: "Lead photographer",
+        review: false,
+      },
+      {
+        label: "On location, in town",
+        price: "€340-400",
+        length: "2 hr 30 min",
+        who: "Lead photographer",
+        review: false,
+      },
+      {
+        label: "Two hours away or more",
+        price: "€620-780",
+        length: "5 hr",
+        who: "Lead + second shooter",
+        review: true,
+        note: "Travel is confirmed by the studio first.",
+      },
+    ],
   },
   {
+    id: "tattoo",
+    name: "Tattoo studio",
+    question: "How big is the piece?",
+    options: [
+      {
+        label: "Up to 5 cm",
+        price: "€160-200",
+        length: "1 hr 30 min",
+        who: "Fine line artist",
+        review: false,
+      },
+      {
+        label: "5 to 15 cm",
+        price: "€260-340",
+        length: "2 hr 30 min",
+        who: "Fine line artist",
+        review: false,
+      },
+      {
+        label: "Covering old work",
+        price: "€480-650",
+        length: "4 hr",
+        who: "Cover-up specialist",
+        review: true,
+        note: "Cover-ups get a look before they're confirmed.",
+      },
+    ],
+  },
+  {
+    id: "contractor",
     name: "Contractor",
-    question: "Room size, access, materials",
-    effect: "No lift access flags the job for a site visit before pricing",
+    question: "How do materials get in?",
+    options: [
+      {
+        label: "Ground floor or lift",
+        price: "€850-1,100",
+        length: "1 day",
+        who: "Two-person crew",
+        review: false,
+      },
+      {
+        label: "Stairs only",
+        price: "€1,050-1,350",
+        length: "1.5 days",
+        who: "Three-person crew",
+        review: false,
+      },
+      {
+        label: "Not sure yet",
+        price: "After site visit",
+        length: "Site visit first",
+        who: "Project lead",
+        review: true,
+        note: "A short site visit is booked before pricing.",
+      },
+    ],
   },
   {
-    name: "Beauty studio",
-    question: "Hair length, existing colour, allergies",
-    effect: "Colour correction becomes a two-part booking with a patch test",
+    id: "beauty",
+    name: "Hair studio",
+    question: "What's the colour situation?",
+    options: [
+      {
+        label: "Natural, no colour",
+        price: "€85-110",
+        length: "1 hr 30 min",
+        who: "Any stylist",
+        review: false,
+      },
+      {
+        label: "Refresh my colour",
+        price: "€120-150",
+        length: "2 hr",
+        who: "Colourist",
+        review: false,
+      },
+      {
+        label: "Colour correction",
+        price: "€220-320",
+        length: "2 visits",
+        who: "Senior colourist",
+        review: true,
+        note: "Starts with a patch test and a short consult.",
+      },
+    ],
   },
 ];

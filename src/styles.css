@@ -21,6 +21,7 @@
 @theme inline {
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -73,31 +74,31 @@
 
 :root {
   --radius: 0.2rem;
-  --background: oklch(0.91 0.013 77);
+  --background: oklch(0.925 0.011 80);
   --foreground: oklch(0.105 0.007 50);
   --ink: oklch(0.105 0.007 50);
-  --sand: oklch(0.875 0.025 66);
+  --sand: oklch(0.905 0.014 78);
   --brand: oklch(0.46 0.155 38);
   --brand-soft: oklch(0.91 0.052 48);
   --brand-foreground: oklch(0.99 0.002 82);
   --highlight: oklch(0.38 0.09 150);
   --highlight-soft: oklch(0.9 0.038 145);
-  --card: oklch(0.95 0.011 79);
+  --card: oklch(0.975 0.006 85);
   --card-foreground: oklch(0.105 0.007 50);
-  --popover: oklch(0.95 0.011 79);
+  --popover: oklch(0.975 0.006 85);
   --popover-foreground: oklch(0.105 0.007 50);
   --primary: oklch(0.105 0.007 50);
   --primary-foreground: oklch(0.99 0.002 82);
-  --secondary: oklch(0.865 0.02 75);
+  --secondary: oklch(0.905 0.014 78);
   --secondary-foreground: oklch(0.105 0.007 50);
-  --muted: oklch(0.865 0.02 75);
+  --muted: oklch(0.905 0.014 78);
   --muted-foreground: oklch(0.37 0.02 60);
-  --accent: oklch(0.91 0.052 48);
+  --accent: oklch(0.905 0.014 78);
   --accent-foreground: oklch(0.2 0.015 50);
   --destructive: oklch(0.545 0.178 27);
   --destructive-foreground: oklch(0.985 0.006 84);
-  --border: oklch(0.69 0.015 70);
-  --input: oklch(0.69 0.015 70);
+  --border: oklch(0.78 0.014 72);
+  --input: oklch(0.72 0.014 72);
   --ring: oklch(0.46 0.155 38);
   --chart-1: oklch(0.575 0.132 42);
   --chart-2: oklch(0.62 0.07 140);
@@ -114,41 +115,6 @@
   --sidebar-ring: oklch(0.575 0.132 42);
 }
 
-
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-}
 
 @layer base {
   * {
@@ -183,10 +149,10 @@
 }
 
 @utility eyebrow {
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--muted-foreground);
 }
 
@@ -194,10 +160,6 @@
   border: 1px solid var(--border);
   border-radius: 0;
   background: var(--card);
-}
-
-@utility nook-shadow {
-  box-shadow: 0 18px 50px color-mix(in oklab, var(--ink) 11%, transparent);
 }
 
 @keyframes nook-enter {
@@ -238,12 +200,69 @@
 .nook-lift:active { transform: translateY(1px) scale(0.99); box-shadow: none; }
 .nook-pop { animation: nook-pop 320ms ease-out both; }
 
+/*
+ * Shape and elevation rules (keep consistent everywhere):
+ * - Controls and surfaces use --radius (2px). Full round is only for avatars
+ *   and small status/count badges.
+ * - The only elevation is a hard offset "print" shadow. No soft blur shadows.
+ * - Selected = ink border + shadow in the accent colour. No filled background.
+ */
 .nook-choice {
-  border-radius: 0.375rem;
-  box-shadow: 3px 3px 0 color-mix(in oklab, var(--foreground) 20%, transparent);
+  border-radius: var(--radius);
+  background-color: var(--card);
+  box-shadow: 3px 3px 0 color-mix(in oklab, var(--foreground) 18%, transparent);
 }
-.nook-choice:hover { box-shadow: 4px 4px 0 color-mix(in oklab, var(--foreground) 28%, transparent); }
+.nook-choice:hover {
+  border-color: var(--foreground);
+  box-shadow: 4px 4px 0 color-mix(in oklab, var(--foreground) 26%, transparent);
+}
 .nook-choice:active { box-shadow: 1px 1px 0 color-mix(in oklab, var(--foreground) 24%, transparent); }
+.nook-choice.nook-selected,
+.nook-selected {
+  border-color: var(--foreground);
+  background-color: var(--card);
+  box-shadow: 3px 3px 0 var(--brand);
+}
+
+/* Booking ticket: a neutral receipt that summarises any booking. */
+.nook-ticket {
+  position: relative;
+  border: 1px solid var(--foreground);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: 4px 4px 0 color-mix(in oklab, var(--foreground) 18%, transparent);
+}
+.nook-perforation {
+  position: relative;
+  border-top: 1px dashed var(--border);
+}
+.nook-perforation::before,
+.nook-perforation::after {
+  content: "";
+  position: absolute;
+  top: -0.5rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--foreground);
+  background: var(--background);
+}
+.nook-perforation::before { left: -0.5rem; clip-path: inset(0 0 0 50%); }
+.nook-perforation::after { right: -0.5rem; clip-path: inset(0 50% 0 0); }
+.nook-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1.5px solid currentColor;
+  border-radius: var(--radius);
+  padding: 0.25rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
 
 .nook-title { position: relative; padding-bottom: 0.9rem; }
 .nook-title::after {

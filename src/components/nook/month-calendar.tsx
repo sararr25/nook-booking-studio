@@ -24,9 +24,19 @@ export function MonthCalendar({
   selected,
   onSelect,
 }: Props) {
+  // Open on the first month that actually has a free day, so customers never
+  // land on a fully greyed-out calendar (e.g. near the end of a month).
   const [cursor, setCursor] = useState(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
+    const now = new Date();
+    for (let offset = 0; offset < 6; offset += 1) {
+      const month = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+      const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d += 1) {
+        const day = new Date(month.getFullYear(), month.getMonth(), d);
+        if (slotsForDay(business, eligibleTeam, duration, day, booked).length > 0) return month;
+      }
+    }
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [openDay, setOpenDay] = useState<string | null>(selected?.date ?? null);
 
@@ -70,7 +80,7 @@ export function MonthCalendar({
               type="button"
               onClick={() => shift(-1)}
               aria-label="Previous month"
-              className="flex size-9 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-secondary disabled:opacity-40"
+              className="flex size-9 items-center justify-center rounded-sm text-foreground/70 transition-colors hover:bg-secondary disabled:opacity-40"
               disabled={
                 cursor.getFullYear() === today.getFullYear() &&
                 cursor.getMonth() === today.getMonth()
@@ -84,7 +94,7 @@ export function MonthCalendar({
               type="button"
               onClick={() => shift(1)}
               aria-label="Next month"
-              className="flex size-9 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-secondary"
+              className="flex size-9 items-center justify-center rounded-sm text-foreground/70 transition-colors hover:bg-secondary"
             >
               <ChevronRight className="size-4" />
             </Button>
@@ -93,7 +103,7 @@ export function MonthCalendar({
 
         <div className="grid grid-cols-7 gap-1 text-center">
           {weekdayLabels.map((d) => (
-            <div key={d} className="pb-2 text-[10px] font-medium text-muted-foreground">
+            <div key={d} className="pb-2 text-xs font-medium text-muted-foreground">
               {d.slice(0, 3)}
             </div>
           ))}
@@ -113,12 +123,14 @@ export function MonthCalendar({
                 onClick={() => setOpenDay(isOpen ? null : key)}
                 className={cn(
                   "relative flex aspect-square h-auto min-h-9 w-full flex-col items-center justify-center rounded-sm text-xs transition-colors",
-                  free ? "bg-secondary/55 hover:bg-brand-soft" : "text-muted-foreground/35",
-                  isOpen && free && "bg-primary text-primary-foreground",
-                  isSelected && "bg-primary text-primary-foreground",
+                  free
+                    ? "border border-border bg-card font-semibold text-foreground hover:border-foreground"
+                    : "font-normal text-muted-foreground/60",
+                  isOpen && free && "border-foreground bg-primary text-primary-foreground",
+                  isSelected && "border-foreground bg-primary text-primary-foreground",
                 )}
               >
-                <span className={cn(isSelected && "font-semibold")}>{day.getDate()}</span>
+                <span className="tabular-nums">{day.getDate()}</span>
               </Button>
             );
           })}
@@ -131,7 +143,7 @@ export function MonthCalendar({
               <p className="text-sm text-muted-foreground">Nothing open on this day.</p>
             ) : (
               <>
-                <p className="mb-3 text-[11px] leading-relaxed text-muted-foreground">
+                <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
                   {new Date(`${openDay}T00:00:00`).toLocaleDateString("en-GB", {
                     weekday: "long",
                     day: "numeric",
@@ -151,13 +163,11 @@ export function MonthCalendar({
                         type="button"
                         onClick={() => onSelect({ date: openDay, slot })}
                         className={cn(
-                          "nook-choice min-h-10 w-full border px-3 py-2 text-center text-xs transition-colors",
-                          active
-                            ? "border-brand bg-brand-soft text-foreground"
-                            : "border-border bg-secondary/60 hover:border-brand hover:bg-brand-soft/50",
+                          "nook-choice min-h-10 w-full border border-border px-3 py-2 text-center text-sm",
+                          active && "nook-selected",
                         )}
                       >
-                        <span className="font-medium">{slot.time}</span>
+                        <span className="font-mono font-medium tabular-nums">{slot.time}</span>
                       </Button>
                     );
                   })}
@@ -168,7 +178,7 @@ export function MonthCalendar({
         ) : (
           <div className="pt-1">
             <p className="text-xs font-semibold">Available times</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">Choose a day</p>
+            <p className="mt-1 text-xs text-muted-foreground">Choose a highlighted day</p>
           </div>
         )}
       </div>
