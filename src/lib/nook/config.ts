@@ -13,6 +13,7 @@ export const defaultBusiness: BusinessConfig = {
     autoApproveUnder: 900,
     autoApproveMaxDuration: 300,
     cancellationHours: 48,
+    depositDueHours: 24,
     reviewNote:
       "Anything large, on tricky placement, or covering old work gets a quick look from Ines before it is confirmed.",
   },
@@ -152,7 +153,7 @@ export const defaultBusiness: BusinessConfig = {
       blurb: "Pick a ready-made design from the studio sheet. Quick and fixed price.",
       basePrice: 140,
       baseDuration: 60,
-      depositPercent: 25,
+      depositPercent: 20,
       questions: [
         {
           id: "sizeflash",

@@ -51,7 +51,7 @@ function Landing() {
           <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
             <div>
               <p className="eyebrow">Booking, for work that varies</p>
-              <h1 className="display mt-5 max-w-[14ch] text-balance text-[2.75rem] sm:text-6xl lg:text-7xl">
+              <h1 className="display mt-5 max-w-[14ch] text-balance text-[2.5rem] sm:text-5xl lg:text-6xl">
                 Some jobs can&apos;t be booked from a{" "}
                 <span className="text-brand">
                   <span className="whitespace-nowrap">drop-down</span> menu.
@@ -117,7 +117,7 @@ function TradeDemoSection() {
     <section className="bg-ink text-brand-foreground">
       <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-16 sm:py-20 lg:grid-cols-[1fr_22rem] lg:gap-16">
         <div className="min-w-0">
-          <h2 className="display text-3xl sm:text-5xl">One engine, any trade.</h2>
+          <h2 className="display text-3xl sm:text-4xl">One engine, any trade.</h2>
           <p className="mt-4 max-w-lg text-sm leading-relaxed text-brand-foreground/70 sm:text-base">
             Pick a business and an answer. Each owner decides what their answers do to the price,
             the time and who takes the job.

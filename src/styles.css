@@ -131,8 +131,8 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    letter-spacing: 0;
-    line-height: 1.12;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
   }
 
   ::selection {
@@ -144,8 +144,8 @@
 @utility display {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: 0;
-  line-height: 1.08;
+  letter-spacing: -0.015em;
+  line-height: 1.02;
 }
 
 @utility eyebrow {
@@ -264,7 +264,7 @@
   transform: rotate(-2deg);
 }
 
-.nook-title { position: relative; padding-bottom: 0.9rem; }
+.nook-title { position: relative; padding-bottom: 0.75rem; }
 .nook-title::after {
   content: "";
   position: absolute;

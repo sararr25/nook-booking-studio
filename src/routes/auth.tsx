@@ -90,7 +90,7 @@ function OwnerAuth() {
       <section className="hidden rounded-l-sm border border-r-0 border-border bg-card p-12 lg:flex lg:flex-col lg:justify-between">
         <Wordmark />
         <div className="max-w-xl">
-          <h1 className="display text-6xl">Everything in its place.</h1>
+          <h1 className="display text-5xl">Everything in its place.</h1>
           <p className="mt-6 max-w-md leading-relaxed text-muted-foreground">
             Review requests, shape your calendar, set honest prices and keep the flash book current.
           </p>
@@ -101,7 +101,7 @@ function OwnerAuth() {
         <div className="mx-auto w-full max-w-sm">
           <Wordmark className="lg:hidden" />
           <p className="eyebrow mt-12 lg:mt-0">Owner access</p>
-          <h2 className="display mt-3 text-4xl">
+          <h2 className="display mt-3 text-3xl">
             {mode === "signin" ? "Welcome back" : "Create your studio account"}
           </h2>
           <p className="mt-3 text-sm text-muted-foreground">

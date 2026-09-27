@@ -73,6 +73,8 @@ export type Policies = {
   autoApproveMaxDuration: number; // minutes
   reviewNote: string;
   cancellationHours: number;
+  /** Hours the customer has to pay the deposit after the booking is confirmed. */
+  depositDueHours: number;
 };
 
 export type BusinessConfig = {

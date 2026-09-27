@@ -145,7 +145,7 @@ function OwnerPage() {
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-foreground pb-8">
             <div>
               <p className="eyebrow">Owner dashboard · {business.name}</p>
-              <h1 className="display mt-2 text-3xl sm:text-5xl">Good morning, Alex</h1>
+              <h1 className="display mt-2 text-3xl sm:text-4xl">Good morning, Alex</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 {pending > 0
                   ? `${pending} request${pending > 1 ? "s" : ""} waiting on you.`
@@ -240,7 +240,7 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
               {panel.title}
               <ChevronRight className="size-4" />
             </span>
-            <span className="font-mono text-6xl font-semibold tabular-nums">{panel.count}</span>
+            <span className="font-mono text-5xl font-semibold tabular-nums">{panel.count}</span>
             <span className="w-full border-t border-border pt-3 text-xs text-muted-foreground">
               {panel.detail}
             </span>
@@ -295,7 +295,7 @@ function AvailabilityTab() {
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_18rem]">
       <section>
-        <h2 className="display text-3xl">When the studio is open</h2>
+        <h2 className="display text-2xl">When the studio is open</h2>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
           Edit each professional’s working days and hours in Team. Nook uses them to find sessions
           long enough for each request.
@@ -370,7 +370,7 @@ function FlashTab() {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="display text-3xl">The flash book</h2>
+          <h2 className="display text-2xl">The flash book</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Available designs can be selected directly during booking.
           </p>
@@ -1002,6 +1002,12 @@ function PoliciesTab() {
           value={p.cancellationHours}
           step={12}
           onChange={(v) => patch({ cancellationHours: v })}
+        />
+        <NumberField
+          label="Deposit due within (hours)"
+          value={p.depositDueHours}
+          step={12}
+          onChange={(v) => patch({ depositDueHours: v })}
         />
       </div>
 

@@ -24,6 +24,7 @@ import { Wordmark } from "@/components/nook/wordmark";
 import { NookProvider, useNook } from "@/lib/nook/store";
 import {
   buildQuote,
+  describeOptionEffect,
   formatDuration,
   formatMoney,
   isAnswered,
@@ -84,6 +85,7 @@ function BookingFlow() {
   const [artistChoice, setArtistChoice] = useState<string>("auto");
   const [done, setDone] = useState<null | {
     pending: boolean;
+    terms: string[];
     date: string;
     time: string;
     who: string;
@@ -189,6 +191,13 @@ function BookingFlow() {
     addRequest(request);
     setDone({
       pending,
+      terms: bookingTerms({
+        free: quote.high === 0,
+        review: pending,
+        deposit: formatMoney(quote.deposit, business.policies.currency),
+        depositPercent: service.depositPercent,
+        depositDueHours: business.policies.depositDueHours,
+      }),
       date: selected.date,
       time: selected.slot.time,
       who: selected.slot.memberName,
@@ -232,7 +241,7 @@ function BookingFlow() {
           >
             {step === 0 && (
               <section>
-                <h1 className="display nook-title max-w-xl text-4xl sm:text-6xl lg:text-7xl">
+                <h1 className="display nook-title max-w-xl text-balance text-3xl sm:text-4xl lg:text-5xl">
                   What would you like to book?
                 </h1>
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">{business.tagline}</p>
@@ -281,7 +290,7 @@ function BookingFlow() {
 
             {step === 1 && (
               <section>
-                <h1 className="display nook-title max-w-xl text-[2rem] leading-[1.12] sm:text-6xl lg:text-7xl">
+                <h1 className="display nook-title max-w-xl text-balance text-3xl sm:text-4xl lg:text-5xl">
                   How big is your tattoo?
                 </h1>
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">
@@ -313,6 +322,7 @@ function BookingFlow() {
                       key={q.id}
                       index={i + 1}
                       question={q}
+                      currency={business.policies.currency}
                       answers={answers}
                       onSet={setAnswer}
                       onToggle={toggleMulti}
@@ -324,7 +334,12 @@ function BookingFlow() {
 
             {step === 2 && (
               <>
-                <QuoteStep quote={quote} currency={business.policies.currency} service={service} />
+                <QuoteStep
+                  quote={quote}
+                  currency={business.policies.currency}
+                  service={service}
+                  depositDueHours={business.policies.depositDueHours}
+                />
                 <ArtistPicker
                   team={quote.eligibleTeam}
                   recommendedId={recommendation?.member.id}
@@ -337,7 +352,7 @@ function BookingFlow() {
 
             {step === 3 && (
               <section>
-                <h1 className="display nook-title max-w-xl text-balance text-[2rem] leading-[1.12] sm:text-6xl lg:text-7xl">
+                <h1 className="display nook-title max-w-xl text-balance text-3xl sm:text-4xl lg:text-5xl">
                   Choose a date and time
                 </h1>
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">
@@ -365,7 +380,7 @@ function BookingFlow() {
 
             {step === 4 && (
               <section>
-                <h1 className="display text-4xl sm:text-6xl lg:text-7xl">Almost done!</h1>
+                <h1 className="display text-3xl sm:text-4xl lg:text-5xl">Almost done!</h1>
                 <h2 className="mt-4 text-base font-bold">
                   {service.id === "tattoo"
                     ? `Your details${referenceFiles.length ? ` · ${referenceFiles.length} reference ${referenceFiles.length === 1 ? "picture" : "pictures"} attached` : ""}`
@@ -374,7 +389,7 @@ function BookingFlow() {
                 <p className="mt-1 max-w-lg text-sm text-muted-foreground">
                   {quote.requiresReview
                     ? business.policies.reviewNote
-                    : "This one fits the studio's standard rules, so it confirms straight away."}
+                    : "This one fits the studio's standard rules, so the confirmation email goes out as soon as you book."}
                 </p>
 
                 <div className="mt-7 max-w-xl space-y-5">
@@ -429,6 +444,8 @@ function BookingFlow() {
               <SummaryPanel
                 quote={quote}
                 currency={business.policies.currency}
+                depositPercent={service.depositPercent}
+                depositDueHours={business.policies.depositDueHours}
                 serviceName={service.name}
                 selected={selected}
                 artistName={chosenMember?.name}
@@ -726,12 +743,14 @@ function Field({
 function QuestionBlock({
   index,
   question,
+  currency,
   answers,
   onSet,
   onToggle,
 }: {
   index: number;
   question: Question;
+  currency: string;
   answers: Answers;
   onSet: (id: string, value: Answers[string]) => void;
   onToggle: (id: string, optionId: string) => void;
@@ -871,6 +890,11 @@ function QuestionBlock({
                           {option.hint}
                         </span>
                       )}
+                      {describeOptionEffect(option, currency) && (
+                        <span className="mt-1 block font-mono text-xs font-medium text-brand">
+                          {describeOptionEffect(option, currency)}
+                        </span>
+                      )}
                     </Button>
                   );
                 })}
@@ -887,15 +911,17 @@ function QuoteStep({
   quote,
   currency,
   service,
+  depositDueHours,
 }: {
   quote: ReturnType<typeof buildQuote>;
   currency: string;
   service: { name: string; depositPercent: number };
+  depositDueHours: number;
 }) {
   return (
     <section>
       <p className="eyebrow">Estimate</p>
-      <h1 className="mt-3 font-mono text-[2rem] font-semibold leading-[1.12] tabular-nums sm:text-5xl">
+      <h1 className="mt-3 font-mono text-3xl font-semibold leading-tight tabular-nums sm:text-4xl">
         {quote.high === 0 ? (
           "No charge"
         ) : (
@@ -912,7 +938,8 @@ function QuoteStep({
         </span>
         {quote.deposit > 0 && (
           <span>
-            {formatMoney(quote.deposit, currency)} deposit ({service.depositPercent}%)
+            {formatMoney(quote.deposit, currency)} deposit ({service.depositPercent}%), due within{" "}
+            {depositDueHours}h of confirmation
           </span>
         )}
       </p>
@@ -983,7 +1010,7 @@ function QuoteStep({
             </>
           ) : (
             <p className="mt-2 text-sm">
-              Standard request. Pick a time and it confirms on the spot.
+              Standard request. It&apos;s confirmed by email as soon as you book.
             </p>
           )}
         </div>
@@ -1000,12 +1027,16 @@ function QuoteStep({
 function SummaryPanel({
   quote,
   currency,
+  depositPercent,
+  depositDueHours,
   serviceName,
   selected,
   artistName,
 }: {
   quote: ReturnType<typeof buildQuote>;
   currency: string;
+  depositPercent: number;
+  depositDueHours: number;
   serviceName: string;
   selected: { date: string; slot: Slot } | null;
   artistName: string | undefined;
@@ -1034,14 +1065,50 @@ function SummaryPanel({
       rows={rows}
       review={quote.requiresReview}
       note={quote.requiresPhotos ? "Reference pictures required." : undefined}
+      terms={bookingTerms({
+        free: quote.high === 0,
+        review: quote.requiresReview,
+        deposit: formatMoney(quote.deposit, currency),
+        depositPercent,
+        depositDueHours,
+      })}
     />
   );
+}
+
+/** What the customer agrees to: shown in the ticket and on the confirmation page. */
+function bookingTerms({
+  free,
+  review,
+  deposit,
+  depositPercent,
+  depositDueHours,
+}: {
+  free: boolean;
+  review: boolean;
+  deposit: string;
+  depositPercent: number;
+  depositDueHours: number;
+}) {
+  if (free)
+    return [
+      review
+        ? "The studio confirms your request first, then you get an email."
+        : "Confirmed by email as soon as you book. Nothing to pay.",
+    ];
+  return [
+    "The price is an estimate. The final price is agreed at the studio.",
+    review
+      ? `The studio confirms your request first. Then you get an email with a link to pay the ${depositPercent}% deposit (${deposit}) within ${depositDueHours} hours.`
+      : `You get a confirmation email straight away, with a link to pay the ${depositPercent}% deposit (${deposit}) within ${depositDueHours} hours.`,
+    "Your slot is secured once the deposit is paid.",
+  ];
 }
 
 function Confirmation({
   done,
 }: {
-  done: { pending: boolean; date: string; time: string; who: string };
+  done: { pending: boolean; terms: string[]; date: string; time: string; who: string };
 }) {
   const pretty = new Date(`${done.date}T00:00:00`).toLocaleDateString("en-GB", {
     weekday: "long",
@@ -1054,13 +1121,13 @@ function Confirmation({
       <SiteHeader />
       <main className="mx-auto w-full max-w-2xl px-5 py-20">
         <p className="eyebrow">{done.pending ? "Request sent" : "Booked"}</p>
-        <h1 className="display mt-4 text-4xl sm:text-5xl">
+        <h1 className="display mt-4 text-3xl sm:text-4xl">
           {done.pending ? "Ines will come back to you." : "You're booked."}
         </h1>
         <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
           {done.pending
             ? "We've held this slot while your request is reviewed, usually within a day. You'll get an email either way."
-            : "A confirmation is on its way, along with aftercare notes and how to find the studio."}
+            : "Your confirmation email is on its way, with the deposit link and how to find the studio."}
         </p>
 
         <dl className="mt-10 divide-y divide-border border-y border-border text-sm">
@@ -1078,6 +1145,12 @@ function Confirmation({
             </dd>
           </div>
         </dl>
+
+        <ul className="mt-6 list-disc space-y-1.5 pl-4 text-sm leading-relaxed text-muted-foreground">
+          {done.terms.map((term) => (
+            <li key={term}>{term}</li>
+          ))}
+        </ul>
 
         <div className="mt-10 flex flex-wrap gap-3">
           <Link

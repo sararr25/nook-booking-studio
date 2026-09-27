@@ -14,6 +14,7 @@ export function BookingTicket({
   rows,
   review,
   note,
+  terms,
   className,
 }: {
   heading?: string;
@@ -22,6 +23,8 @@ export function BookingTicket({
   rows: TicketRow[];
   review: boolean;
   note?: string | undefined;
+  /** Small-print conditions, e.g. estimate and deposit rules. */
+  terms?: string[];
   className?: string;
 }) {
   return (
@@ -47,6 +50,13 @@ export function BookingTicket({
         </span>
         {note && <p className="mt-3 text-xs text-muted-foreground">{note}</p>}
       </div>
+      {terms && terms.length > 0 && (
+        <ul className="nook-perforation list-disc space-y-1.5 py-4 pl-9 pr-5 text-xs leading-relaxed text-muted-foreground">
+          {terms.map((term) => (
+            <li key={term}>{term}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

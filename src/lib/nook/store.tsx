@@ -82,7 +82,9 @@ export function NookProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setBusiness(read(CONFIG_KEY, defaultBusiness));
+    const saved = read(CONFIG_KEY, defaultBusiness);
+    // Configs saved before a policy existed pick up its default value.
+    setBusiness({ ...saved, policies: { ...defaultBusiness.policies, ...saved.policies } });
     setRequests(read(REQUESTS_KEY, seedRequests()));
     setHydrated(true);
   }, []);

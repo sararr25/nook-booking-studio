@@ -23,6 +23,23 @@ export const formatDuration = (minutes: number) => {
   return `${h} hr ${m} min`;
 };
 
+const percentChange = (factor: number) => {
+  const pct = Math.round((factor - 1) * 100);
+  return `${pct > 0 ? "+" : ""}${pct}%`;
+};
+
+/** Short, customer-facing summary of what picking an option adds, e.g. "+€25, +20 min". */
+export const describeOptionEffect = (option: Option, currency: string) => {
+  const parts: string[] = [];
+  if (option.priceDelta) parts.push(`+${formatMoney(option.priceDelta, currency)}`);
+  if (option.priceFactor && option.priceFactor !== 1)
+    parts.push(`${percentChange(option.priceFactor)} price`);
+  if (option.durationDelta) parts.push(`+${formatDuration(option.durationDelta)}`);
+  if (option.durationFactor && option.durationFactor !== 1)
+    parts.push(`${percentChange(option.durationFactor)} time`);
+  return parts.join(", ");
+};
+
 export const isQuestionVisible = (question: Question, answers: Answers) => {
   if (!question.showIf) return true;
   const value = answers[question.showIf.questionId];
