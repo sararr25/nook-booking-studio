@@ -122,7 +122,7 @@ export const defaultBusiness: BusinessConfig = {
               priceDelta: 70,
             },
             { id: "evening", label: "Evening sitting", hint: "After 18:00", priceDelta: 40 },
-            { id: "numbing", label: "Numbing cream", priceDelta: 25, durationDelta: 20 },
+            { id: "numbing", label: "Numbing cream", priceDelta: 10, durationDelta: 5 },
             {
               id: "companion",
               label: "Bring someone with me",
