@@ -56,7 +56,7 @@ function OwnerAuth() {
   return <main className="grid min-h-screen bg-secondary p-3 lg:grid-cols-[1fr_30rem] lg:p-5">
     <section className="hidden rounded-l-lg border border-r-0 border-border bg-card p-12 lg:flex lg:flex-col lg:justify-between">
       <span className="text-2xl font-semibold">Nook</span>
-      <div className="max-w-xl"><p className="eyebrow">Studio workspace</p><h1 className="display mt-5 text-6xl leading-[1.02]">Everything in its place.</h1><p className="mt-6 max-w-md leading-relaxed text-muted-foreground">Review requests, shape your calendar, set honest prices and keep the flash book current.</p></div>
+       <div className="max-w-xl"><p className="eyebrow">Studio workspace</p><h1 className="display mt-5 text-6xl">Everything in its place.</h1><p className="mt-6 max-w-md leading-relaxed text-muted-foreground">Review requests, shape your calendar, set honest prices and keep the flash book current.</p></div>
       <p className="text-xs text-muted-foreground">Ember & Thread · Malmö</p>
     </section>
     <section className="flex items-center rounded-lg border border-border bg-card px-6 py-14 lg:rounded-l-none sm:px-12"><div className="mx-auto w-full max-w-sm">

@@ -17,6 +17,7 @@ import {
 } from "@/lib/nook/engine";
 import type { Slot } from "@/lib/nook/engine";
 import type { Answers, BookingRequest, Question, TeamMember } from "@/lib/nook/types";
+import { artistImage } from "@/lib/nook/artist-images";
 import { supabase } from "@/integrations/supabase/client";
 import botanical from "@/assets/flash-botanical.jpg";
 import moth from "@/assets/flash-moth.jpg";
@@ -173,11 +174,11 @@ function BookingFlow() {
            <p className="mb-6 flex items-center gap-4 border-b border-border pb-3 text-[11px] font-semibold uppercase text-brand"><span className="font-display text-lg tabular-nums">{String(step + 1).padStart(2, "0")}</span><span>{stepNames[step]}</span></p>
           {step === 0 && (
             <section>
-               <h1 className="display nook-title max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">What would you like to book?</h1>
+               <h1 className="display nook-title max-w-xl text-4xl sm:text-6xl lg:text-7xl">What would you like to book?</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 {business.tagline}
               </p>
-               <div className="nook-stagger mt-9 grid border-t border-border sm:grid-cols-3">
+                <div className="nook-stagger mt-9 grid gap-3 sm:grid-cols-3">
                  {business.services.map((s, serviceIndex) => (
                    <Button
                      variant="ghost"
@@ -189,7 +190,7 @@ function BookingFlow() {
                       setSelected(null);
                       setArtistChoice("auto");
                     }}
-                      className={cn("nook-lift flex h-auto min-h-52 w-full flex-col items-start justify-between whitespace-normal rounded-none border-b border-border p-5 text-left hover:bg-brand-soft/30 sm:border-r", serviceId === s.id && "bg-brand-soft/35")}
+                       className={cn("nook-choice nook-lift flex h-auto min-h-52 w-full flex-col items-start justify-between whitespace-normal border border-border bg-secondary/60 p-5 text-left hover:border-brand hover:bg-brand-soft/50", serviceId === s.id && "border-brand bg-brand-soft")}
                   >
                      <span className="flex w-full justify-between text-xs font-semibold tabular-nums text-brand"><span>{String(serviceIndex + 1).padStart(2, "0")}</span>{serviceId === s.id && <Check className="size-4" />}</span>
                      <span className="mt-6 flex-1">
@@ -212,7 +213,7 @@ function BookingFlow() {
 
           {step === 1 && (
             <section>
-               <h1 className="display nook-title max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">How big is your tattoo?</h1>
+               <h1 className="display nook-title max-w-xl text-4xl sm:text-6xl lg:text-7xl">How big is your tattoo?</h1>
                <p className="mt-3 max-w-lg text-sm text-muted-foreground">This helps us estimate time and price.</p>
               {service.id === "flash" && <FlashPicker selected={flashDesignId} onSelect={setFlashDesignId} />}
               {service.id === "tattoo" && (
@@ -252,7 +253,7 @@ function BookingFlow() {
 
           {step === 3 && (
             <section>
-               <h1 className="display nook-title max-w-xl text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">Choose a date<br />and time</h1>
+               <h1 className="display nook-title max-w-xl text-4xl sm:text-6xl lg:text-7xl">Choose a date<br />and time</h1>
               <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                 Showing days with a free {formatDuration(quote.duration)} block for{" "}
                 {chosenMember ? chosenMember.name : "no one yet"}
@@ -280,7 +281,7 @@ function BookingFlow() {
 
           {step === 4 && (
             <section>
-               <h1 className="display text-4xl leading-none sm:text-6xl lg:text-7xl">Almost done!</h1>
+               <h1 className="display text-4xl sm:text-6xl lg:text-7xl">Almost done!</h1>
                <h2 className="mt-4 text-base font-bold">{service.id === "tattoo" ? `Your details${referenceFiles.length ? ` · ${referenceFiles.length} reference ${referenceFiles.length === 1 ? "picture" : "pictures"} attached` : ""}` : "Add a reference photo"}</h2>
                <p className="mt-1 max-w-lg text-sm text-muted-foreground">
                 {quote.requiresReview
@@ -399,7 +400,7 @@ const bookingFlashDesigns = [
 ];
 
 function FlashPicker({ selected, onSelect }: { selected: string | undefined; onSelect: (id: string) => void }) {
-  return <div className="mt-8"><div className="flex items-center gap-2"><ImagePlus className="size-4 text-brand"/><h2 className="font-semibold">Choose a flash design</h2></div><p className="mt-1 text-sm text-muted-foreground">Each design is tattooed once. Select one to reserve it with your request.</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{bookingFlashDesigns.map((design) => <button key={design.id} type="button" onClick={() => onSelect(design.id)} className={cn("nook-lift overflow-hidden rounded-sm border bg-card text-left", selected === design.id ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-brand")}><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><span className="block p-3"><span className="block text-sm font-semibold">{design.title}</span><span className="mt-1 block text-xs text-muted-foreground">{design.detail}</span></span></button>)}</div></div>;
+   return <div className="mt-8"><div className="flex items-center gap-2"><ImagePlus className="size-4 text-brand"/><h2 className="font-semibold">Choose a flash design</h2></div><p className="mt-1 text-sm text-muted-foreground">Each design is tattooed once. Select one to reserve it with your request.</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{bookingFlashDesigns.map((design) => <Button variant="ghost" key={design.id} type="button" aria-pressed={selected === design.id} onClick={() => onSelect(design.id)} className={cn("nook-choice nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal border p-0 text-left", selected === design.id ? "border-brand bg-brand-soft" : "border-border bg-secondary/60 hover:border-brand")}><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><span className="block p-3"><span className="block text-sm font-semibold">{design.title}</span><span className="mt-1 block text-xs text-muted-foreground">{design.detail}</span></span></Button>)}</div></div>;
 }
 
 function Field({
@@ -448,7 +449,7 @@ function QuestionBlock({
           <div className="mt-4">
             {question.type === "scale" && (
               <div className="grid max-w-2xl grid-cols-1 gap-2 min-[360px]:grid-cols-3">
-                {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <Button variant="ghost" key={size.label} type="button" onClick={() => onSet(question.id, size.value)} className={cn("nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal rounded-none border bg-card p-0 text-left", value === size.value ? "border-brand bg-brand-soft/25" : "border-border hover:border-brand")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></Button>)}
+                 {[{ label: "Small", hint: "Up to 5 cm", time: "~ 1 hour", value: 5, image: swallow }, { label: "Medium", hint: "5 – 15 cm", time: "~ 2 hours", value: 12, image: botanical }, { label: "Large", hint: "Bigger than 15 cm", time: "~ 3+ hours", value: 24, image: moth }].map((size) => <Button variant="ghost" key={size.label} type="button" aria-pressed={value === size.value} onClick={() => onSet(question.id, size.value)} className={cn("nook-choice nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal border p-0 text-left", value === size.value ? "border-brand bg-brand-soft" : "border-border bg-secondary/60 hover:border-brand")}><img src={size.image} alt="" aria-hidden="true" className="aspect-[4/3] w-full object-cover"/><span className="block p-3"><strong className="block text-xs sm:text-sm">{size.label}</strong><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.hint}</span><span className="mt-1 block text-[10px] text-muted-foreground sm:text-xs">{size.time}</span></span></Button>)}
               </div>
             )}
 
@@ -480,10 +481,10 @@ function QuestionBlock({
                           : onSet(question.id, option.id)
                       }
                       className={cn(
-                         "h-auto min-h-11 max-w-full flex-col items-start whitespace-normal rounded-none border px-4 py-2.5 text-left text-sm transition-colors",
+                          "nook-choice h-auto min-h-11 max-w-full flex-col items-start whitespace-normal border px-4 py-2.5 text-left text-sm transition-colors",
                         active
-                           ? "border-primary bg-primary text-primary-foreground"
-                           : "border-border bg-card hover:border-primary",
+                            ? "border-brand bg-brand-soft text-foreground"
+                            : "border-border bg-secondary/60 hover:border-brand hover:bg-brand-soft/50",
                       )}
                     >
                       <span className="block font-medium">{option.label}</span>
@@ -558,9 +559,7 @@ function QuoteStep({
             <ul className="mt-3 space-y-2">
               {quote.eligibleTeam.map((m) => (
                 <li key={m.id} className="flex items-center gap-2.5 text-sm">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-sand text-[11px] font-semibold">
-                    {m.initials}
-                  </span>
+                   {artistImage(m.id) ? <img src={artistImage(m.id)} alt="" loading="lazy" width={816} height={816} className="size-8 rounded-full object-cover" /> : <span className="flex size-8 items-center justify-center rounded-full bg-sand text-[11px] font-semibold">{m.initials}</span>}
                   <span>
                     <span className="font-medium">{m.name}</span>
                     <span className="block text-xs text-muted-foreground">{m.role}</span>
@@ -767,20 +766,18 @@ function ArtistPicker({
             <div
               key={member.id}
               className={cn(
-                "nook-lift relative flex flex-col rounded-md border bg-card p-4",
-                active ? "border-primary ring-1 ring-primary" : "border-border hover:border-brand",
+                 "nook-choice nook-lift relative flex flex-col border p-4",
+                 active ? "border-brand bg-brand-soft" : "border-border bg-secondary/60 hover:border-brand",
               )}
             >
-              <button type="button" onClick={() => onChoose(best ? "auto" : member.id)} className="flex items-start gap-3 text-left" aria-pressed={active}>
-                <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors", active ? "bg-primary text-primary-foreground" : "bg-sand")}>
-                  {member.initials}
-                </span>
+               <Button variant="ghost" type="button" onClick={() => onChoose(best ? "auto" : member.id)} className="flex h-auto w-full items-start justify-start gap-3 whitespace-normal p-0 text-left hover:bg-transparent" aria-pressed={active}>
+                 {artistImage(member.id) ? <img src={artistImage(member.id)} alt={`Portrait of ${member.name}`} loading="lazy" width={816} height={816} className="size-12 shrink-0 rounded-full object-cover" /> : <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-sand text-sm font-bold">{member.initials}</span>}
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold">{member.name}</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">{member.role}</span>
                 </span>
                 {active && <Check className="nook-pop size-4 shrink-0" />}
-              </button>
+               </Button>
               {best && (
                 <p className="mt-3 flex items-start gap-1.5 rounded-sm bg-brand-soft/60 px-2.5 py-2 text-xs">
                   <Star className="mt-0.5 size-3 shrink-0 fill-brand text-brand" />

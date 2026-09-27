@@ -73,7 +73,7 @@
 
 :root {
   --radius: 0.2rem;
-  --background: oklch(0.955 0.008 78);
+  --background: oklch(0.91 0.013 77);
   --foreground: oklch(0.105 0.007 50);
   --ink: oklch(0.105 0.007 50);
   --sand: oklch(0.875 0.025 66);
@@ -82,15 +82,15 @@
   --brand-foreground: oklch(0.99 0.002 82);
   --highlight: oklch(0.38 0.09 150);
   --highlight-soft: oklch(0.9 0.038 145);
-  --card: oklch(0.995 0.003 85);
+  --card: oklch(0.95 0.011 79);
   --card-foreground: oklch(0.105 0.007 50);
-  --popover: oklch(0.995 0.003 85);
+  --popover: oklch(0.95 0.011 79);
   --popover-foreground: oklch(0.105 0.007 50);
   --primary: oklch(0.105 0.007 50);
   --primary-foreground: oklch(0.99 0.002 82);
-  --secondary: oklch(0.925 0.012 74);
+  --secondary: oklch(0.865 0.02 75);
   --secondary-foreground: oklch(0.105 0.007 50);
-  --muted: oklch(0.925 0.012 74);
+  --muted: oklch(0.865 0.02 75);
   --muted-foreground: oklch(0.37 0.02 60);
   --accent: oklch(0.91 0.052 48);
   --accent-foreground: oklch(0.2 0.015 50);
@@ -166,6 +166,7 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: 0;
+    line-height: 1.12;
   }
 
   ::selection {
@@ -178,6 +179,7 @@
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0;
+  line-height: 1.08;
 }
 
 @utility eyebrow {
@@ -235,6 +237,13 @@
 }
 .nook-lift:active { transform: translateY(1px) scale(0.99); box-shadow: none; }
 .nook-pop { animation: nook-pop 320ms ease-out both; }
+
+.nook-choice {
+  border-radius: 0.375rem;
+  box-shadow: 3px 3px 0 color-mix(in oklab, var(--foreground) 20%, transparent);
+}
+.nook-choice:hover { box-shadow: 4px 4px 0 color-mix(in oklab, var(--foreground) 28%, transparent); }
+.nook-choice:active { box-shadow: 1px 1px 0 color-mix(in oklab, var(--foreground) 24%, transparent); }
 
 .nook-title { position: relative; padding-bottom: 0.9rem; }
 .nook-title::after {
