@@ -469,7 +469,17 @@ function RequestsTab() {
                   })}{" "}
                   at {r.time} · {member?.name ?? "unassigned"}
                 </p>
-                {r.notes && <p className="mt-2 max-w-lg text-sm text-foreground/80">“{r.notes}”</p>}
+                {r.memberId === "unassigned" && (
+                  <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand-soft/40 px-2.5 py-1 text-xs text-foreground/80">
+                    No artist matched automatically — date and time above are the customer's
+                    preference, not a held slot. Assign an artist and confirm a real time below.
+                  </p>
+                )}
+                {r.notes && (
+                  <p className="mt-2 max-w-lg text-sm text-foreground/80">
+                    &ldquo;{r.notes}&rdquo;
+                  </p>
+                )}
               </div>
               <div className="text-right">
                 <p className="font-medium tabular-nums">
@@ -547,7 +557,11 @@ function EditQuote({
   const [low, setLow] = useState(request.quote.low);
   const [high, setHigh] = useState(request.quote.high);
   const [duration, setDuration] = useState(request.quote.duration);
-  const [memberId, setMemberId] = useState(request.memberId);
+  const [memberId, setMemberId] = useState(
+    business.team.some((m) => m.id === request.memberId)
+      ? request.memberId
+      : (business.team[0]?.id ?? request.memberId),
+  );
 
   return (
     <div className="mt-4 grid gap-4 rounded-sm border border-border bg-sand/50 p-5 sm:grid-cols-4">
