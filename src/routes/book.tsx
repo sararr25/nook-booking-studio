@@ -290,7 +290,12 @@ function BookingFlow() {
                     <ReferenceUpload files={referenceFiles} onChange={setReferenceFiles} />
                   </div>
                 )}
-                <div className={cn("mt-8 space-y-9", service.id === "flash" && "mt-7 space-y-7 sm:mt-8 sm:space-y-9")}>
+                <div
+                  className={cn(
+                    "mt-8 space-y-9",
+                    service.id === "flash" && "mt-7 space-y-7 sm:mt-8 sm:space-y-9",
+                  )}
+                >
                   {questions.map((q, i) => (
                     <QuestionBlock
                       key={q.id}
@@ -575,8 +580,12 @@ function FlashPicker({
               className="aspect-[4/5] w-full object-cover"
             />
             <span className="block min-w-0 px-2.5 py-3 sm:p-3">
-              <span className="block text-[13px] font-semibold leading-snug sm:text-sm">{design.title}</span>
-              <span className="mt-1 block text-xs leading-snug text-muted-foreground">{design.detail}</span>
+              <span className="block text-[13px] font-semibold leading-snug sm:text-sm">
+                {design.title}
+              </span>
+              <span className="mt-1 block text-xs leading-snug text-muted-foreground">
+                {design.detail}
+              </span>
             </span>
           </Button>
         ))}
@@ -1088,7 +1097,9 @@ function ArtistPicker({
   return (
     <div className="mt-10">
       <p className="eyebrow">Your artist</p>
-      <h2 className="mt-2 text-lg font-bold leading-snug sm:text-xl">We matched you with the best fit</h2>
+      <h2 className="mt-2 text-lg font-bold leading-snug sm:text-xl">
+        We matched you with the best fit
+      </h2>
       <p className="mt-1 max-w-lg text-sm text-muted-foreground">
         Based on your style, placement and sitting length. Prefer someone else? Pick them instead.
       </p>
