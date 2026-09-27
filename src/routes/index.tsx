@@ -28,7 +28,11 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
-  return <NookProvider><Landing /></NookProvider>;
+  return (
+    <NookProvider>
+      <Landing />
+    </NookProvider>
+  );
 }
 
 const steps = [
@@ -61,7 +65,7 @@ function Landing() {
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
             <div>
               <p className="eyebrow">Booking, for work that varies</p>
-               <h1 className="display mt-5 text-[2.75rem] sm:text-6xl lg:text-7xl">
+              <h1 className="display mt-5 text-[2.75rem] sm:text-6xl lg:text-7xl">
                 Some jobs can&apos;t be
                 <br />
                 booked from a
@@ -69,8 +73,8 @@ function Landing() {
                 <span className="text-brand italic">drop-down menu.</span>
               </h1>
               <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground">
-                Nook asks the handful of questions that actually change the price, the length and the
-                person doing the work — then shows you the dates that survive all three.
+                Nook asks the handful of questions that actually change the price, the length and
+                the person doing the work — then shows you the dates that survive all three.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
@@ -96,7 +100,8 @@ function Landing() {
                 className="aspect-4/5 w-full rounded-sm object-cover"
               />
               <figcaption className="mt-3 text-xs text-muted-foreground">
-                Demo business — {business.name}, {business.location}. A {business.archetype.toLowerCase()}.
+                Demo business — {business.name}, {business.location}. A{" "}
+                {business.archetype.toLowerCase()}.
               </figcaption>
             </figure>
           </div>

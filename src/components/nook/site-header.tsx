@@ -18,19 +18,19 @@ export function SiteHeader({ variant = "site" }: { variant?: "site" | "owner" })
         <nav className="flex items-center gap-1 text-sm">
           <Link
             to="/book"
-             className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-secondary hover:text-foreground"
+            className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-secondary hover:text-foreground"
             activeProps={{ className: "bg-secondary text-foreground" }}
           >
             Book
           </Link>
           <Link
             to="/owner"
-             className="relative rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-secondary hover:text-foreground"
+            className="relative rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-secondary hover:text-foreground"
             activeProps={{ className: "bg-secondary text-foreground" }}
           >
             Owner
             {pending > 0 && (
-               <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+              <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                 {pending}
               </span>
             )}

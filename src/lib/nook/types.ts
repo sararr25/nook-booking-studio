@@ -109,7 +109,10 @@ export type BookingRequest = {
   notes: string;
   serviceId: string;
   answers: Answers;
-  quote: Pick<Quote, "low" | "high" | "duration" | "deposit" | "requiresReview" | "reviewReasons"> & {
+  quote: Pick<
+    Quote,
+    "low" | "high" | "duration" | "deposit" | "requiresReview" | "reviewReasons"
+  > & {
     lines: { label: string; detail: string }[];
   };
   date: string; // yyyy-mm-dd

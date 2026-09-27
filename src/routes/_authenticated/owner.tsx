@@ -1,6 +1,23 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, CalendarRange, Check, ChevronRight, Clock3, Home, ImagePlus, Images, LogOut, RotateCcw, Settings, Unplug, Upload, UsersRound, WandSparkles, X } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarRange,
+  Check,
+  ChevronRight,
+  Clock3,
+  Home,
+  ImagePlus,
+  Images,
+  LogOut,
+  RotateCcw,
+  Settings,
+  Unplug,
+  Upload,
+  UsersRound,
+  WandSparkles,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { NookProvider, useNook } from "@/lib/nook/store";
@@ -36,10 +53,23 @@ export const Route = createFileRoute("/_authenticated/owner")({
 });
 
 function OwnerRoute() {
-  return <NookProvider><OwnerPage /></NookProvider>;
+  return (
+    <NookProvider>
+      <OwnerPage />
+    </NookProvider>
+  );
 }
 
-const tabs = ["Overview", "Bookings", "Availability", "Services", "Questions", "Team", "Flash", "Policies"] as const;
+const tabs = [
+  "Overview",
+  "Bookings",
+  "Availability",
+  "Services",
+  "Questions",
+  "Team",
+  "Flash",
+  "Policies",
+] as const;
 type Tab = (typeof tabs)[number];
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -53,47 +83,114 @@ function OwnerPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto grid min-h-screen max-w-7xl border-x border-border bg-card lg:grid-cols-[13rem_1fr]">
-      <aside className="border-b border-border bg-secondary/40 p-4 lg:border-b-0 lg:border-r lg:p-5">
-        <div className="flex items-center justify-between lg:block"><span className="font-display text-2xl font-bold">Nook<span className="text-brand">.</span></span><Button variant="ghost" size="icon" className="lg:hidden" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }}><LogOut/><span className="sr-only">Sign out</span></Button></div>
-        <p className="mt-7 hidden border-b border-foreground pb-3 text-[10px] font-bold uppercase text-brand lg:block">Studio index / 01</p>
-        <nav className="mt-4 flex gap-1 overflow-x-auto lg:mt-3 lg:block lg:space-y-0">{tabs.map((item, index) => { const Icon = tabIcons[item]; return <Button key={item} variant="ghost" type="button" onClick={() => setTab(item)} className={cn("flex h-11 shrink-0 items-center justify-start gap-2 rounded-none border-b border-border px-2 text-xs transition-colors lg:w-full", tab === item ? "border-l-2 border-l-brand bg-brand-soft/40 font-semibold text-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}><span className="hidden w-5 font-display text-[10px] tabular-nums text-brand lg:inline">{String(index + 1).padStart(2, "0")}</span><Icon className="size-4"/>{item}{item === "Bookings" && pending > 0 && <span className="ml-auto bg-primary px-1.5 text-[9px] text-primary-foreground">{pending}</span>}</Button>; })}</nav>
-        <Button variant="ghost" type="button" onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/auth", search: { notice: undefined }, replace: true }); }} className="mt-8 hidden min-h-10 w-full items-center justify-start gap-3 rounded-none px-2 text-xs text-muted-foreground lg:flex"><LogOut className="size-4"/>Sign out</Button>
-      </aside>
-
-       <main className="min-w-0 px-5 py-7 sm:px-8 lg:px-12 lg:py-10">
-         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-foreground pb-8">
-          <div>
-             <p className="eyebrow">Owner dashboard · {business.name}</p>
-             <h1 className="display mt-2 text-3xl sm:text-5xl">Good morning, Alex</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {pending > 0
-                ? `${pending} request${pending > 1 ? "s" : ""} waiting on you.`
-                : "Nothing waiting. The book runs itself today."}
-            </p>
+        <aside className="border-b border-border bg-secondary/40 p-4 lg:border-b-0 lg:border-r lg:p-5">
+          <div className="flex items-center justify-between lg:block">
+            <span className="font-display text-2xl font-bold">
+              Nook<span className="text-brand">.</span>
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                await navigate({ to: "/auth", search: { notice: undefined }, replace: true });
+              }}
+            >
+              <LogOut />
+              <span className="sr-only">Sign out</span>
+            </Button>
           </div>
-           <div className="flex items-center gap-3"><span aria-hidden="true" className="flex size-10 items-center justify-center bg-highlight-soft font-display text-sm font-bold text-highlight">AR</span><Button variant="outline"
+          <p className="mt-7 hidden border-b border-foreground pb-3 text-[10px] font-bold uppercase text-brand lg:block">
+            Studio index / 01
+          </p>
+          <nav className="mt-4 flex gap-1 overflow-x-auto lg:mt-3 lg:block lg:space-y-0">
+            {tabs.map((item, index) => {
+              const Icon = tabIcons[item];
+              return (
+                <Button
+                  key={item}
+                  variant="ghost"
+                  type="button"
+                  onClick={() => setTab(item)}
+                  className={cn(
+                    "flex h-11 shrink-0 items-center justify-start gap-2 rounded-none border-b border-border px-2 text-xs transition-colors lg:w-full",
+                    tab === item
+                      ? "border-l-2 border-l-brand bg-brand-soft/40 font-semibold text-foreground"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}
+                >
+                  <span className="hidden w-5 font-display text-[10px] tabular-nums text-brand lg:inline">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <Icon className="size-4" />
+                  {item}
+                  {item === "Bookings" && pending > 0 && (
+                    <span className="ml-auto bg-primary px-1.5 text-[9px] text-primary-foreground">
+                      {pending}
+                    </span>
+                  )}
+                </Button>
+              );
+            })}
+          </nav>
+          <Button
+            variant="ghost"
             type="button"
-            onClick={() => {
-              resetAll();
-              toast.success("Demo data reset");
+            onClick={async () => {
+              await supabase.auth.signOut();
+              await navigate({ to: "/auth", search: { notice: undefined }, replace: true });
             }}
-              className="min-h-10"
+            className="mt-8 hidden min-h-10 w-full items-center justify-start gap-3 rounded-none px-2 text-xs text-muted-foreground lg:flex"
           >
-            <RotateCcw className="size-3.5" /> Reset demo
-           </Button></div>
-        </div>
+            <LogOut className="size-4" />
+            Sign out
+          </Button>
+        </aside>
 
-         <div className="py-8 nook-enter" key={tab}>
-          {tab === "Overview" && <OverviewTab onOpen={setTab} />}
-          {tab === "Bookings" && <RequestsTab />}
-          {tab === "Availability" && <AvailabilityTab />}
-          {tab === "Services" && <ServicesTab />}
-          {tab === "Questions" && <QuestionsTab />}
-          {tab === "Team" && <TeamTab />}
-          {tab === "Flash" && <FlashTab />}
-          {tab === "Policies" && <PoliciesTab />}
-        </div>
-      </main>
+        <main className="min-w-0 px-5 py-7 sm:px-8 lg:px-12 lg:py-10">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-foreground pb-8">
+            <div>
+              <p className="eyebrow">Owner dashboard · {business.name}</p>
+              <h1 className="display mt-2 text-3xl sm:text-5xl">Good morning, Alex</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {pending > 0
+                  ? `${pending} request${pending > 1 ? "s" : ""} waiting on you.`
+                  : "Nothing waiting. The book runs itself today."}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="flex size-10 items-center justify-center bg-highlight-soft font-display text-sm font-bold text-highlight"
+              >
+                AR
+              </span>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  resetAll();
+                  toast.success("Demo data reset");
+                }}
+                className="min-h-10"
+              >
+                <RotateCcw className="size-3.5" /> Reset demo
+              </Button>
+            </div>
+          </div>
+
+          <div className="py-8 nook-enter" key={tab}>
+            {tab === "Overview" && <OverviewTab onOpen={setTab} />}
+            {tab === "Bookings" && <RequestsTab />}
+            {tab === "Availability" && <AvailabilityTab />}
+            {tab === "Services" && <ServicesTab />}
+            {tab === "Questions" && <QuestionsTab />}
+            {tab === "Team" && <TeamTab />}
+            {tab === "Flash" && <FlashTab />}
+            {tab === "Policies" && <PoliciesTab />}
+          </div>
+        </main>
       </div>
     </div>
   );
@@ -115,20 +212,138 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
   const pending = requests.filter((request) => request.status === "pending");
   const confirmed = requests.filter((request) => request.status === "confirmed");
   const panels: { title: string; count: string; detail: string; tab: Tab }[] = [
-    { title: "Needs your review", count: String(pending.length), detail: pending[0]?.customerName ?? "Nothing waiting", tab: "Bookings" },
-    { title: "Today", count: String(confirmed.length), detail: confirmed[0]?.customerName ?? "No appointments", tab: "Bookings" },
+    {
+      title: "Needs your review",
+      count: String(pending.length),
+      detail: pending[0]?.customerName ?? "Nothing waiting",
+      tab: "Bookings",
+    },
+    {
+      title: "Today",
+      count: String(confirmed.length),
+      detail: confirmed[0]?.customerName ?? "No appointments",
+      tab: "Bookings",
+    },
     { title: "Flash book", count: "4", detail: "Designs ready to book", tab: "Flash" },
   ];
-  return <div>
-     <p className="text-sm text-muted-foreground">{pending.length} thing{pending.length === 1 ? "" : "s"} need your attention today.</p>
-      <div className="mt-6 grid border-t border-border md:grid-cols-3">{panels.map((panel, index) => <Button key={panel.title} variant="ghost" type="button" onClick={() => onOpen(panel.tab)} className={cn("nook-lift flex h-auto min-h-56 flex-col items-start justify-between whitespace-normal rounded-none border-b border-border p-5 text-left md:border-r", index === 0 && "bg-brand-soft/25", index === 1 && "bg-highlight-soft/30")}><span className="flex w-full items-center justify-between text-[10px] font-bold uppercase text-brand">{String(index + 1).padStart(2, "0")} / {panel.title}<ChevronRight className="size-4"/></span><span className="font-display text-6xl font-bold tabular-nums">{panel.count}</span><span className="flex w-full items-center gap-3 border-t border-border pt-3"><img src={index === 0 ? moth : index === 1 ? botanical : sun} alt="" aria-hidden="true" className="size-10 object-cover"/><span className="text-xs font-semibold">{panel.detail}</span></span></Button>)}</div>
-    <div className="mt-10 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]"><div><p className="eyebrow">Next in the book</p><div className="mt-3 divide-y divide-border border-y border-border">{requests.slice(0, 4).map((request) => <div key={request.id} className="flex items-center justify-between gap-4 py-4"><span><strong className="block text-sm">{request.time} · {request.customerName}</strong><span className="text-xs text-muted-foreground">{business.services.find((service) => service.id === request.serviceId)?.name}</span></span><StatusPill status={request.status} /></div>)}</div></div><div className="border-l border-border pl-0 lg:pl-8"><p className="eyebrow">Studio status</p><dl className="mt-3 space-y-4 text-sm"><div className="flex justify-between"><dt className="text-muted-foreground">Professionals</dt><dd>{business.team.length}</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Calendar</dt><dd className="text-brand">Not connected</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Auto-approval</dt><dd>Under {formatMoney(business.policies.autoApproveUnder, business.policies.currency)}</dd></div></dl></div></div>
-  </div>;
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground">
+        {pending.length} thing{pending.length === 1 ? "" : "s"} need your attention today.
+      </p>
+      <div className="mt-6 grid border-t border-border md:grid-cols-3">
+        {panels.map((panel, index) => (
+          <Button
+            key={panel.title}
+            variant="ghost"
+            type="button"
+            onClick={() => onOpen(panel.tab)}
+            className={cn(
+              "nook-lift flex h-auto min-h-56 flex-col items-start justify-between whitespace-normal rounded-none border-b border-border p-5 text-left md:border-r",
+              index === 0 && "bg-brand-soft/25",
+              index === 1 && "bg-highlight-soft/30",
+            )}
+          >
+            <span className="flex w-full items-center justify-between text-[10px] font-bold uppercase text-brand">
+              {String(index + 1).padStart(2, "0")} / {panel.title}
+              <ChevronRight className="size-4" />
+            </span>
+            <span className="font-display text-6xl font-bold tabular-nums">{panel.count}</span>
+            <span className="flex w-full items-center gap-3 border-t border-border pt-3">
+              <img
+                src={index === 0 ? moth : index === 1 ? botanical : sun}
+                alt=""
+                aria-hidden="true"
+                className="size-10 object-cover"
+              />
+              <span className="text-xs font-semibold">{panel.detail}</span>
+            </span>
+          </Button>
+        ))}
+      </div>
+      <div className="mt-10 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]">
+        <div>
+          <p className="eyebrow">Next in the book</p>
+          <div className="mt-3 divide-y divide-border border-y border-border">
+            {requests.slice(0, 4).map((request) => (
+              <div key={request.id} className="flex items-center justify-between gap-4 py-4">
+                <span>
+                  <strong className="block text-sm">
+                    {request.time} · {request.customerName}
+                  </strong>
+                  <span className="text-xs text-muted-foreground">
+                    {business.services.find((service) => service.id === request.serviceId)?.name}
+                  </span>
+                </span>
+                <StatusPill status={request.status} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="border-l border-border pl-0 lg:pl-8">
+          <p className="eyebrow">Studio status</p>
+          <dl className="mt-3 space-y-4 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Professionals</dt>
+              <dd>{business.team.length}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Calendar</dt>
+              <dd className="text-brand">Not connected</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Auto-approval</dt>
+              <dd>
+                Under {formatMoney(business.policies.autoApproveUnder, business.policies.currency)}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AvailabilityTab() {
   const { business } = useNook();
-  return <div className="grid gap-10 lg:grid-cols-[1fr_18rem]"><section><p className="eyebrow">Weekly hours</p><h2 className="display mt-3 text-3xl">When the studio is open</h2><p className="mt-3 max-w-xl text-sm text-muted-foreground">Edit each professional’s working days and hours in Team. Nook uses them to find sessions long enough for each request.</p><div className="mt-8 divide-y divide-border border-y border-border">{business.team.map((member) => <div key={member.id} className="grid gap-2 py-5 sm:grid-cols-[1fr_1.4fr_auto]"><span className="font-medium">{member.name}</span><span className="text-sm text-muted-foreground">{member.days.map((day) => weekdays[day]).join(", ")}</span><span className="text-sm tabular-nums">{member.start}–{member.end}</span></div>)}</div></section><aside className="rounded-sm border border-border bg-card p-5"><CalendarDays className="size-5"/><h3 className="mt-4 font-semibold">Google Calendar</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Connect the studio calendar to remove busy times from customer availability.</p><Button className="mt-5 w-full rounded-sm" variant="outline" disabled><Unplug /> Not connected</Button><p className="mt-3 text-xs text-muted-foreground">Calendar access was not approved during setup.</p></aside></div>;
+  return (
+    <div className="grid gap-10 lg:grid-cols-[1fr_18rem]">
+      <section>
+        <p className="eyebrow">Weekly hours</p>
+        <h2 className="display mt-3 text-3xl">When the studio is open</h2>
+        <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+          Edit each professional’s working days and hours in Team. Nook uses them to find sessions
+          long enough for each request.
+        </p>
+        <div className="mt-8 divide-y divide-border border-y border-border">
+          {business.team.map((member) => (
+            <div key={member.id} className="grid gap-2 py-5 sm:grid-cols-[1fr_1.4fr_auto]">
+              <span className="font-medium">{member.name}</span>
+              <span className="text-sm text-muted-foreground">
+                {member.days.map((day) => weekdays[day]).join(", ")}
+              </span>
+              <span className="text-sm tabular-nums">
+                {member.start}–{member.end}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+      <aside className="rounded-sm border border-border bg-card p-5">
+        <CalendarDays className="size-5" />
+        <h3 className="mt-4 font-semibold">Google Calendar</h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Connect the studio calendar to remove busy times from customer availability.
+        </p>
+        <Button className="mt-5 w-full rounded-sm" variant="outline" disabled>
+          <Unplug /> Not connected
+        </Button>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Calendar access was not approved during setup.
+        </p>
+      </aside>
+    </div>
+  );
 }
 
 const flashDesigns = [
@@ -143,16 +358,85 @@ function FlashTab() {
   const upload = async (files: File[]) => {
     for (const file of files) {
       const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
-      const { error: storageError } = await supabase.storage.from("flash-gallery").upload(path, file);
-      if (storageError) { toast.error(storageError.message); continue; }
-      const { error: rowError } = await supabase.from("flash_designs").insert({ title: file.name.replace(/\.[^.]+$/, ""), image_path: path, price: 150, duration_minutes: 90 });
-      if (rowError) { toast.error(rowError.message); continue; }
+      const { error: storageError } = await supabase.storage
+        .from("flash-gallery")
+        .upload(path, file);
+      if (storageError) {
+        toast.error(storageError.message);
+        continue;
+      }
+      const { error: rowError } = await supabase.from("flash_designs").insert({
+        title: file.name.replace(/\.[^.]+$/, ""),
+        image_path: path,
+        price: 150,
+        duration_minutes: 90,
+      });
+      if (rowError) {
+        toast.error(rowError.message);
+        continue;
+      }
       const { data } = await supabase.storage.from("flash-gallery").createSignedUrl(path, 3600);
-      if (data?.signedUrl) setUploads((current) => [...current, { name: file.name, url: data.signedUrl }]);
+      if (data?.signedUrl)
+        setUploads((current) => [...current, { name: file.name, url: data.signedUrl }]);
       toast.success(`${file.name} added to the flash book`);
     }
   };
-  return <div><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Pre-made tattoos</p><h2 className="display mt-3 text-3xl">The flash book</h2><p className="mt-2 text-sm text-muted-foreground">Available designs can be selected directly during booking.</p></div><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm border border-border px-4 text-sm hover:bg-secondary"><Upload className="size-4"/>Upload design<input type="file" accept="image/*" multiple className="sr-only" onChange={(event) => void upload(Array.from(event.target.files ?? []))} /></label></div><div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">{flashDesigns.map((design) => <article key={design.id} className="overflow-hidden rounded-sm border border-border bg-card"><img src={design.image} alt={design.title} loading="lazy" width={912} height={1104} className="aspect-[4/5] w-full object-cover"/><div className="p-3"><h3 className="text-sm font-semibold">{design.title}</h3><p className="mt-1 text-xs text-muted-foreground">€{design.price} · {formatDuration(design.duration)}</p></div></article>)}{uploads.map((item) => <article key={item.url} className="overflow-hidden rounded-sm border border-brand bg-card"><img src={item.url} alt={item.name} className="aspect-[4/5] w-full object-cover"/><p className="truncate p-3 text-xs">{item.name}</p></article>)}</div></div>;
+  return (
+    <div>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Pre-made tattoos</p>
+          <h2 className="display mt-3 text-3xl">The flash book</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Available designs can be selected directly during booking.
+          </p>
+        </div>
+        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm border border-border px-4 text-sm hover:bg-secondary">
+          <Upload className="size-4" />
+          Upload design
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="sr-only"
+            onChange={(event) => void upload(Array.from(event.target.files ?? []))}
+          />
+        </label>
+      </div>
+      <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+        {flashDesigns.map((design) => (
+          <article
+            key={design.id}
+            className="overflow-hidden rounded-sm border border-border bg-card"
+          >
+            <img
+              src={design.image}
+              alt={design.title}
+              loading="lazy"
+              width={912}
+              height={1104}
+              className="aspect-[4/5] w-full object-cover"
+            />
+            <div className="p-3">
+              <h3 className="text-sm font-semibold">{design.title}</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                €{design.price} · {formatDuration(design.duration)}
+              </p>
+            </div>
+          </article>
+        ))}
+        {uploads.map((item) => (
+          <article
+            key={item.url}
+            className="overflow-hidden rounded-sm border border-brand bg-card"
+          >
+            <img src={item.url} alt={item.name} className="aspect-[4/5] w-full object-cover" />
+            <p className="truncate p-3 text-xs">{item.name}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function RequestsTab() {
@@ -240,7 +524,9 @@ function RequestsTab() {
               </div>
             )}
 
-            {editing === r.id && <EditQuote request={r} onSave={updateRequest} onDone={() => setEditing(null)} />}
+            {editing === r.id && (
+              <EditQuote request={r} onSave={updateRequest} onDone={() => setEditing(null)} />
+            )}
           </article>
         );
       })}
@@ -398,12 +684,13 @@ function QuestionsTab() {
   const [serviceId, setServiceId] = useState(business.services[0]?.id ?? "tattoo");
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
 
-  if (!service) return <p className="text-sm text-muted-foreground">Add a service to edit its questions.</p>;
+  if (!service)
+    return <p className="text-sm text-muted-foreground">Add a service to edit its questions.</p>;
 
   const patchOption = (
     questionId: string,
     optionId: string,
-    patch: Partial<NonNullable<typeof service.questions[number]["options"]>[number]>,
+    patch: Partial<NonNullable<(typeof service.questions)[number]["options"]>[number]>,
   ) =>
     updateBusiness((b) => ({
       ...b,
@@ -417,7 +704,13 @@ function QuestionsTab() {
                   ? q
                   : {
                       ...q,
-                       ...(q.options ? { options: q.options.map((o) => (o.id === optionId ? { ...o, ...patch } : o)) } : {}),
+                      ...(q.options
+                        ? {
+                            options: q.options.map((o) =>
+                              o.id === optionId ? { ...o, ...patch } : o,
+                            ),
+                          }
+                        : {}),
                     },
               ),
             },
@@ -434,7 +727,9 @@ function QuestionsTab() {
             onClick={() => setServiceId(s.id)}
             className={cn(
               "min-h-11 rounded-full border px-4 text-sm transition-colors",
-              s.id === serviceId ? "border-brand bg-brand-soft/60" : "border-border hover:bg-secondary",
+              s.id === serviceId
+                ? "border-brand bg-brand-soft/60"
+                : "border-border hover:bg-secondary",
             )}
           >
             {s.name}
@@ -487,7 +782,9 @@ function QuestionsTab() {
                             className="min-h-9 w-20 rounded-sm border border-border bg-card px-2 tabular-nums outline-none focus:border-brand"
                           />
                           {o.priceFactor && (
-                            <span className="ml-2 text-xs text-muted-foreground">×{o.priceFactor}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ×{o.priceFactor}
+                            </span>
                           )}
                         </td>
                         <td className="py-2 pr-3">
@@ -501,7 +798,9 @@ function QuestionsTab() {
                             className="min-h-9 w-20 rounded-sm border border-border bg-card px-2 tabular-nums outline-none focus:border-brand"
                           />
                           {o.durationFactor && (
-                            <span className="ml-2 text-xs text-muted-foreground">×{o.durationFactor}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ×{o.durationFactor}
+                            </span>
                           )}
                         </td>
                         <td className="py-2 pr-3 text-xs text-muted-foreground">
@@ -510,7 +809,9 @@ function QuestionsTab() {
                         <td className="py-2">
                           <button
                             type="button"
-                            onClick={() => patchOption(q.id, o.id, { requiresReview: !o.requiresReview })}
+                            onClick={() =>
+                              patchOption(q.id, o.id, { requiresReview: !o.requiresReview })
+                            }
                             className={cn(
                               "min-h-9 rounded-full border px-3 text-xs transition-colors",
                               o.requiresReview
@@ -551,7 +852,20 @@ function TeamTab() {
       {business.team.map((m) => (
         <div key={m.id} className="border-t border-border pt-6">
           <div className="flex items-center gap-3">
-             {artistImage(m.id) ? <img src={artistImage(m.id)} alt={`Portrait of ${m.name}`} loading="lazy" width={816} height={816} className="size-12 rounded-full object-cover" /> : <span className="flex size-12 items-center justify-center rounded-full bg-sand text-sm font-semibold">{m.initials}</span>}
+            {artistImage(m.id) ? (
+              <img
+                src={artistImage(m.id)}
+                alt={`Portrait of ${m.name}`}
+                loading="lazy"
+                width={816}
+                height={816}
+                className="size-12 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex size-12 items-center justify-center rounded-full bg-sand text-sm font-semibold">
+                {m.initials}
+              </span>
+            )}
             <div>
               <h2 className="display text-lg">{m.name}</h2>
               <p className="text-sm text-muted-foreground">{m.role}</p>
@@ -568,7 +882,6 @@ function TeamTab() {
             />
           </label>
 
-
           <div className="mt-4 flex flex-wrap gap-1.5">
             {weekdays.map((label, index) => {
               const on = m.days.includes(index);
@@ -583,7 +896,9 @@ function TeamTab() {
                   }
                   className={cn(
                     "min-h-11 min-w-11 rounded-sm border px-2 text-xs transition-colors",
-                    on ? "border-brand bg-brand-soft/60" : "border-border text-muted-foreground hover:bg-secondary",
+                    on
+                      ? "border-brand bg-brand-soft/60"
+                      : "border-border text-muted-foreground hover:bg-secondary",
                   )}
                 >
                   {label}
@@ -636,7 +951,9 @@ function TeamTab() {
                       }
                       className={cn(
                         "min-h-9 rounded-full border px-3 text-xs transition-colors",
-                        on ? "border-brand bg-brand-soft/60" : "border-border text-muted-foreground hover:bg-secondary",
+                        on
+                          ? "border-brand bg-brand-soft/60"
+                          : "border-border text-muted-foreground hover:bg-secondary",
                       )}
                     >
                       {skill}

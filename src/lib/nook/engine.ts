@@ -72,7 +72,10 @@ export const buildQuote = (
 
   for (const question of visibleQuestions(service, answers)) {
     if (question.type === "scale") {
-      const value = typeof answers[question.id] === "number" ? (answers[question.id] as number) : question.min ?? 0;
+      const value =
+        typeof answers[question.id] === "number"
+          ? (answers[question.id] as number)
+          : (question.min ?? 0);
       const over = Math.max(0, value - (question.min ?? 0));
       const addPrice = over * (question.pricePerUnit ?? 0);
       const addDuration = over * (question.durationPerUnit ?? 0);
@@ -80,7 +83,8 @@ export const buildQuote = (
       duration += addDuration;
       if (addPrice || addDuration) {
         lines.push({
-          label: `${value}${question.unit ?? ""} ${question.label.toLowerCase().includes("big") ? "piece" : ""}`.trim(),
+          label:
+            `${value}${question.unit ?? ""} ${question.label.toLowerCase().includes("big") ? "piece" : ""}`.trim(),
           detail: `+${formatMoney(addPrice, business.policies.currency)} · +${formatDuration(Math.round(addDuration))}`,
         });
       }
@@ -95,14 +99,17 @@ export const buildQuote = (
       if (option.durationFactor) duration *= option.durationFactor;
       if (option.requiresSkills) requiredSkills.push(...option.requiresSkills);
       if (option.requiresPhotos) requiresPhotos = true;
-      if (option.requiresReview) reviewReasons.push(`${option.label} — ${question.label.toLowerCase()}`);
+      if (option.requiresReview)
+        reviewReasons.push(`${option.label} — ${question.label.toLowerCase()}`);
 
       const dp = price - before.price;
       const dd = duration - before.duration;
       if (Math.round(dp) !== 0 || Math.round(dd) !== 0) {
         const parts: string[] = [];
         if (Math.round(dp) !== 0)
-          parts.push(`${dp > 0 ? "+" : "−"}${formatMoney(Math.abs(dp), business.policies.currency)}`);
+          parts.push(
+            `${dp > 0 ? "+" : "−"}${formatMoney(Math.abs(dp), business.policies.currency)}`,
+          );
         if (Math.round(dd) !== 0)
           parts.push(`${dd > 0 ? "+" : "−"}${formatDuration(Math.abs(Math.round(dd)))}`);
         lines.push({ label: option.label, detail: parts.join(" · ") });
@@ -188,7 +195,8 @@ export const slotsForDay = (
       if (seeded(`${member.id}-${key}-${t}`) > 0.55) continue;
       const time = toTimeLabel(t);
       const clash = booked.some(
-        (b) => b.date === key && b.memberId === member.id && Math.abs(toMinutes(b.time) - t) < duration,
+        (b) =>
+          b.date === key && b.memberId === member.id && Math.abs(toMinutes(b.time) - t) < duration,
       );
       if (clash) continue;
       slots.push({ time, memberId: member.id, memberName: member.name });
@@ -200,7 +208,12 @@ export const slotsForDay = (
 /** Picks the strongest fit: covers the required skills, specialises in them, and has room to spare. */
 export const recommendArtist = (quote: Quote): { member: TeamMember; reason: string } | null => {
   const scored = quote.eligibleTeam.map((member) => {
-    const lead = member.skills.slice(0, 2).reduce((sum, skill, index) => sum + (quote.requiredSkills.includes(skill) ? 2 - index : 0), 0);
+    const lead = member.skills
+      .slice(0, 2)
+      .reduce(
+        (sum, skill, index) => sum + (quote.requiredSkills.includes(skill) ? 2 - index : 0),
+        0,
+      );
     const focus = quote.requiredSkills.length / Math.max(1, member.skills.length);
     const headroom = Math.min(1, (member.maxSession - quote.duration) / 120);
     return { member, lead, score: lead * 3 + focus * 2 + headroom };
