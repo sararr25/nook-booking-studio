@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { NookProvider, useNook } from "@/lib/nook/store";
 import { formatDuration, formatMoney } from "@/lib/nook/engine";
 import type { BookingRequest, BusinessConfig } from "@/lib/nook/types";
+import { artistImage } from "@/lib/nook/artist-images";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import botanical from "@/assets/flash-botanical.jpg";
@@ -550,9 +551,7 @@ function TeamTab() {
       {business.team.map((m) => (
         <div key={m.id} className="border-t border-border pt-6">
           <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-full bg-sand text-sm font-semibold">
-              {m.initials}
-            </span>
+             {artistImage(m.id) ? <img src={artistImage(m.id)} alt={`Portrait of ${m.name}`} loading="lazy" width={816} height={816} className="size-12 rounded-full object-cover" /> : <span className="flex size-12 items-center justify-center rounded-full bg-sand text-sm font-semibold">{m.initials}</span>}
             <div>
               <h2 className="display text-lg">{m.name}</h2>
               <p className="text-sm text-muted-foreground">{m.role}</p>

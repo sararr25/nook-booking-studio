@@ -61,7 +61,7 @@ function Landing() {
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
             <div>
               <p className="eyebrow">Booking, for work that varies</p>
-              <h1 className="display mt-5 text-[2.75rem] leading-[1.02] sm:text-6xl lg:text-7xl">
+               <h1 className="display mt-5 text-[2.75rem] sm:text-6xl lg:text-7xl">
                 Some jobs can&apos;t be
                 <br />
                 booked from a
