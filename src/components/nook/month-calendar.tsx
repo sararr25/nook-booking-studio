@@ -111,9 +111,9 @@ export function MonthCalendar({
               disabled={!free}
               onClick={() => setOpenDay(isOpen ? null : key)}
               className={cn(
-                 "relative flex aspect-square h-auto min-h-9 w-full flex-col items-center justify-center rounded-none text-xs transition-colors",
+                  "relative flex aspect-square h-auto min-h-9 w-full flex-col items-center justify-center rounded-sm text-xs transition-colors",
                 free
-                  ? "hover:bg-secondary"
+                   ? "bg-secondary/55 hover:bg-brand-soft"
                   : "text-muted-foreground/35",
                 isOpen && free && "bg-primary text-primary-foreground",
                 isSelected && "bg-primary text-primary-foreground",
@@ -153,10 +153,10 @@ export function MonthCalendar({
                       type="button"
                       onClick={() => onSelect({ date: openDay, slot })}
                       className={cn(
-                         "min-h-10 w-full rounded-none border px-3 py-2 text-center text-xs transition-colors",
+                          "nook-choice min-h-10 w-full border px-3 py-2 text-center text-xs transition-colors",
                         active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-card hover:border-primary",
+                           ? "border-brand bg-brand-soft text-foreground"
+                           : "border-border bg-secondary/60 hover:border-brand hover:bg-brand-soft/50",
                       )}
                     >
                       <span className="font-medium">{slot.time}</span>
