@@ -168,7 +168,16 @@ export function NookProvider({ children }: { children: ReactNode }) {
       updateRequest,
       resetAll,
     }),
-    [business, requests, loaded, updateBusiness, addRequest, setRequestStatus, updateRequest, resetAll],
+    [
+      business,
+      requests,
+      loaded,
+      updateBusiness,
+      addRequest,
+      setRequestStatus,
+      updateRequest,
+      resetAll,
+    ],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
