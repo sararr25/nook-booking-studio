@@ -193,6 +193,8 @@ export const slotsForDay = (
   duration: number,
   date: Date,
   booked: { date: string; time: string; memberId: string }[],
+  /** Studio-wide busy times (e.g. Google Calendar), minutes after midnight. */
+  blocked: { date: string; start: number; end: number }[] = [],
 ): Slot[] => {
   const key = dateKey(date);
   const today = new Date();
@@ -215,6 +217,7 @@ export const slotsForDay = (
           b.date === key && b.memberId === member.id && Math.abs(toMinutes(b.time) - t) < duration,
       );
       if (clash) continue;
+      if (blocked.some((b) => b.date === key && b.start < t + duration && b.end > t)) continue;
       slots.push({ time, memberId: member.id, memberName: member.name });
     }
   }

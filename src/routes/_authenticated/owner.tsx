@@ -479,7 +479,7 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Calendar sync</dt>
-              <dd className="text-brand">Not connected</dd>
+              <dd className="text-highlight">Google Calendar</dd>
             </div>
           </dl>
         </section>
@@ -529,10 +529,10 @@ function AvailabilityTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
         <CalendarDays className="size-5" />
         <h2 className="mt-4 font-semibold">Google Calendar</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Calendar sync is not available yet, so busy times are not pulled in automatically.
+          Connected to the studio&apos;s main calendar. Busy times there can&apos;t be booked.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Until it is, keep each person&apos;s days and hours in Team up to date.
+          When a customer pays the deposit, the appointment is added to the calendar.
         </p>
       </aside>
     </div>

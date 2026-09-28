@@ -20,6 +20,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/nook/site-header";
 import { MonthCalendar } from "@/components/nook/month-calendar";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getCalendarBusy } from "@/lib/nook/booking-emails.functions";
 import { BookingTicket } from "@/components/nook/booking-ticket";
 import { Wordmark } from "@/components/nook/wordmark";
 import { NookProvider, useNook } from "@/lib/nook/store";
@@ -74,6 +77,12 @@ const stepNames = ["Service", "Details", "Quote", "Date & time", "Your details"]
 
 function BookingFlow() {
   const { business, requests, addRequest } = useNook();
+  const fetchBusy = useServerFn(getCalendarBusy);
+  const busyQuery = useQuery({
+    queryKey: ["calendar-busy"],
+    queryFn: () => fetchBusy(),
+    staleTime: 60_000,
+  });
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState(business.services[0]?.id ?? "tattoo");
   const [answers, setAnswers] = useState<Answers>({});
@@ -110,6 +119,7 @@ function BookingFlow() {
     setSelected(null);
   };
 
+  const calendarBusy = busyQuery.data?.blocks ?? [];
   const booked = requests
     .filter((r) => r.status !== "declined")
     .map((r) => ({ date: r.date, time: r.time, memberId: r.memberId }));
@@ -381,6 +391,7 @@ function BookingFlow() {
                       eligibleTeam={calendarTeam}
                       duration={quote.duration}
                       booked={booked}
+                      blocked={calendarBusy}
                       selected={selected}
                       onSelect={setSelected}
                     />
