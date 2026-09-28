@@ -188,6 +188,8 @@ function BookingFlow() {
       appointment_date: request.date,
       appointment_time: request.time,
       flash_design_id: null,
+      member_id: request.memberId,
+      flash_design_key: request.flashDesignId ?? null,
       reference_paths: uploadedPaths,
       status: request.status,
     });

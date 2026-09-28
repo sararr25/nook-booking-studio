@@ -67,7 +67,9 @@ export type Database = {
           created_at: string
           customer_name: string
           flash_design_id: string | null
+          flash_design_key: string | null
           id: string
+          member_id: string
           notes: string
           phone: string
           professional_id: string | null
@@ -85,7 +87,9 @@ export type Database = {
           created_at?: string
           customer_name: string
           flash_design_id?: string | null
+          flash_design_key?: string | null
           id?: string
+          member_id?: string
           notes?: string
           phone?: string
           professional_id?: string | null
@@ -103,7 +107,9 @@ export type Database = {
           created_at?: string
           customer_name?: string
           flash_design_id?: string | null
+          flash_design_key?: string | null
           id?: string
+          member_id?: string
           notes?: string
           phone?: string
           professional_id?: string | null
@@ -249,6 +255,7 @@ export type Database = {
       studio_settings: {
         Row: {
           business_name: string
+          config: Json | null
           currency: string
           id: string
           location: string
@@ -258,6 +265,7 @@ export type Database = {
         }
         Insert: {
           business_name: string
+          config?: Json | null
           currency?: string
           id?: string
           location: string
@@ -267,6 +275,7 @@ export type Database = {
         }
         Update: {
           business_name?: string
+          config?: Json | null
           currency?: string
           id?: string
           location?: string
