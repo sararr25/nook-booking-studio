@@ -561,12 +561,12 @@ const statusGroups: { status: BookingRequest["status"]; title: string; empty: st
 /** Patch where `undefined` removes the key, so optional fields can be cleared. */
 type Patch<T> = { [K in keyof T]?: T[K] | undefined };
 const applyPatch = <T extends object>(target: T, patch: Patch<T>): T => {
-  const next: Record<string, unknown> = Object.assign({}, target);
+  const next = new Map<string, unknown>(Object.entries(target));
   for (const [key, value] of Object.entries(patch)) {
-    if (value === undefined) delete next[key];
-    else next[key] = value;
+    if (value === undefined) next.delete(key);
+    else next.set(key, value);
   }
-  return next as T;
+  return Object.fromEntries(next) as T;
 };
 
 const newId = (prefix: string) => `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
