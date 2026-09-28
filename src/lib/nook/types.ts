@@ -107,7 +107,9 @@ export type BookingRequest = {
   id: string;
   createdAt: string;
   customerName: string;
+  /** Customer email. */
   contact: string;
+  phone?: string;
   notes: string;
   serviceId: string;
   answers: Answers;
