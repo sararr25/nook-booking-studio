@@ -1,4 +1,14 @@
-import { Body, Button, Container, Head, Heading, Html, Preview, Section, Text } from "@react-email/components";
+import {
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Preview,
+  Section,
+  Text,
+} from "@react-email/components";
 import type { TemplateEntry } from "./registry";
 
 export type BookingEmailKind = "received" | "confirmed" | "changed" | "declined";
@@ -45,15 +55,36 @@ function BookingUpdate({
     <Html lang="en">
       <Head />
       <Preview>{headings[kind]}</Preview>
-      <Body style={{ backgroundColor: "#ffffff", fontFamily: "Manrope, Arial, sans-serif", color: "#1c1917" }}>
+      <Body
+        style={{
+          backgroundColor: "#ffffff",
+          fontFamily: "Manrope, Arial, sans-serif",
+          color: "#1c1917",
+        }}
+      >
         <Container style={{ padding: "32px 24px", maxWidth: "520px" }}>
-          <Heading style={{ fontSize: "26px", lineHeight: "1.15", margin: "0 0 16px" }}>{headings[kind]}</Heading>
+          <Heading style={{ fontSize: "26px", lineHeight: "1.15", margin: "0 0 16px" }}>
+            {headings[kind]}
+          </Heading>
           <Text style={{ fontSize: "15px", lineHeight: "1.6" }}>Hi {customerName},</Text>
           <Text style={{ fontSize: "15px", lineHeight: "1.6" }}>{intro[kind]}</Text>
           {showDetails && (
-            <Section style={{ borderTop: "1px solid #d6d3d1", borderBottom: "1px solid #d6d3d1", padding: "12px 0", margin: "16px 0" }}>
-              <Text style={{ fontSize: "15px", margin: "4px 0" }}>When: {date} at {time}</Text>
-              {priceRange && <Text style={{ fontSize: "15px", margin: "4px 0" }}>Estimated price: {priceRange}</Text>}
+            <Section
+              style={{
+                borderTop: "1px solid #d6d3d1",
+                borderBottom: "1px solid #d6d3d1",
+                padding: "12px 0",
+                margin: "16px 0",
+              }}
+            >
+              <Text style={{ fontSize: "15px", margin: "4px 0" }}>
+                When: {date} at {time}
+              </Text>
+              {priceRange && (
+                <Text style={{ fontSize: "15px", margin: "4px 0" }}>
+                  Estimated price: {priceRange}
+                </Text>
+              )}
             </Section>
           )}
           {showDeposit && (
@@ -78,7 +109,14 @@ function BookingUpdate({
                   >
                     Pay deposit
                   </Button>
-                  <Text style={{ color: "#78716c", fontSize: "12px", lineHeight: "1.5", margin: "10px 0 0" }}>
+                  <Text
+                    style={{
+                      color: "#78716c",
+                      fontSize: "12px",
+                      lineHeight: "1.5",
+                      margin: "10px 0 0",
+                    }}
+                  >
                     Payment demo only. No money will be taken.
                   </Text>
                 </>
@@ -86,7 +124,8 @@ function BookingUpdate({
             </Section>
           )}
           <Text style={{ fontSize: "13px", color: "#57534e", marginTop: "24px" }}>
-            Questions? Just reply to the studio directly. The final price is confirmed at your appointment.
+            Questions? Just reply to the studio directly. The final price is confirmed at your
+            appointment.
           </Text>
         </Container>
       </Body>

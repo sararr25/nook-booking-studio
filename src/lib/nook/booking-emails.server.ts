@@ -5,16 +5,26 @@ type QuoteShape = { low?: number; high?: number; deposit?: number };
 type ConfigShape = { name?: string; policies?: { currency?: string; depositDueHours?: number } };
 
 const money = (value: number, currency: string) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
+  new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 0 }).format(
+    value,
+  );
 
-export async function sendBookingEmail(bookingId: string, kind: BookingEmailKind, eventKey: string) {
+export async function sendBookingEmail(
+  bookingId: string,
+  kind: BookingEmailKind,
+  eventKey: string,
+) {
   const demoPaymentBaseUrl =
     process.env["PUBLIC_SITE_URL"] ??
     "https://id-preview--664e83fd-ad41-4b0f-9b00-51c7ba92a361.lovable.app";
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: booking, error }, { data: settings }] = await Promise.all([
     supabaseAdmin.from("booking_requests").select("*").eq("id", bookingId).maybeSingle(),
-    supabaseAdmin.from("studio_settings").select("config, currency, business_name").eq("id", "main").maybeSingle(),
+    supabaseAdmin
+      .from("studio_settings")
+      .select("config, currency, business_name")
+      .eq("id", "main")
+      .maybeSingle(),
   ]);
   if (error || !booking) return { sent: false as const };
   const email = booking.contact.trim();
@@ -47,7 +57,10 @@ export async function sendBookingEmail(bookingId: string, kind: BookingEmailKind
     });
     return { sent: result.sent };
   } catch (sendError) {
-    console.error("Booking email failed", sendError instanceof Error ? sendError.message : sendError);
+    console.error(
+      "Booking email failed",
+      sendError instanceof Error ? sendError.message : sendError,
+    );
     return { sent: false as const };
   }
 }
