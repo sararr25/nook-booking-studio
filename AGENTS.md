@@ -31,3 +31,4 @@
 
 - Keep the three fictional artist portraits in a dedicated image lookup keyed by stable artist ID; this makes the booking and owner views share the same portraits without persisting generated image paths in customer-editable data.
 - Keep NookProvider alongside each Nook content route rather than in the root layout, so a hot-reloaded route and its store consumer share the same context instance.
+- Studio setup (services, questions, team, policies) is stored as one JSON document in studio_settings.config (row 'main'); bookings live in booking_requests. Why: owner edits must persist across devices, and one document keeps the booking engine's shape intact.
