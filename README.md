@@ -24,13 +24,25 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 - **Stay in sync**: every change made in Lovable is committed straight to this repository.
 - **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
+## Current state
+
+What the prototype does today, on top of the brief above:
+
+- **Customer flow** (`/book`): service, adaptive questions (each answer shows what it adds, e.g. "+€10, +5 min"), estimate with team match, month calendar with real availability, contact details. A booking ticket on the side keeps the running summary and the terms.
+- **Booking rule**: standard requests get a confirmation email right away with a link to pay a 20% deposit within 24 hours; unusual requests are confirmed by the studio first, then the same email goes out. Prices are always estimates. The deposit deadline is editable in the owner Policies. (Emails and payments are described in the UI but not sent in this prototype.)
+- **Landing** (`/`): an interactive "one engine, any trade" demo showing how the same rules read for a groomer, photographer, tattoo studio, contractor and hair studio.
+- **Owner panel** (`/owner`): overview, bookings grouped by status with approve / edit quote / decline, availability, services, questions with a "Customer sees" preview, team, flash book and policies.
+- **Owner account**: the first account created on `/auth` becomes the owner; later sign-ups are customers. The same account works locally and on Lovable because both use the same backend.
+
+Design rules for anyone (or any agent) editing the UI are in `AGENTS.md`.
+
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+The project uses [bun](https://bun.sh) (`bun.lock`). Environment variables for the backend are in `.env`.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+bun install
+bun run dev
 ```
+
+Without bun, once dependencies are installed you can start the dev server with `npx vite dev`.
