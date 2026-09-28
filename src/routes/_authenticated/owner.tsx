@@ -799,6 +799,7 @@ function RequestsTab() {
                           {r.quote.deposit > 0 && (
                             <p className="mt-2 font-mono text-xs">
                               Deposit {formatMoney(r.quote.deposit, currency)}
+                              {r.depositPaidAt ? " · paid" : " · not paid yet"}
                             </p>
                           )}
                           {(r.referencePaths?.length ?? 0) > 0 && (

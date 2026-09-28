@@ -66,6 +66,7 @@ export type Database = {
           contact: string
           created_at: string
           customer_name: string
+          deposit_paid_at: string | null
           flash_design_id: string | null
           flash_design_key: string | null
           id: string
@@ -86,6 +87,7 @@ export type Database = {
           contact: string
           created_at?: string
           customer_name: string
+          deposit_paid_at?: string | null
           flash_design_id?: string | null
           flash_design_key?: string | null
           id?: string
@@ -106,6 +108,7 @@ export type Database = {
           contact?: string
           created_at?: string
           customer_name?: string
+          deposit_paid_at?: string | null
           flash_design_id?: string | null
           flash_design_key?: string | null
           id?: string

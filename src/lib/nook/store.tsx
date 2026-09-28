@@ -72,6 +72,7 @@ const toRequest = (row: RequestRow): BookingRequest => {
     ...(row.flash_design_key ? { flashDesignId: row.flash_design_key } : {}),
     referencePaths: row.reference_paths,
     status: toStatus(row.status),
+    ...(row.deposit_paid_at ? { depositPaidAt: row.deposit_paid_at } : {}),
     quote: {
       low: quote.low ?? 0,
       high: quote.high ?? 0,

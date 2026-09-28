@@ -125,4 +125,5 @@ export type BookingRequest = {
   flashDesignId?: string;
   referencePaths?: string[];
   status: "confirmed" | "pending" | "declined";
+  depositPaidAt?: string;
 };
