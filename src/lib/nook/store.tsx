@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { defaultBusiness } from "./config";
+import { notifyBookingChange } from "./booking-emails.functions";
 import type { Answers, BookingRequest, BusinessConfig } from "./types";
 
 type RequestRow = Database["public"]["Tables"]["booking_requests"]["Row"];
@@ -143,7 +144,22 @@ export function NookProvider({ children }: { children: ReactNode }) {
       .update(toRowPatch(patch))
       .eq("id", id)
       .then(({ error }) => {
-        if (error) toast.error("Could not save the booking change.");
+        if (error) {
+          toast.error("Could not save the booking change.");
+          return;
+        }
+        const kind =
+          patch.status === "confirmed" || patch.status === "declined"
+            ? patch.status
+            : !patch.status && (patch.date || patch.time || patch.memberId || patch.quote)
+              ? "changed"
+              : null;
+        if (!kind) return;
+        notifyBookingChange({ data: { id, kind } })
+          .then((result) => {
+            if (result.sent) toast.success("The customer has been emailed.");
+          })
+          .catch(() => toast.error("Saved, but the email to the customer could not be sent."));
       });
   }, []);
 

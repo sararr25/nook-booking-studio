@@ -1,3 +1,4 @@
+import { notifyNewBooking } from "@/lib/nook/booking-emails.functions";
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -198,6 +199,7 @@ function BookingFlow() {
       return;
     }
     addRequest(request);
+    void notifyNewBooking({ data: { id: request.id } }).catch(() => undefined);
     setDone({
       pending,
       terms: bookingTerms({
