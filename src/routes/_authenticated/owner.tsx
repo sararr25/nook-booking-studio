@@ -142,7 +142,7 @@ const greeting = () => {
 };
 
 function OwnerPage() {
-  const { business, requests, saveState } = useNook();
+  const { business, requests, saveState, loaded, loadError } = useNook();
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const tab = tabFromSlug(Route.useSearch().tab);
@@ -262,16 +262,40 @@ function OwnerPage() {
             {tab !== "Overview" && tab !== "Bookings" && <SaveStatus state={saveState} />}
           </div>
 
-          <div className="nook-enter py-8" key={tab}>
-            {tab === "Overview" && <OverviewTab onOpen={openTab} />}
-            {tab === "Bookings" && <RequestsTab />}
-            {tab === "Availability" && <AvailabilityTab onOpen={openTab} />}
-            {tab === "Services" && <ServicesTab />}
-            {tab === "Questions" && <QuestionsTab />}
-            {tab === "Team" && <TeamTab />}
-            {tab === "Flash" && <FlashTab />}
-            {tab === "Policies" && <PoliciesTab />}
-          </div>
+          {loadError ? (
+            <div role="alert" className="mt-8 max-w-xl rounded-sm border border-destructive/40 p-5">
+              <p className="flex items-center gap-2 font-semibold">
+                <AlertTriangle className="size-4 text-destructive" /> Could not load your studio
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Nothing is shown or saved until it loads, so your setup stays safe. Check your
+                connection and reload.
+              </p>
+              <p className="mt-2 font-mono text-xs text-muted-foreground">{loadError}</p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className={cn(ghostButton, "mt-4")}
+              >
+                <RotateCcw className="size-4" /> Reload
+              </button>
+            </div>
+          ) : !loaded ? (
+            <p className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Loading your studio…
+            </p>
+          ) : (
+            <div className="nook-enter py-8" key={tab}>
+              {tab === "Overview" && <OverviewTab onOpen={openTab} />}
+              {tab === "Bookings" && <RequestsTab />}
+              {tab === "Availability" && <AvailabilityTab onOpen={openTab} />}
+              {tab === "Services" && <ServicesTab />}
+              {tab === "Questions" && <QuestionsTab />}
+              {tab === "Team" && <TeamTab />}
+              {tab === "Flash" && <FlashTab />}
+              {tab === "Policies" && <PoliciesTab />}
+            </div>
+          )}
         </main>
       </div>
     </div>

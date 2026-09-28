@@ -24,6 +24,8 @@ type StoreValue = {
   business: BusinessConfig;
   requests: BookingRequest[];
   loaded: boolean;
+  /** Set when the studio setup or bookings could not be read; nothing may be saved then. */
+  loadError: string | null;
   saveState: SaveState;
   updateBusiness: (updater: (draft: BusinessConfig) => BusinessConfig) => void;
   addRequest: (request: BookingRequest) => void;
@@ -94,6 +96,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
   const [business, setBusiness] = useState<BusinessConfig>(defaultBusiness);
   const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const dirty = useRef(false);
 
@@ -106,6 +109,13 @@ export function NookProvider({ children }: { children: ReactNode }) {
         supabase.from("booking_requests").select("*").order("appointment_date"),
       ]);
       if (cancelled) return;
+      // Never fall back to the defaults on a failed read: the next autosave would overwrite the real setup.
+      const error = settings.error ?? bookings.error;
+      if (error) {
+        setLoadError(error.message);
+        toast.error("Could not load the studio. Reload the page to try again.");
+        return;
+      }
       setBusiness(toBusiness(settings.data?.config ?? null));
       setRequests((bookings.data ?? []).map(toRequest));
       setLoaded(true);
@@ -209,6 +219,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
       business,
       requests,
       loaded,
+      loadError,
       saveState,
       updateBusiness,
       addRequest,
@@ -220,6 +231,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
       business,
       requests,
       loaded,
+      loadError,
       saveState,
       updateBusiness,
       addRequest,

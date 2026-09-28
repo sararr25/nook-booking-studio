@@ -31,4 +31,5 @@
 - Keep artist portraits in the stable-ID image lookup shared by booking and owner views.
 - Keep `NookProvider` beside each Nook content route to preserve context during hot reload.
 - Store studio setup as one JSON document in `studio_settings.config`; bookings stay in `booking_requests`.
+- If loading the setup or bookings fails, show the error and block editing. Never fall back to `defaultBusiness`, or autosave would overwrite the real setup.
 - `/payment-demo/$bookingId` is display-only: never read booking records or collect payment details.
