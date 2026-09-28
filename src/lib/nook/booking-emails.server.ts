@@ -7,6 +7,10 @@ type ConfigShape = { name?: string; policies?: { currency?: string; depositDueHo
 const money = (value: number, currency: string) =>
   new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
 
+const demoPaymentBaseUrl =
+  process.env["PUBLIC_SITE_URL"] ??
+  "https://id-preview--664e83fd-ad41-4b0f-9b00-51c7ba92a361.lovable.app";
+
 export async function sendBookingEmail(bookingId: string, kind: BookingEmailKind, eventKey: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: booking, error }, { data: settings }] = await Promise.all([
@@ -35,6 +39,10 @@ export async function sendBookingEmail(bookingId: string, kind: BookingEmailKind
         priceRange: high > 0 ? `${money(low, currency)} to ${money(high, currency)}` : "Free",
         deposit: deposit > 0 ? money(deposit, currency) : "",
         depositDueHours: config.policies?.depositDueHours ?? 24,
+        paymentUrl:
+          deposit > 0 && (kind === "confirmed" || kind === "changed")
+            ? `${demoPaymentBaseUrl}/payment-demo/${bookingId}`
+            : "",
       },
       idempotencyKey: `booking-${kind}-${bookingId}-${eventKey}`,
     });
