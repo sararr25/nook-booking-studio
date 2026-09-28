@@ -11,7 +11,7 @@ import { defaultBusiness } from "./config";
 import type { BookingRequest, BusinessConfig } from "./types";
 
 const CONFIG_KEY = "nook.business.v3";
-const REQUESTS_KEY = "nook.requests.v1";
+const REQUESTS_KEY = "nook.requests.v2";
 
 const seedRequests = (): BookingRequest[] => {
   const soon = new Date();
@@ -23,6 +23,7 @@ const seedRequests = (): BookingRequest[] => {
       createdAt: new Date().toISOString(),
       customerName: "Nadia Berg",
       contact: "nadia.berg@mail.com",
+      phone: "+46 70 482 19 03",
       notes: "Covering an old anchor on the forearm, would love something botanical over it.",
       serviceId: "tattoo",
       answers: {},

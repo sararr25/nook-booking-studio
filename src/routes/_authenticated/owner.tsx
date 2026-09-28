@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+  ArrowDown,
+  ArrowUp,
   CalendarDays,
   CalendarRange,
   Check,
@@ -9,12 +11,17 @@ import {
   Home,
   Images,
   LogOut,
+  Mail,
+  Pencil,
+  Phone,
+  Plus,
   RotateCcw,
   Settings,
   Unplug,
   Upload,
   UsersRound,
   Tag,
+  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -548,12 +555,35 @@ function FlashTab() {
 const statusGroups: { status: BookingRequest["status"]; title: string; empty: string }[] = [
   { status: "pending", title: "Needs your review", empty: "Nothing waiting for review." },
   { status: "confirmed", title: "Confirmed", empty: "No confirmed bookings yet." },
-  { status: "declined", title: "Declined", empty: "" },
+  { status: "declined", title: "Declined or cancelled", empty: "" },
 ];
+
+/** Patch where `undefined` removes the key, so optional fields can be cleared. */
+type Patch<T> = { [K in keyof T]?: T[K] | undefined };
+const applyPatch = <T extends object>(target: T, patch: Patch<T>): T => {
+  const next = new Map<string, unknown>(Object.entries(target));
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) next.delete(key);
+    else next.set(key, value);
+  }
+  return Object.fromEntries(next) as T;
+};
+
+const newId = (prefix: string) => `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+
+const inputClass =
+  "min-h-10 w-full rounded-sm border border-input bg-card px-3 text-sm outline-none focus:border-foreground";
+
+const ghostButton =
+  "inline-flex min-h-10 items-center gap-2 rounded-sm border border-border px-3 text-sm transition-colors hover:border-foreground";
+
+const dangerButton =
+  "inline-flex min-h-10 items-center gap-2 rounded-sm px-3 text-sm text-muted-foreground transition-colors hover:text-destructive";
 
 function RequestsTab() {
   const { business, requests, setRequestStatus, updateRequest } = useNook();
   const [editing, setEditing] = useState<string | null>(null);
+  const [openDetails, setOpenDetails] = useState<string | null>(null);
   const currency = business.policies.currency;
 
   if (requests.length === 0)
@@ -586,13 +616,14 @@ function RequestsTab() {
                   const member = business.team.find((m) => m.id === r.memberId);
                   const service = business.services.find((s) => s.id === r.serviceId);
                   const isPending = r.status === "pending";
+                  const isConfirmed = r.status === "confirmed";
                   return (
                     <article
                       key={r.id}
                       className={cn(
                         "rounded-sm border bg-card p-5",
                         isPending ? "nook-ticket" : "border-border",
-                        r.status === "declined" && "opacity-70",
+                        r.status === "declined" && "opacity-75",
                       )}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -602,7 +633,7 @@ function RequestsTab() {
                             <StatusPill status={r.status} />
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            {service?.name} with {member?.name ?? "no one yet"}
+                            {service?.name ?? "Removed service"} with {member?.name ?? "no one yet"}
                           </p>
                           <p className="mt-1 font-mono text-sm">{formatWhen(r.date, r.time)}</p>
                         </div>
@@ -618,11 +649,36 @@ function RequestsTab() {
                         </div>
                       </div>
 
+                      <div className="mt-4 flex flex-wrap gap-2 border-t border-dashed border-border pt-4">
+                        {r.phone ? (
+                          <a href={`tel:${r.phone.replace(/\s+/g, "")}`} className={ghostButton}>
+                            <Phone className="size-4" />
+                            <span className="font-mono">{r.phone}</span>
+                          </a>
+                        ) : (
+                          <span className="inline-flex min-h-10 items-center text-xs text-muted-foreground">
+                            No phone given
+                          </span>
+                        )}
+                        {r.contact && (
+                          <a
+                            href={
+                              r.contact.includes("@")
+                                ? `mailto:${r.contact}?subject=${encodeURIComponent(`Your booking at ${business.name}`)}`
+                                : `tel:${r.contact.replace(/\s+/g, "")}`
+                            }
+                            className={cn(ghostButton, "min-w-0")}
+                          >
+                            <Mail className="size-4 shrink-0" />
+                            <span className="truncate">{r.contact}</span>
+                          </a>
+                        )}
+                      </div>
+
                       {r.memberId === "unassigned" && (
                         <p className="mt-3 rounded-sm border border-brand/50 bg-background px-3 py-2 text-xs">
                           No artist matched automatically. The date and time are the customer&apos;s
-                          preference, not a held slot. Pick an artist and a real time with Edit
-                          quote.
+                          preference, not a held slot. Pick an artist and a real time with Edit.
                         </p>
                       )}
                       {r.notes && (
@@ -642,50 +698,107 @@ function RequestsTab() {
                         </div>
                       )}
 
-                      {isPending && (
-                        <div className="mt-5 flex flex-wrap items-center gap-2">
+                      {openDetails === r.id && (
+                        <div className="mt-4 border-t border-dashed border-border pt-3">
+                          <p className="eyebrow">Quote breakdown</p>
+                          {r.quote.lines.length === 0 ? (
+                            <p className="mt-2 text-sm text-muted-foreground">No extras.</p>
+                          ) : (
+                            <dl className="mt-2 space-y-1 text-sm">
+                              {r.quote.lines.map((line) => (
+                                <div key={line.label} className="flex justify-between gap-4">
+                                  <dt>{line.label}</dt>
+                                  <dd className="font-mono text-xs text-muted-foreground">
+                                    {line.detail}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          )}
+                          {r.quote.deposit > 0 && (
+                            <p className="mt-2 font-mono text-xs">
+                              Deposit {formatMoney(r.quote.deposit, currency)}
+                            </p>
+                          )}
+                          {(r.referencePaths?.length ?? 0) > 0 && (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              {r.referencePaths?.length} reference photo
+                              {r.referencePaths?.length === 1 ? "" : "s"} attached
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="mt-5 flex flex-wrap items-center gap-2">
+                        {isPending && (
                           <button
                             type="button"
                             onClick={() => {
                               setRequestStatus(r.id, "confirmed");
-                              toast.success(
-                                `${r.customerName} confirmed. The deposit link goes out by email.`,
-                              );
+                              toast.success(`${r.customerName} confirmed.`);
                             }}
                             className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
                           >
                             <Check className="size-4" /> Approve
                           </button>
+                        )}
+                        {r.status !== "declined" && (
                           <button
                             type="button"
                             onClick={() => setEditing(editing === r.id ? null : r.id)}
                             aria-expanded={editing === r.id}
-                            className="min-h-11 rounded-sm border border-foreground px-5 text-sm transition-colors hover:bg-background"
+                            className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-foreground px-5 text-sm transition-colors hover:bg-background"
                           >
-                            Edit quote
+                            <Pencil className="size-4" />
+                            {isPending ? "Edit quote" : "Change booking"}
                           </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setOpenDetails(openDetails === r.id ? null : r.id)}
+                          aria-expanded={openDetails === r.id}
+                          className="min-h-11 rounded-sm px-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {openDetails === r.id ? "Hide details" : "Details"}
+                        </button>
+                        {isPending && (
                           <button
                             type="button"
                             onClick={() => {
                               setRequestStatus(r.id, "declined");
                               toast("Request declined");
                             }}
-                            className="inline-flex min-h-11 items-center gap-2 rounded-sm px-4 text-sm text-muted-foreground transition-colors hover:text-destructive"
+                            className={cn(dangerButton, "min-h-11")}
                           >
                             <X className="size-4" /> Decline
                           </button>
-                          {r.quote.deposit > 0 && (
-                            <p className="w-full pt-1 text-xs text-muted-foreground">
-                              Approving emails {r.customerName} a link to pay the{" "}
-                              {formatMoney(r.quote.deposit, currency)} deposit within{" "}
-                              {business.policies.depositDueHours} hours.
-                            </p>
-                          )}
-                        </div>
-                      )}
+                        )}
+                        {isConfirmed && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!window.confirm(`Cancel ${r.customerName}'s booking?`)) return;
+                              setRequestStatus(r.id, "declined");
+                              toast("Booking cancelled. Let the customer know.");
+                            }}
+                            className={cn(dangerButton, "min-h-11")}
+                          >
+                            <X className="size-4" /> Cancel booking
+                          </button>
+                        )}
+                        {r.status === "declined" && (
+                          <button
+                            type="button"
+                            onClick={() => setRequestStatus(r.id, "pending")}
+                            className={ghostButton}
+                          >
+                            <RotateCcw className="size-4" /> Back to review
+                          </button>
+                        )}
+                      </div>
 
                       {editing === r.id && (
-                        <EditQuote
+                        <EditBooking
                           request={r}
                           onSave={updateRequest}
                           onDone={() => setEditing(null)}
@@ -703,7 +816,7 @@ function RequestsTab() {
   );
 }
 
-function EditQuote({
+function EditBooking({
   request,
   onSave,
   onDone,
@@ -716,23 +829,46 @@ function EditQuote({
   const [low, setLow] = useState(request.quote.low);
   const [high, setHigh] = useState(request.quote.high);
   const [duration, setDuration] = useState(request.quote.duration);
+  const [deposit, setDeposit] = useState(request.quote.deposit);
+  const [date, setDate] = useState(request.date);
+  const [time, setTime] = useState(request.time);
   const [memberId, setMemberId] = useState(
     business.team.some((m) => m.id === request.memberId)
       ? request.memberId
       : (business.team[0]?.id ?? request.memberId),
   );
+  const wasConfirmed = request.status === "confirmed";
 
   return (
     <div className="mt-5 grid gap-4 rounded-sm border border-border bg-background p-5 sm:grid-cols-4">
       <NumberField label="Low" value={low} onChange={setLow} />
       <NumberField label="High" value={high} onChange={setHigh} />
       <NumberField label="Minutes" value={duration} step={15} onChange={setDuration} />
+      <NumberField label="Deposit" value={deposit} step={10} onChange={setDeposit} />
       <label className="block">
+        <span className="eyebrow mb-2 block">Date</span>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className={cn(inputClass, "min-h-11 font-mono")}
+        />
+      </label>
+      <label className="block">
+        <span className="eyebrow mb-2 block">Time</span>
+        <input
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          className={cn(inputClass, "min-h-11 font-mono")}
+        />
+      </label>
+      <label className="block sm:col-span-2">
         <span className="eyebrow mb-2 block">Artist</span>
         <select
           value={memberId}
           onChange={(e) => setMemberId(e.target.value)}
-          className="min-h-11 w-full rounded-sm border border-input bg-card px-2 text-sm outline-none focus:border-foreground"
+          className={cn(inputClass, "min-h-11")}
         >
           {business.team.map((m) => (
             <option key={m.id} value={m.id}>
@@ -741,21 +877,38 @@ function EditQuote({
           ))}
         </select>
       </label>
-      <div className="sm:col-span-4">
+      <div className="flex flex-wrap items-center gap-3 sm:col-span-4">
         <button
           type="button"
           onClick={() => {
+            if (high < low) {
+              toast.error("High price can't be below the low price.");
+              return;
+            }
             onSave(request.id, {
               memberId,
+              date,
+              time,
               status: "confirmed",
-              quote: { ...request.quote, low, high, duration },
+              quote: { ...request.quote, low, high, duration, deposit },
             });
-            toast.success("Quote updated and confirmed. The deposit link goes out by email.");
+            toast.success(
+              wasConfirmed
+                ? `Booking changed. Let ${request.customerName} know${request.phone ? ` on ${request.phone}` : ""}.`
+                : `${request.customerName} confirmed with the new quote.`,
+            );
             onDone();
           }}
           className="min-h-11 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
         >
-          Save & confirm
+          {wasConfirmed ? "Save changes" : "Save & confirm"}
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          className="min-h-11 px-3 text-sm text-muted-foreground"
+        >
+          Cancel
         </button>
       </div>
     </div>
@@ -786,12 +939,14 @@ function NumberField({
   onChange,
   step = 1,
   suffix,
+  compact,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
   step?: number;
   suffix?: string;
+  compact?: boolean;
 }) {
   return (
     <label className="block">
@@ -799,10 +954,13 @@ function NumberField({
       <span className="flex items-center gap-2">
         <input
           type="number"
-          value={value}
+          value={Number.isFinite(value) ? value : 0}
           step={step}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="min-h-11 w-full rounded-sm border border-input bg-card px-3 font-mono text-sm tabular-nums outline-none focus:border-foreground"
+          className={cn(
+            "w-full rounded-sm border border-input bg-card px-3 font-mono text-sm tabular-nums outline-none focus:border-foreground",
+            compact ? "min-h-9" : "min-h-11",
+          )}
         />
         {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
       </span>
@@ -810,10 +968,87 @@ function NumberField({
   );
 }
 
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="eyebrow mb-2 block">{label}</span>
+      {multiline ? (
+        <textarea
+          rows={2}
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(inputClass, "py-2")}
+        />
+      ) : (
+        <input
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className={inputClass}
+        />
+      )}
+    </label>
+  );
+}
+
+/** Comma-separated list editor that commits on blur, so typing a comma doesn't fight the input. */
+function ListField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string[];
+  onChange: (value: string[]) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="eyebrow mb-2 block">{label}</span>
+      <input
+        key={value.join(",")}
+        defaultValue={value.join(", ")}
+        placeholder={placeholder}
+        onBlur={(e) =>
+          onChange(
+            Array.from(
+              new Set(
+                e.target.value
+                  .split(",")
+                  .map((part) => part.trim().toLowerCase())
+                  .filter(Boolean),
+              ),
+            ),
+          )
+        }
+        className={cn(inputClass, "min-h-9")}
+      />
+    </label>
+  );
+}
+
+type ServiceItem = BusinessConfig["services"][number];
+type QuestionItem = ServiceItem["questions"][number];
+type OptionItem = NonNullable<QuestionItem["options"]>[number];
+
 const editServices = (
   business: BusinessConfig,
   serviceId: string,
-  patch: Partial<BusinessConfig["services"][number]>,
+  patch: Partial<ServiceItem>,
 ): BusinessConfig => ({
   ...business,
   services: business.services.map((s) => (s.id === serviceId ? { ...s, ...patch } : s)),
@@ -822,13 +1057,56 @@ const editServices = (
 function ServicesTab() {
   const { business, updateBusiness } = useNook();
 
+  const addService = () =>
+    updateBusiness((b) => ({
+      ...b,
+      services: [
+        ...b.services,
+        {
+          id: newId("service"),
+          name: "New service",
+          blurb: "",
+          basePrice: 100,
+          baseDuration: 60,
+          depositPercent: 20,
+          questions: [],
+        },
+      ],
+    }));
+
   return (
     <div className="space-y-4">
       {business.services.map((s) => (
         <div key={s.id} className="rounded-sm border border-border bg-card p-5">
-          <h2 className="font-display text-xl font-semibold">{s.name}</h2>
-          <p className="mt-1 max-w-lg text-sm text-muted-foreground">{s.blurb}</p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+            <TextField
+              label="Name"
+              value={s.name}
+              onChange={(v) => updateBusiness((b) => editServices(b, s.id, { name: v }))}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (!window.confirm(`Remove ${s.name} and its questions?`)) return;
+                updateBusiness((b) => ({
+                  ...b,
+                  services: b.services.filter((x) => x.id !== s.id),
+                }));
+              }}
+              className={cn(dangerButton, "sm:mt-6")}
+            >
+              <Trash2 className="size-4" /> Remove
+            </button>
+          </div>
+          <div className="mt-4">
+            <TextField
+              label="Short description"
+              multiline
+              value={s.blurb}
+              onChange={(v) => updateBusiness((b) => editServices(b, s.id, { blurb: v }))}
+            />
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <NumberField
               label={`Base price (${business.policies.currency})`}
               value={s.basePrice}
@@ -848,49 +1126,88 @@ function ServicesTab() {
               onChange={(v) => updateBusiness((b) => editServices(b, s.id, { depositPercent: v }))}
             />
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {s.questions.length} question{s.questions.length === 1 ? "" : "s"}. Edit them in
+            Questions.
+          </p>
         </div>
       ))}
+      <button type="button" onClick={addService} className={ghostButton}>
+        <Plus className="size-4" /> Add service
+      </button>
     </div>
   );
 }
 
+/** Factor 1.15 is shown and edited as +15%. */
+const factorToPercent = (factor?: number) => (factor ? Math.round((factor - 1) * 100) : 0);
+const percentToFactor = (percent: number) => (percent === 0 ? undefined : 1 + percent / 100);
+
+const questionTypeLabels: Record<QuestionItem["type"], string> = {
+  single: "Pick one",
+  multi: "Pick any",
+  boolean: "Yes / no",
+  scale: "Slider",
+  text: "Free text",
+};
+
 function QuestionsTab() {
   const { business, updateBusiness } = useNook();
-  const [serviceId, setServiceId] = useState(business.services[0]?.id ?? "tattoo");
+  const [serviceId, setServiceId] = useState(business.services[0]?.id ?? "");
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
 
   if (!service)
     return <p className="text-sm text-muted-foreground">Add a service to edit its questions.</p>;
 
-  const patchOption = (
-    questionId: string,
-    optionId: string,
-    patch: Partial<NonNullable<(typeof service.questions)[number]["options"]>[number]>,
-  ) =>
+  const currency = business.policies.currency;
+
+  const setQuestions = (fn: (questions: QuestionItem[]) => QuestionItem[]) =>
     updateBusiness((b) => ({
       ...b,
       services: b.services.map((s) =>
-        s.id !== serviceId
-          ? s
-          : {
-              ...s,
-              questions: s.questions.map((q) =>
-                q.id !== questionId
-                  ? q
-                  : {
-                      ...q,
-                      ...(q.options
-                        ? {
-                            options: q.options.map((o) =>
-                              o.id === optionId ? { ...o, ...patch } : o,
-                            ),
-                          }
-                        : {}),
-                    },
-              ),
-            },
+        s.id !== service.id ? s : { ...s, questions: fn(s.questions) },
       ),
     }));
+
+  const patchQuestion = (questionId: string, patch: Patch<QuestionItem>) =>
+    setQuestions((qs) => qs.map((q) => (q.id === questionId ? applyPatch(q, patch) : q)));
+
+  const setOptions = (questionId: string, fn: (options: OptionItem[]) => OptionItem[]) =>
+    setQuestions((qs) =>
+      qs.map((q) => (q.id === questionId ? { ...q, options: fn(q.options ?? []) } : q)),
+    );
+
+  const patchOption = (questionId: string, optionId: string, patch: Patch<OptionItem>) =>
+    setOptions(questionId, (os) => os.map((o) => (o.id === optionId ? applyPatch(o, patch) : o)));
+
+  const moveQuestion = (index: number, delta: number) =>
+    setQuestions((qs) => {
+      const next = [...qs];
+      const target = index + delta;
+      if (target < 0 || target >= next.length) return qs;
+      const [moved] = next.splice(index, 1);
+      if (moved) next.splice(target, 0, moved);
+      return next;
+    });
+
+  const addQuestion = (type: QuestionItem["type"]) => {
+    const base: QuestionItem = { id: newId("q"), label: "New question", type };
+    const question: QuestionItem =
+      type === "scale"
+        ? { ...base, min: 1, max: 10, step: 1, unit: "", pricePerUnit: 10, durationPerUnit: 5 }
+        : type === "text"
+          ? { ...base, optional: true }
+          : type === "boolean"
+            ? {
+                ...base,
+                options: [
+                  { id: "yes", label: "Yes" },
+                  { id: "no", label: "No" },
+                ],
+              }
+            : { ...base, options: [{ id: newId("o"), label: "First answer" }] };
+    setQuestions((qs) => [...qs, question]);
+  };
 
   return (
     <div>
@@ -900,11 +1217,11 @@ function QuestionsTab() {
             key={s.id}
             type="button"
             role="tab"
-            aria-selected={s.id === serviceId}
+            aria-selected={s.id === service.id}
             onClick={() => setServiceId(s.id)}
             className={cn(
               "min-h-10 rounded-sm border px-4 text-sm transition-colors",
-              s.id === serviceId
+              s.id === service.id
                 ? "border-foreground bg-ink text-brand-foreground"
                 : "border-border hover:border-foreground",
             )}
@@ -915,116 +1232,280 @@ function QuestionsTab() {
       </div>
 
       <p className="mt-6 max-w-xl text-sm text-muted-foreground">
-        Each answer can change the price, the time, who can do the job, and whether you check the
-        request first. &ldquo;Customer sees&rdquo; is exactly what shows on the booking page.
+        Each answer can add a fixed amount or a percentage to price and time, require a skill, ask
+        for photos, or send the request to you first. &ldquo;Customer sees&rdquo; is exactly what
+        shows on the booking page.
       </p>
 
       <div className="mt-6 space-y-4">
+        {service.questions.length === 0 && (
+          <p className="text-sm text-muted-foreground">No questions yet for this service.</p>
+        )}
         {service.questions.map((q, index) => (
           <div key={q.id} className="rounded-sm border border-border bg-card p-5">
-            <h3 className="flex gap-3 text-base font-semibold">
-              <span className="font-mono text-sm text-brand">
+            <div className="flex flex-wrap items-start gap-3">
+              <span className="mt-8 font-mono text-sm text-brand">
                 {String(index + 1).padStart(2, "0")}
               </span>
-              {q.label}
-            </h3>
+              <div className="min-w-0 flex-1">
+                <TextField
+                  label={`Question · ${questionTypeLabels[q.type]}`}
+                  value={q.label}
+                  onChange={(v) => patchQuestion(q.id, { label: v })}
+                />
+              </div>
+              <div className="mt-6 flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Move up"
+                  disabled={index === 0}
+                  onClick={() => moveQuestion(index, -1)}
+                  className="flex size-10 items-center justify-center rounded-sm border border-border disabled:opacity-40"
+                >
+                  <ArrowUp className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Move down"
+                  disabled={index === service.questions.length - 1}
+                  onClick={() => moveQuestion(index, 1)}
+                  className="flex size-10 items-center justify-center rounded-sm border border-border disabled:opacity-40"
+                >
+                  <ArrowDown className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Remove question ${q.label}`}
+                  onClick={() => {
+                    if (!window.confirm(`Remove "${q.label}"?`)) return;
+                    setQuestions((qs) => qs.filter((x) => x.id !== q.id));
+                  }}
+                  className="flex size-10 items-center justify-center rounded-sm text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <TextField
+                label="Help text"
+                value={q.help ?? ""}
+                placeholder="Optional hint under the question"
+                onChange={(v) => patchQuestion(q.id, { help: v || undefined })}
+              />
+              <label className="flex min-h-10 items-center gap-2 text-sm sm:mt-6">
+                <input
+                  type="checkbox"
+                  checked={Boolean(q.optional)}
+                  onChange={(e) => patchQuestion(q.id, { optional: e.target.checked })}
+                  className="size-4 accent-[var(--brand)]"
+                />
+                Optional
+              </label>
+            </div>
+
             {q.type === "scale" ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Slider {q.min}-{q.max}
-                {q.unit}. {formatMoney(q.pricePerUnit ?? 0, business.policies.currency)} and{" "}
-                {q.durationPerUnit ?? 0} min per {q.unit} above {q.min}
-                {q.unit}.
-              </p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                <NumberField
+                  label="Min"
+                  value={q.min ?? 0}
+                  onChange={(v) => patchQuestion(q.id, { min: v })}
+                />
+                <NumberField
+                  label="Max"
+                  value={q.max ?? 10}
+                  onChange={(v) => patchQuestion(q.id, { max: v })}
+                />
+                <NumberField
+                  label="Step"
+                  value={q.step ?? 1}
+                  onChange={(v) => patchQuestion(q.id, { step: v })}
+                />
+                <TextField
+                  label="Unit"
+                  value={q.unit ?? ""}
+                  onChange={(v) => patchQuestion(q.id, { unit: v })}
+                />
+                <NumberField
+                  label={`${currency} per unit`}
+                  value={q.pricePerUnit ?? 0}
+                  onChange={(v) => patchQuestion(q.id, { pricePerUnit: v })}
+                />
+                <NumberField
+                  label="Min per unit"
+                  value={q.durationPerUnit ?? 0}
+                  onChange={(v) => patchQuestion(q.id, { durationPerUnit: v })}
+                />
+                <p className="text-xs text-muted-foreground sm:col-span-3 lg:col-span-6">
+                  Every {q.unit || "unit"} above {q.min ?? 0} adds{" "}
+                  {formatMoney(q.pricePerUnit ?? 0, currency)} and {q.durationPerUnit ?? 0} min.
+                </p>
+              </div>
             ) : q.type === "text" ? (
-              <p className="mt-2 text-sm text-muted-foreground">Free text. No effect on price.</p>
+              <p className="mt-4 text-sm text-muted-foreground">Free text. No effect on price.</p>
             ) : (
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[44rem] text-sm">
-                  <thead>
-                    <tr className="text-left">
-                      <th className="eyebrow pb-2">Answer</th>
-                      <th className="eyebrow pb-2">+ Price</th>
-                      <th className="eyebrow pb-2">+ Min</th>
-                      <th className="eyebrow pb-2">Customer sees</th>
-                      <th className="eyebrow pb-2">Skills</th>
-                      <th className="eyebrow pb-2">Check first</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {q.options?.map((o) => (
-                      <tr key={o.id}>
-                        <td className="py-2 pr-4">{o.label}</td>
-                        <td className="py-2 pr-3">
-                          <input
-                            type="number"
-                            value={o.priceDelta ?? 0}
-                            step={10}
-                            onChange={(e) =>
-                              patchOption(q.id, o.id, { priceDelta: Number(e.target.value) })
-                            }
-                            className="min-h-9 w-20 rounded-sm border border-input bg-card px-2 font-mono tabular-nums outline-none focus:border-foreground"
-                          />
-                          {o.priceFactor && (
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              ×{o.priceFactor}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-3">
-                          <input
-                            type="number"
-                            value={o.durationDelta ?? 0}
-                            step={5}
-                            onChange={(e) =>
-                              patchOption(q.id, o.id, { durationDelta: Number(e.target.value) })
-                            }
-                            className="min-h-9 w-20 rounded-sm border border-input bg-card px-2 font-mono tabular-nums outline-none focus:border-foreground"
-                          />
-                          {o.durationFactor && (
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              ×{o.durationFactor}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-3 font-mono text-xs text-brand">
-                          {describeOptionEffect(o, business.policies.currency) || (
-                            <span className="text-muted-foreground">No change</span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-3 text-xs text-muted-foreground">
-                          {o.requiresSkills?.join(", ") ?? "None"}
-                        </td>
-                        <td className="py-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              patchOption(q.id, o.id, { requiresReview: !o.requiresReview })
-                            }
-                            className={cn(
-                              "min-h-9 rounded-sm border px-3 text-xs transition-colors",
-                              o.requiresReview
-                                ? "nook-selected font-medium"
-                                : "border-border text-muted-foreground hover:bg-secondary",
-                            )}
-                          >
-                            {o.requiresReview ? "Yes" : "No"}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-5 space-y-3">
+                {(q.options ?? []).map((o) => (
+                  <div key={o.id} className="rounded-sm border border-border bg-background p-4">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="min-w-[12rem] flex-1">
+                        <TextField
+                          label="Answer"
+                          value={o.label}
+                          onChange={(v) => patchOption(q.id, o.id, { label: v })}
+                        />
+                      </div>
+                      <div className="min-w-[12rem] flex-1">
+                        <TextField
+                          label="Hint"
+                          value={o.hint ?? ""}
+                          placeholder="Optional"
+                          onChange={(v) => patchOption(q.id, o.id, { hint: v || undefined })}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Remove answer ${o.label}`}
+                        onClick={() => setOptions(q.id, (os) => os.filter((x) => x.id !== o.id))}
+                        className="flex size-10 items-center justify-center rounded-sm text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <NumberField
+                        compact
+                        label={`+ ${currency}`}
+                        value={o.priceDelta ?? 0}
+                        step={10}
+                        onChange={(v) => patchOption(q.id, o.id, { priceDelta: v || undefined })}
+                      />
+                      <NumberField
+                        compact
+                        label="Price %"
+                        value={factorToPercent(o.priceFactor)}
+                        step={5}
+                        onChange={(v) =>
+                          patchOption(q.id, o.id, { priceFactor: percentToFactor(v) })
+                        }
+                      />
+                      <NumberField
+                        compact
+                        label="+ Min"
+                        value={o.durationDelta ?? 0}
+                        step={5}
+                        onChange={(v) => patchOption(q.id, o.id, { durationDelta: v || undefined })}
+                      />
+                      <NumberField
+                        compact
+                        label="Time %"
+                        value={factorToPercent(o.durationFactor)}
+                        step={5}
+                        onChange={(v) =>
+                          patchOption(q.id, o.id, { durationFactor: percentToFactor(v) })
+                        }
+                      />
+                    </div>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+                      <ListField
+                        label="Skills needed"
+                        value={o.requiresSkills ?? []}
+                        placeholder="e.g. coverup, colour"
+                        onChange={(v) =>
+                          patchOption(q.id, o.id, { requiresSkills: v.length ? v : undefined })
+                        }
+                      />
+                      <button
+                        type="button"
+                        aria-pressed={Boolean(o.requiresPhotos)}
+                        onClick={() =>
+                          patchOption(q.id, o.id, { requiresPhotos: !o.requiresPhotos })
+                        }
+                        className={cn(
+                          "min-h-9 rounded-sm border px-3 text-xs transition-colors",
+                          o.requiresPhotos
+                            ? "nook-selected font-medium"
+                            : "border-border text-muted-foreground hover:bg-secondary",
+                        )}
+                      >
+                        Photos {o.requiresPhotos ? "required" : "optional"}
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={Boolean(o.requiresReview)}
+                        onClick={() =>
+                          patchOption(q.id, o.id, { requiresReview: !o.requiresReview })
+                        }
+                        className={cn(
+                          "min-h-9 rounded-sm border px-3 text-xs transition-colors",
+                          o.requiresReview
+                            ? "nook-selected font-medium"
+                            : "border-border text-muted-foreground hover:bg-secondary",
+                        )}
+                      >
+                        {o.requiresReview ? "You check first" : "Confirms on its own"}
+                      </button>
+                    </div>
+                    <p className="mt-3 font-mono text-xs text-brand">
+                      Customer sees:{" "}
+                      {describeOptionEffect(o, currency) || (
+                        <span className="text-muted-foreground">No change</span>
+                      )}
+                    </p>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOptions(q.id, (os) => [...os, { id: newId("o"), label: "New answer" }])
+                  }
+                  className={ghostButton}
+                >
+                  <Plus className="size-4" /> Add answer
+                </button>
               </div>
             )}
           </div>
+        ))}
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <span className="eyebrow mr-1">Add question</span>
+        {(Object.keys(questionTypeLabels) as QuestionItem["type"][]).map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => addQuestion(type)}
+            className={ghostButton}
+          >
+            <Plus className="size-4" /> {questionTypeLabels[type]}
+          </button>
         ))}
       </div>
     </div>
   );
 }
 
+const initialsFrom = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
+    .slice(0, 2) || "?";
+
 function TeamTab() {
   const { business, updateBusiness } = useNook();
+
+  const knownSkills = Array.from(
+    new Set([
+      ...business.team.flatMap((m) => m.skills),
+      ...business.services.flatMap((s) =>
+        s.questions.flatMap((q) => (q.options ?? []).flatMap((o) => o.requiresSkills ?? [])),
+      ),
+    ]),
+  ).sort();
 
   const patchMember = (id: string, patch: Partial<BusinessConfig["team"][number]>) =>
     updateBusiness((b) => ({
@@ -1032,11 +1513,30 @@ function TeamTab() {
       team: b.team.map((m) => (m.id === id ? { ...m, ...patch } : m)),
     }));
 
+  const addMember = () =>
+    updateBusiness((b) => ({
+      ...b,
+      team: [
+        ...b.team,
+        {
+          id: newId("member"),
+          name: "New artist",
+          role: "Artist",
+          initials: "NA",
+          skills: [],
+          days: [2, 3, 4, 5],
+          start: "10:00",
+          end: "18:00",
+          maxSession: 240,
+        },
+      ],
+    }));
+
   return (
     <div className="space-y-4">
       {business.team.map((m) => (
         <div key={m.id} className="rounded-sm border border-border bg-card p-5">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-start gap-4">
             {artistImage(m.id) ? (
               <img
                 src={artistImage(m.id)}
@@ -1044,17 +1544,35 @@ function TeamTab() {
                 loading="lazy"
                 width={816}
                 height={816}
-                className="size-12 rounded-full object-cover"
+                className="size-14 rounded-full object-cover"
               />
             ) : (
-              <span className="flex size-12 items-center justify-center rounded-full bg-sand text-sm font-semibold">
+              <span className="flex size-14 items-center justify-center rounded-full bg-sand text-sm font-semibold">
                 {m.initials}
               </span>
             )}
-            <div>
-              <h2 className="font-display text-lg font-semibold">{m.name}</h2>
-              <p className="text-sm text-muted-foreground">{m.role}</p>
+            <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
+              <TextField
+                label="Name"
+                value={m.name}
+                onChange={(v) => patchMember(m.id, { name: v, initials: initialsFrom(v) })}
+              />
+              <TextField
+                label="Role"
+                value={m.role}
+                onChange={(v) => patchMember(m.id, { role: v })}
+              />
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!window.confirm(`Remove ${m.name} from the team?`)) return;
+                updateBusiness((b) => ({ ...b, team: b.team.filter((x) => x.id !== m.id) }));
+              }}
+              className={cn(dangerButton, "sm:mt-6")}
+            >
+              <Trash2 className="size-4" /> Remove
+            </button>
           </div>
           <label className="mt-5 block max-w-md">
             <span className="eyebrow mb-2 block">Portfolio link</span>
@@ -1063,7 +1581,7 @@ function TeamTab() {
               value={m.portfolioUrl ?? ""}
               onChange={(e) => patchMember(m.id, { portfolioUrl: e.target.value })}
               placeholder="https://instagram.com/…"
-              className="min-h-10 w-full rounded-sm border border-input bg-card px-3 text-sm outline-none focus:border-foreground"
+              className={inputClass}
             />
           </label>
 
@@ -1075,6 +1593,7 @@ function TeamTab() {
                 <button
                   key={label}
                   type="button"
+                  aria-pressed={on}
                   onClick={() =>
                     patchMember(m.id, {
                       days: on ? m.days.filter((d) => d !== index) : [...m.days, index].sort(),
@@ -1100,7 +1619,7 @@ function TeamTab() {
                 type="time"
                 value={m.start}
                 onChange={(e) => patchMember(m.id, { start: e.target.value })}
-                className="min-h-11 w-full rounded-sm border border-input bg-card px-3 font-mono text-sm outline-none focus:border-foreground"
+                className={cn(inputClass, "min-h-11 font-mono")}
               />
             </label>
             <label className="block">
@@ -1109,7 +1628,7 @@ function TeamTab() {
                 type="time"
                 value={m.end}
                 onChange={(e) => patchMember(m.id, { end: e.target.value })}
-                className="min-h-11 w-full rounded-sm border border-input bg-card px-3 font-mono text-sm outline-none focus:border-foreground"
+                className={cn(inputClass, "min-h-11 font-mono")}
               />
             </label>
             <NumberField
@@ -1123,37 +1642,63 @@ function TeamTab() {
           <div className="mt-5">
             <span className="eyebrow">Skills</span>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {["fineline", "blackwork", "colour", "lettering", "coverup", "exposed-placement"].map(
-                (skill) => {
-                  const on = m.skills.includes(skill);
-                  return (
-                    <button
-                      key={skill}
-                      type="button"
-                      onClick={() =>
-                        patchMember(m.id, {
-                          skills: on ? m.skills.filter((s) => s !== skill) : [...m.skills, skill],
-                        })
-                      }
-                      className={cn(
-                        "min-h-9 rounded-sm border px-3 text-xs transition-colors",
-                        on
-                          ? "nook-selected font-medium"
-                          : "border-border text-muted-foreground hover:bg-secondary",
-                      )}
-                    >
-                      {skill}
-                    </button>
-                  );
-                },
-              )}
+              {knownSkills.map((skill) => {
+                const on = m.skills.includes(skill);
+                return (
+                  <button
+                    key={skill}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() =>
+                      patchMember(m.id, {
+                        skills: on ? m.skills.filter((s) => s !== skill) : [...m.skills, skill],
+                      })
+                    }
+                    className={cn(
+                      "min-h-9 rounded-sm border px-3 text-xs transition-colors",
+                      on
+                        ? "nook-selected font-medium"
+                        : "border-border text-muted-foreground hover:bg-secondary",
+                    )}
+                  >
+                    {skill}
+                  </button>
+                );
+              })}
             </div>
+            <form
+              className="mt-3 flex max-w-sm gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const input = e.currentTarget.elements.namedItem("skill");
+                if (!(input instanceof HTMLInputElement)) return;
+                const skill = input.value.trim().toLowerCase();
+                if (skill && !m.skills.includes(skill))
+                  patchMember(m.id, { skills: [...m.skills, skill] });
+                input.value = "";
+              }}
+            >
+              <input
+                name="skill"
+                aria-label={`New skill for ${m.name}`}
+                placeholder="New skill, e.g. realism"
+                className={cn(inputClass, "min-h-9")}
+              />
+              <button type="submit" className={cn(ghostButton, "min-h-9 shrink-0")}>
+                <Plus className="size-4" /> Add
+              </button>
+            </form>
           </div>
         </div>
       ))}
+      <button type="button" onClick={addMember} className={ghostButton}>
+        <Plus className="size-4" /> Add team member
+      </button>
     </div>
   );
 }
+
+const currencies = ["EUR", "SEK", "DKK", "NOK", "GBP", "USD"];
 
 function PoliciesTab() {
   const { business, updateBusiness } = useNook();
@@ -1164,9 +1709,41 @@ function PoliciesTab() {
 
   return (
     <div className="max-w-3xl space-y-4">
+      <PolicyGroup title="Studio" lead="What customers see at the top of the booking page.">
+        <TextField
+          label="Studio name"
+          value={business.name}
+          onChange={(v) => updateBusiness((b) => ({ ...b, name: v }))}
+        />
+        <TextField
+          label="Address"
+          value={business.location}
+          onChange={(v) => updateBusiness((b) => ({ ...b, location: v }))}
+        />
+        <TextField
+          label="Tagline"
+          value={business.tagline}
+          onChange={(v) => updateBusiness((b) => ({ ...b, tagline: v }))}
+        />
+        <label className="block">
+          <span className="eyebrow mb-2 block">Currency</span>
+          <select
+            value={p.currency}
+            onChange={(e) => patch({ currency: e.target.value })}
+            className={inputClass}
+          >
+            {currencies.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+      </PolicyGroup>
+
       <PolicyGroup
         title="Confirms on its own"
-        lead="Requests inside both limits get a confirmation email straight away. Anything else comes to you first."
+        lead="Requests inside both limits are confirmed straight away. Anything else comes to you first."
       >
         <NumberField
           label="Price under"
@@ -1183,10 +1760,7 @@ function PoliciesTab() {
         />
       </PolicyGroup>
 
-      <PolicyGroup
-        title="Deposit"
-        lead="The confirmation email carries a payment link. The percentage is set per service in Services."
-      >
+      <PolicyGroup title="Deposit" lead="The percentage is set per service in Services.">
         <NumberField
           label="Due within (hours)"
           value={p.depositDueHours}
@@ -1201,11 +1775,17 @@ function PoliciesTab() {
         />
       </PolicyGroup>
 
-      <PolicyGroup title="Scheduling" lead="How far ahead customers can book.">
+      <PolicyGroup title="Scheduling" lead="How soon and how far ahead customers can book.">
         <NumberField
           label="Earliest booking (days ahead)"
           value={p.leadTimeDays}
           onChange={(v) => patch({ leadTimeDays: v })}
+        />
+        <NumberField
+          label="Latest booking (days ahead)"
+          value={p.horizonDays}
+          step={15}
+          onChange={(v) => patch({ horizonDays: v })}
         />
       </PolicyGroup>
 

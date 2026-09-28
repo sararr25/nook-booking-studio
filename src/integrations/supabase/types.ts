@@ -69,6 +69,7 @@ export type Database = {
           flash_design_id: string | null
           id: string
           notes: string
+          phone: string
           professional_id: string | null
           quote: Json
           reference_paths: string[]
@@ -86,6 +87,7 @@ export type Database = {
           flash_design_id?: string | null
           id?: string
           notes?: string
+          phone?: string
           professional_id?: string | null
           quote?: Json
           reference_paths?: string[]
@@ -103,6 +105,7 @@ export type Database = {
           flash_design_id?: string | null
           id?: string
           notes?: string
+          phone?: string
           professional_id?: string | null
           quote?: Json
           reference_paths?: string[]

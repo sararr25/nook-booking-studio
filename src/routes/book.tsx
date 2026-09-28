@@ -79,6 +79,7 @@ function BookingFlow() {
   const [selected, setSelected] = useState<{ date: string; slot: Slot } | null>(null);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
+  const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [flashDesignId, setFlashDesignId] = useState<string | undefined>();
   const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
@@ -129,8 +130,12 @@ function BookingFlow() {
     });
 
   const submit = async () => {
-    if (!selected || !name.trim() || !contact.trim()) {
-      toast.error("Add your name and a way to reach you.");
+    if (!selected || !name.trim() || !/^\S+@\S+\.\S+$/.test(contact.trim())) {
+      toast.error("Add your name and a valid email.");
+      return;
+    }
+    if (phone.replace(/[^0-9]/g, "").length < 6) {
+      toast.error("Add a phone number so the studio can reach you.");
       return;
     }
     const pending = quote.requiresReview;
@@ -151,6 +156,7 @@ function BookingFlow() {
       createdAt: new Date().toISOString(),
       customerName: name.trim(),
       contact: contact.trim(),
+      phone: phone.trim(),
       notes: notes.trim(),
       serviceId: service.id,
       answers,
@@ -174,6 +180,7 @@ function BookingFlow() {
       id: request.id,
       customer_name: request.customerName,
       contact: request.contact,
+      phone: request.phone ?? "",
       notes: request.notes,
       service_id: request.serviceId,
       answers: request.answers,
@@ -406,11 +413,25 @@ function BookingFlow() {
                       className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
                     />
                   </Field>
-                  <Field label="Email or phone">
+                  <Field label="Email">
                     <input
+                      type="email"
+                      autoComplete="email"
+                      required
                       value={contact}
                       onChange={(e) => setContact(e.target.value)}
                       placeholder="you@email.com"
+                      className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
+                    />
+                  </Field>
+                  <Field label="Phone">
+                    <input
+                      type="tel"
+                      autoComplete="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+46 70 123 45 67"
                       className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
                     />
                   </Field>
