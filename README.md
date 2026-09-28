@@ -31,8 +31,11 @@ What the prototype does today, on top of the brief above:
 - **Customer flow** (`/book`): service, adaptive questions (each answer shows what it adds, e.g. "+€10, +5 min"), estimate with team match, month calendar with real availability, contact details. A booking ticket on the side keeps the running summary and the terms.
 - **Booking rule**: standard requests get a confirmation email right away with a link to pay a 20% deposit within 24 hours; unusual requests are confirmed by the studio first, then the same email goes out. Prices are always estimates. The deposit deadline is editable in the owner Policies. (Emails and payments are described in the UI but not sent in this prototype.)
 - **Landing** (`/`): an interactive "one engine, any trade" demo showing how the same rules read for a groomer, photographer, tattoo studio, contractor and hair studio.
-- **Owner panel** (`/owner`): overview, bookings grouped by status with approve / edit quote / decline, availability, services, questions with a "Customer sees" preview, team, flash book and policies.
-- **Owner account**: the first account created on `/auth` becomes the owner; later sign-ups are customers. The same account works locally and on Lovable because both use the same backend.
+- **Owner panel** (`/owner`): overview, bookings grouped by status with approve / edit quote / decline, availability, services, questions with a "Customer sees" preview, team, flash book and policies. Each section has its own address (`/owner?tab=bookings`), so refresh and Back work. Setup edits save on their own and the header shows the save state.
+- **Booking review**: a request with no matched artist can't be approved until the owner picks one. Editing a booking blocks impossible values (negative prices, past dates, no artist) and warns, without blocking, when the artist is off that day, outside their hours, missing a required skill, past their longest sitting or already booked. Changing a confirmed booking emails the customer a "changed" message, not a new confirmation.
+- **Skills**: answers pick required skills from the same list the team uses, and warn when nobody on the team has one.
+- **Start over**: restoring the default setup lives at the bottom of Policies, behind a confirmation dialog, with Undo right after. Bookings are never touched.
+- **Owner account**: the first account created on `/auth` becomes the owner; later sign-ups are customers. Email and password accounts work locally and on Lovable because both use the same backend. Google sign-in goes through Lovable and only works on the Lovable preview and published domains, not on `localhost`.
 
 Design rules for anyone (or any agent) editing the UI are in `AGENTS.md`.
 

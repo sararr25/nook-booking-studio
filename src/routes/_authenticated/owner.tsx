@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   CalendarDays,
@@ -8,6 +9,7 @@ import {
   Check,
   ChevronRight,
   ListChecks,
+  Loader2,
   Home,
   Images,
   LogOut,
@@ -17,7 +19,6 @@ import {
   Plus,
   RotateCcw,
   Settings,
-  Unplug,
   Upload,
   UsersRound,
   Tag,
@@ -26,19 +27,51 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { NookProvider, useNook } from "@/lib/nook/store";
-import { describeOptionEffect, formatDuration, formatMoney } from "@/lib/nook/engine";
-import type { BookingRequest, BusinessConfig } from "@/lib/nook/types";
+import { NookProvider, useNook, type SaveState } from "@/lib/nook/store";
+import { buildQuote, describeOptionEffect, formatDuration, formatMoney } from "@/lib/nook/engine";
+import type { BookingRequest, BusinessConfig, TeamMember } from "@/lib/nook/types";
 import { artistImage } from "@/lib/nook/artist-images";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Wordmark } from "@/components/nook/wordmark";
 import botanical from "@/assets/flash-botanical.jpg";
 import moth from "@/assets/flash-moth.jpg";
 import sun from "@/assets/flash-sun.jpg";
 import swallow from "@/assets/flash-swallow.jpg";
 
+const tabs = [
+  "Overview",
+  "Bookings",
+  "Availability",
+  "Services",
+  "Questions",
+  "Team",
+  "Flash",
+  "Policies",
+] as const;
+type Tab = (typeof tabs)[number];
+
+/** Overview has no slug so /owner stays the home of the panel. */
+const tabSlug = (tab: Tab) => (tab === "Overview" ? undefined : tab.toLowerCase());
+const tabFromSlug = (slug: unknown): Tab =>
+  tabs.find((tab) => tab !== "Overview" && tab.toLowerCase() === slug) ?? "Overview";
+
 export const Route = createFileRoute("/_authenticated/owner")({
+  validateSearch: (search: Record<string, unknown>): { tab?: string } => {
+    const slug = tabSlug(tabFromSlug(search["tab"]));
+    return slug ? { tab: slug } : {};
+  },
   head: () => ({
     meta: [
       { title: "Studio settings | Nook" },
@@ -66,18 +99,6 @@ function OwnerRoute() {
     </NookProvider>
   );
 }
-
-const tabs = [
-  "Overview",
-  "Bookings",
-  "Availability",
-  "Services",
-  "Questions",
-  "Team",
-  "Flash",
-  "Policies",
-] as const;
-type Tab = (typeof tabs)[number];
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -121,10 +142,18 @@ const greeting = () => {
 };
 
 function OwnerPage() {
-  const { business, requests, resetAll } = useNook();
+  const { business, requests, saveState } = useNook();
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("Overview");
+  const tab = tabFromSlug(Route.useSearch().tab);
+  const openTab = (next: Tab) => {
+    const slug = tabSlug(next);
+    void navigate({ to: "/owner", search: slug ? { tab: slug } : {} });
+  };
+  // Each section starts at the top, not wherever the previous one was scrolled to.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [tab]);
   const pending = requests.filter((r) => r.status === "pending").length;
   const metaName: unknown = user.user_metadata?.["display_name"];
   const displayName =
@@ -159,11 +188,12 @@ function OwnerPage() {
             <nav className="mt-4 flex gap-1 overflow-x-auto [scrollbar-width:none] lg:mt-8 lg:block lg:space-y-1">
               {tabs.map((item) => {
                 const Icon = tabIcons[item];
+                const slug = tabSlug(item);
                 return (
-                  <button
+                  <Link
                     key={item}
-                    type="button"
-                    onClick={() => setTab(item)}
+                    to="/owner"
+                    search={slug ? { tab: slug } : {}}
                     aria-current={tab === item ? "page" : undefined}
                     className={cn(
                       "flex h-10 shrink-0 items-center gap-2.5 rounded-sm border px-3 text-sm transition-colors lg:w-full",
@@ -179,7 +209,7 @@ function OwnerPage() {
                         {pending}
                       </span>
                     )}
-                  </button>
+                  </Link>
                 );
               })}
             </nav>
@@ -229,25 +259,13 @@ function OwnerPage() {
                 </>
               )}
             </div>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => {
-                if (!window.confirm("Restore the default services, questions, team and policies?"))
-                  return;
-                resetAll();
-                toast.success("Default setup restored");
-              }}
-              className="min-h-10"
-            >
-              <RotateCcw className="size-3.5" /> Restore defaults
-            </Button>
+            {tab !== "Overview" && tab !== "Bookings" && <SaveStatus state={saveState} />}
           </div>
 
           <div className="nook-enter py-8" key={tab}>
-            {tab === "Overview" && <OverviewTab onOpen={setTab} />}
+            {tab === "Overview" && <OverviewTab onOpen={openTab} />}
             {tab === "Bookings" && <RequestsTab />}
-            {tab === "Availability" && <AvailabilityTab />}
+            {tab === "Availability" && <AvailabilityTab onOpen={openTab} />}
             {tab === "Services" && <ServicesTab />}
             {tab === "Questions" && <QuestionsTab />}
             {tab === "Team" && <TeamTab />}
@@ -270,6 +288,36 @@ const tabIcons: Record<Tab, typeof Home> = {
   Flash: Images,
   Policies: Settings,
 };
+
+const saveLabels: Record<SaveState, string> = {
+  saved: "All changes saved",
+  unsaved: "Unsaved changes",
+  saving: "Saving…",
+  error: "Not saved. Check your connection",
+};
+
+/** Studio setup saves itself; this says where that save is so edits never feel lost. */
+function SaveStatus({ state }: { state: SaveState }) {
+  return (
+    <p
+      role="status"
+      aria-live="polite"
+      className={cn(
+        "inline-flex min-h-10 items-center gap-2 font-mono text-xs",
+        state === "error" ? "text-destructive" : "text-muted-foreground",
+      )}
+    >
+      {state === "saving" || state === "unsaved" ? (
+        <Loader2 className="size-3.5 animate-spin" />
+      ) : state === "error" ? (
+        <AlertTriangle className="size-3.5" />
+      ) : (
+        <Check className="size-3.5 text-highlight" />
+      )}
+      {saveLabels[state]}
+    </p>
+  );
+}
 
 const formatWhen = (date: string, time: string) =>
   `${new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", {
@@ -363,7 +411,10 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
                       </span>
                     </span>
                   </span>
-                  <StatusPill status={request.status} />
+                  <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                    {!business.team.some((m) => m.id === request.memberId) && <NoArtistPill />}
+                    <StatusPill status={request.status} />
+                  </span>
                 </li>
               ))}
             </ul>
@@ -413,14 +464,19 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
   );
 }
 
-function AvailabilityTab() {
+function AvailabilityTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
   const { business } = useNook();
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_18rem]">
       <section>
-        <p className="max-w-xl text-sm text-muted-foreground">
-          Change days and hours in Team. Each row below is what customers can book into.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-xl text-sm text-muted-foreground">
+            Each row below is what customers can book into.
+          </p>
+          <button type="button" onClick={() => onOpen("Team")} className={ghostButton}>
+            <Pencil className="size-4" /> Edit days and hours in Team
+          </button>
+        </div>
         <ul className="mt-6 divide-y divide-border border-y border-border">
           {business.team.map((member) => (
             <li
@@ -428,20 +484,15 @@ function AvailabilityTab() {
               className="grid items-center gap-3 py-4 sm:grid-cols-[10rem_1fr_auto]"
             >
               <span className="font-medium">{member.name}</span>
-              <span className="flex flex-wrap gap-1">
-                {weekdays.map((day, index) => (
-                  <span
-                    key={day}
-                    className={cn(
-                      "inline-flex h-7 min-w-9 items-center justify-center rounded-sm border px-1.5 text-xs",
-                      member.days.includes(index)
-                        ? "border-foreground font-medium"
-                        : "border-transparent text-muted-foreground/60",
-                    )}
-                  >
-                    {day}
-                  </span>
-                ))}
+              <span className="text-sm">
+                {member.days.length === 0 ? (
+                  <span className="text-muted-foreground">No working days set</span>
+                ) : (
+                  [...member.days]
+                    .sort()
+                    .map((day) => weekdays[day])
+                    .join(", ")
+                )}
               </span>
               <span className="font-mono text-sm tabular-nums">
                 {member.start}-{member.end}
@@ -454,13 +505,10 @@ function AvailabilityTab() {
         <CalendarDays className="size-5" />
         <h2 className="mt-4 font-semibold">Google Calendar</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Connect the studio calendar to remove busy times from customer availability.
+          Calendar sync is not available yet, so busy times are not pulled in automatically.
         </p>
-        <Button className="mt-5 w-full" variant="outline" disabled>
-          <Unplug /> Not connected
-        </Button>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Calendar access was not approved during setup.
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          Until it is, keep each person&apos;s days and hours in Team up to date.
         </p>
       </aside>
     </div>
@@ -619,6 +667,7 @@ function RequestsTab() {
                   const service = business.services.find((s) => s.id === r.serviceId);
                   const isPending = r.status === "pending";
                   const isConfirmed = r.status === "confirmed";
+                  const hasArtist = Boolean(member);
                   return (
                     <article
                       key={r.id}
@@ -633,9 +682,11 @@ function RequestsTab() {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-display text-lg font-semibold">{r.customerName}</h3>
                             <StatusPill status={r.status} />
+                            {!hasArtist && r.status !== "declined" && <NoArtistPill />}
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            {service?.name ?? "Removed service"} with {member?.name ?? "no one yet"}
+                            {service?.name ?? "Removed service"}
+                            {member ? ` with ${member.name}` : ", no artist yet"}
                           </p>
                           <p className="mt-1 font-mono text-sm">{formatWhen(r.date, r.time)}</p>
                         </div>
@@ -677,10 +728,14 @@ function RequestsTab() {
                         )}
                       </div>
 
-                      {r.memberId === "unassigned" && (
-                        <p className="mt-3 rounded-sm border border-brand/50 bg-background px-3 py-2 text-xs">
-                          No artist matched automatically. The date and time are the customer&apos;s
-                          preference, not a held slot. Pick an artist and a real time with Edit.
+                      {!hasArtist && r.status !== "declined" && (
+                        <p className="mt-3 flex gap-2 rounded-sm border border-brand/50 bg-background px-3 py-2 text-xs">
+                          <AlertTriangle className="size-4 shrink-0 text-brand" />
+                          <span>
+                            {isConfirmed
+                              ? "Confirmed, but nobody is booked to do it. The date and time are only the customer's preference. Pick an artist and a real time with Change booking."
+                              : "No artist matched automatically. The date and time are only the customer's preference. Pick an artist and a real time before you approve."}
+                          </span>
                         </p>
                       )}
                       {r.notes && (
@@ -735,13 +790,19 @@ function RequestsTab() {
                         {isPending && (
                           <button
                             type="button"
-                            onClick={() => {
-                              setRequestStatus(r.id, "confirmed");
-                              toast.success(`${r.customerName} confirmed.`);
+                            onClick={async () => {
+                              // A booking with nobody to do it is not a booking: pick the artist first.
+                              if (!hasArtist) {
+                                setEditing(r.id);
+                                return;
+                              }
+                              if (await setRequestStatus(r.id, "confirmed"))
+                                toast.success(`${r.customerName} confirmed.`);
                             }}
                             className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
                           >
-                            <Check className="size-4" /> Approve
+                            <Check className="size-4" />
+                            {hasArtist ? "Approve" : "Pick artist to approve"}
                           </button>
                         )}
                         {r.status !== "declined" && (
@@ -766,9 +827,9 @@ function RequestsTab() {
                         {isPending && (
                           <button
                             type="button"
-                            onClick={() => {
-                              setRequestStatus(r.id, "declined");
-                              toast("Request declined");
+                            onClick={async () => {
+                              if (await setRequestStatus(r.id, "declined"))
+                                toast("Request declined");
                             }}
                             className={cn(dangerButton, "min-h-11")}
                           >
@@ -778,10 +839,10 @@ function RequestsTab() {
                         {isConfirmed && (
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               if (!window.confirm(`Cancel ${r.customerName}'s booking?`)) return;
-                              setRequestStatus(r.id, "declined");
-                              toast("Booking cancelled. Let the customer know.");
+                              if (await setRequestStatus(r.id, "declined"))
+                                toast("Booking cancelled.");
                             }}
                             className={cn(dangerButton, "min-h-11")}
                           >
@@ -791,7 +852,7 @@ function RequestsTab() {
                         {r.status === "declined" && (
                           <button
                             type="button"
-                            onClick={() => setRequestStatus(r.id, "pending")}
+                            onClick={() => void setRequestStatus(r.id, "pending")}
                             className={ghostButton}
                           >
                             <RotateCcw className="size-4" /> Back to review
@@ -818,40 +879,149 @@ function RequestsTab() {
   );
 }
 
+const toMinutes = (time: string) => {
+  const [h = 0, m = 0] = time.split(":").map(Number);
+  return h * 60 + m;
+};
+
+const todayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/**
+ * Things the owner may knowingly accept (the artist is booked outside their usual pattern).
+ * Hard problems, like a missing artist or a negative price, are checked separately and block saving.
+ */
+const bookingWarnings = (
+  member: TeamMember,
+  booking: { id: string; date: string; time: string; duration: number },
+  requiredSkills: string[],
+  others: BookingRequest[],
+): string[] => {
+  const warnings: string[] = [];
+  const weekday = new Date(`${booking.date}T00:00:00`).getDay();
+  const start = toMinutes(booking.time);
+  const end = start + booking.duration;
+  if (!member.days.includes(weekday))
+    warnings.push(`${member.name} doesn't work on ${weekdays[weekday]}s.`);
+  if (start < toMinutes(member.start) || end > toMinutes(member.end))
+    warnings.push(
+      `${member.name} works ${member.start}-${member.end}; this runs outside those hours.`,
+    );
+  if (booking.duration > member.maxSession)
+    warnings.push(
+      `${formatDuration(booking.duration)} is longer than ${member.name}'s longest sitting (${formatDuration(member.maxSession)}).`,
+    );
+  const missing = requiredSkills.filter((skill) => !member.skills.includes(skill));
+  if (missing.length > 0)
+    warnings.push(
+      `${member.name} doesn't have the skill${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`,
+    );
+  const clash = others.find(
+    (o) =>
+      o.id !== booking.id &&
+      o.status !== "declined" &&
+      o.memberId === member.id &&
+      o.date === booking.date &&
+      toMinutes(o.time) < end &&
+      start < toMinutes(o.time) + o.quote.duration,
+  );
+  if (clash)
+    warnings.push(`${member.name} already has ${clash.customerName} at ${clash.time} that day.`);
+  return warnings;
+};
+
 function EditBooking({
   request,
   onSave,
   onDone,
 }: {
   request: BookingRequest;
-  onSave: (id: string, patch: Partial<BookingRequest>) => void;
+  onSave: (id: string, patch: Partial<BookingRequest>) => Promise<boolean>;
   onDone: () => void;
 }) {
-  const { business } = useNook();
+  const { business, requests } = useNook();
   const [low, setLow] = useState(request.quote.low);
   const [high, setHigh] = useState(request.quote.high);
   const [duration, setDuration] = useState(request.quote.duration);
   const [deposit, setDeposit] = useState(request.quote.deposit);
   const [date, setDate] = useState(request.date);
   const [time, setTime] = useState(request.time);
+  // Never pre-pick someone: an unassigned request stays unassigned until the owner chooses.
   const [memberId, setMemberId] = useState(
-    business.team.some((m) => m.id === request.memberId)
-      ? request.memberId
-      : (business.team[0]?.id ?? request.memberId),
+    business.team.some((m) => m.id === request.memberId) ? request.memberId : "",
   );
+  const [saving, setSaving] = useState(false);
   const wasConfirmed = request.status === "confirmed";
+  const member = business.team.find((m) => m.id === memberId);
+  const service = business.services.find((s) => s.id === request.serviceId);
+  const requiredSkills = service
+    ? buildQuote(business, service, request.answers).requiredSkills
+    : [];
+
+  const errors: string[] = [];
+  if (!member) errors.push("Choose who will do this booking.");
+  if ([low, high, deposit].some((v) => !Number.isFinite(v) || v < 0))
+    errors.push("Prices and deposit can't be negative.");
+  if (high < low) errors.push("High price can't be below the low price.");
+  if (deposit > high) errors.push("The deposit can't be more than the high price.");
+  if (!Number.isFinite(duration) || duration <= 0) errors.push("Add how many minutes it takes.");
+  if (!date || !time) errors.push("Pick a date and a time.");
+  else if (date < todayKey()) errors.push("The date is in the past.");
+
+  const warnings =
+    member && date && time
+      ? bookingWarnings(member, { id: request.id, date, time, duration }, requiredSkills, requests)
+      : [];
+
+  const save = async () => {
+    if (errors.length > 0) return;
+    setSaving(true);
+    const saved = await onSave(request.id, {
+      memberId,
+      date,
+      time,
+      // Only a real status change sends the "confirmed" email; edits to a confirmed booking are "changed".
+      ...(wasConfirmed ? {} : { status: "confirmed" as const }),
+      quote: { ...request.quote, low, high, duration, deposit },
+    });
+    setSaving(false);
+    if (!saved) return;
+    toast.success(
+      wasConfirmed ? "Booking changed." : `${request.customerName} confirmed with ${member?.name}.`,
+    );
+    onDone();
+  };
 
   return (
     <div className="mt-5 grid gap-4 rounded-sm border border-border bg-background p-5 sm:grid-cols-4">
-      <NumberField label="Low" value={low} onChange={setLow} />
-      <NumberField label="High" value={high} onChange={setHigh} />
-      <NumberField label="Minutes" value={duration} step={15} onChange={setDuration} />
-      <NumberField label="Deposit" value={deposit} step={10} onChange={setDeposit} />
+      <NumberField
+        label={`Low (${business.policies.currency})`}
+        value={low}
+        min={0}
+        onChange={setLow}
+      />
+      <NumberField
+        label={`High (${business.policies.currency})`}
+        value={high}
+        min={0}
+        onChange={setHigh}
+      />
+      <NumberField label="Minutes" value={duration} min={15} step={15} onChange={setDuration} />
+      <NumberField
+        label={`Deposit (${business.policies.currency})`}
+        value={deposit}
+        min={0}
+        step={10}
+        onChange={setDeposit}
+      />
       <label className="block">
         <span className="eyebrow mb-2 block">Date</span>
         <input
           type="date"
           value={date}
+          min={todayKey()}
           onChange={(e) => setDate(e.target.value)}
           className={cn(inputClass, "min-h-11 font-mono")}
         />
@@ -870,8 +1040,11 @@ function EditBooking({
         <select
           value={memberId}
           onChange={(e) => setMemberId(e.target.value)}
-          className={cn(inputClass, "min-h-11")}
+          className={cn(inputClass, "min-h-11", !member && "border-brand")}
         >
+          <option value="" disabled>
+            Choose an artist
+          </option>
           {business.team.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}
@@ -879,31 +1052,40 @@ function EditBooking({
           ))}
         </select>
       </label>
+
+      {(errors.length > 0 || warnings.length > 0) && (
+        <div className="space-y-2 sm:col-span-4" aria-live="polite">
+          {errors.length > 0 && (
+            <ul className="space-y-1 text-sm text-destructive">
+              {errors.map((error) => (
+                <li key={error} className="flex gap-2">
+                  <X className="mt-0.5 size-4 shrink-0" /> {error}
+                </li>
+              ))}
+            </ul>
+          )}
+          {warnings.length > 0 && (
+            <ul className="space-y-1 text-sm text-brand">
+              {warnings.map((warning) => (
+                <li key={warning} className="flex gap-2">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {warning}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3 sm:col-span-4">
         <button
           type="button"
-          onClick={() => {
-            if (high < low) {
-              toast.error("High price can't be below the low price.");
-              return;
-            }
-            onSave(request.id, {
-              memberId,
-              date,
-              time,
-              status: "confirmed",
-              quote: { ...request.quote, low, high, duration, deposit },
-            });
-            toast.success(
-              wasConfirmed
-                ? `Booking changed. Let ${request.customerName} know${request.phone ? ` on ${request.phone}` : ""}.`
-                : `${request.customerName} confirmed with the new quote.`,
-            );
-            onDone();
-          }}
-          className="min-h-11 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
+          onClick={() => void save()}
+          disabled={errors.length > 0 || saving}
+          className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink"
         >
+          {saving && <Loader2 className="size-4 animate-spin" />}
           {wasConfirmed ? "Save changes" : "Save & confirm"}
+          {warnings.length > 0 && errors.length === 0 && " anyway"}
         </button>
         <button
           type="button"
@@ -914,6 +1096,14 @@ function EditBooking({
         </button>
       </div>
     </div>
+  );
+}
+
+function NoArtistPill() {
+  return (
+    <span className="rounded-full border border-brand/50 bg-card px-2.5 py-0.5 font-mono text-xs font-medium text-brand">
+      No artist
+    </span>
   );
 }
 
@@ -940,6 +1130,7 @@ function NumberField({
   value,
   onChange,
   step = 1,
+  min,
   suffix,
   compact,
 }: {
@@ -947,6 +1138,7 @@ function NumberField({
   value: number;
   onChange: (value: number) => void;
   step?: number;
+  min?: number;
   suffix?: string;
   compact?: boolean;
 }) {
@@ -958,6 +1150,7 @@ function NumberField({
           type="number"
           value={Number.isFinite(value) ? value : 0}
           step={step}
+          min={min}
           onChange={(e) => onChange(Number(e.target.value))}
           className={cn(
             "w-full rounded-sm border border-input bg-card px-3 font-mono text-sm tabular-nums outline-none focus:border-foreground",
@@ -1006,40 +1199,92 @@ function TextField({
   );
 }
 
-/** Comma-separated list editor that commits on blur, so typing a comma doesn't fight the input. */
-function ListField({
+/** Every skill the studio already uses, so answers and artists share one vocabulary. */
+const skillsInUse = (business: BusinessConfig) =>
+  Array.from(
+    new Set([
+      ...business.team.flatMap((m) => m.skills),
+      ...business.services.flatMap((s) =>
+        s.questions.flatMap((q) => (q.options ?? []).flatMap((o) => o.requiresSkills ?? [])),
+      ),
+    ]),
+  ).sort();
+
+/** Pick skills from the shared list instead of typing them, so a typo can't hide every artist. */
+function SkillPicker({
   label,
   value,
+  known,
+  team,
   onChange,
-  placeholder,
 }: {
   label: string;
   value: string[];
+  known: string[];
+  team: TeamMember[];
   onChange: (value: string[]) => void;
-  placeholder?: string;
 }) {
+  const [draft, setDraft] = useState("");
+  const uncovered = value.filter((skill) => !team.some((m) => m.skills.includes(skill)));
+  const add = () => {
+    const skill = draft.trim().toLowerCase();
+    if (skill && !value.includes(skill)) onChange([...value, skill]);
+    setDraft("");
+  };
   return (
-    <label className="block">
+    <div>
       <span className="eyebrow mb-2 block">{label}</span>
-      <input
-        key={value.join(",")}
-        defaultValue={value.join(", ")}
-        placeholder={placeholder}
-        onBlur={(e) =>
-          onChange(
-            Array.from(
-              new Set(
-                e.target.value
-                  .split(",")
-                  .map((part) => part.trim().toLowerCase())
-                  .filter(Boolean),
-              ),
-            ),
-          )
-        }
-        className={cn(inputClass, "min-h-9")}
-      />
-    </label>
+      <div className="flex flex-wrap gap-1.5">
+        {known.map((skill) => {
+          const on = value.includes(skill);
+          return (
+            <button
+              key={skill}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(on ? value.filter((s) => s !== skill) : [...value, skill])}
+              className={cn(
+                "min-h-9 rounded-sm border px-3 text-xs transition-colors",
+                on
+                  ? "nook-selected font-medium"
+                  : "border-border text-muted-foreground hover:bg-secondary",
+              )}
+            >
+              {skill}
+            </button>
+          );
+        })}
+        <span className="flex gap-1.5">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              add();
+            }}
+            aria-label={`New skill for ${label.toLowerCase()}`}
+            placeholder="New skill"
+            className={cn(inputClass, "min-h-9 w-32")}
+          />
+          <button
+            type="button"
+            onClick={add}
+            aria-label="Add skill"
+            className={cn(ghostButton, "min-h-9 shrink-0")}
+          >
+            <Plus className="size-4" />
+          </button>
+        </span>
+      </div>
+      {uncovered.length > 0 && (
+        <p className="mt-2 flex gap-1.5 text-xs text-brand">
+          <AlertTriangle className="size-3.5 shrink-0" />
+          Nobody on the team has {uncovered.join(", ")} yet, so this answer can&apos;t be matched to
+          an artist. Add it to someone in Team.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -1162,6 +1407,7 @@ function QuestionsTab() {
     return <p className="text-sm text-muted-foreground">Add a service to edit its questions.</p>;
 
   const currency = business.policies.currency;
+  const knownSkills = skillsInUse(business);
 
   const setQuestions = (fn: (questions: QuestionItem[]) => QuestionItem[]) =>
     updateBusiness((b) => ({
@@ -1410,10 +1656,11 @@ function QuestionsTab() {
                       />
                     </div>
                     <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
-                      <ListField
+                      <SkillPicker
                         label="Skills needed"
                         value={o.requiresSkills ?? []}
-                        placeholder="e.g. coverup, colour"
+                        known={knownSkills}
+                        team={business.team}
                         onChange={(v) =>
                           patchOption(q.id, o.id, { requiresSkills: v.length ? v : undefined })
                         }
@@ -1428,7 +1675,7 @@ function QuestionsTab() {
                           "min-h-9 rounded-sm border px-3 text-xs transition-colors",
                           o.requiresPhotos
                             ? "nook-selected font-medium"
-                            : "border-border text-muted-foreground hover:bg-secondary",
+                            : "border-input text-foreground hover:bg-secondary",
                         )}
                       >
                         Photos {o.requiresPhotos ? "required" : "optional"}
@@ -1443,7 +1690,7 @@ function QuestionsTab() {
                           "min-h-9 rounded-sm border px-3 text-xs transition-colors",
                           o.requiresReview
                             ? "nook-selected font-medium"
-                            : "border-border text-muted-foreground hover:bg-secondary",
+                            : "border-input text-foreground hover:bg-secondary",
                         )}
                       >
                         {o.requiresReview ? "You check first" : "Confirms on its own"}
@@ -1500,14 +1747,7 @@ const initialsFrom = (name: string) =>
 function TeamTab() {
   const { business, updateBusiness } = useNook();
 
-  const knownSkills = Array.from(
-    new Set([
-      ...business.team.flatMap((m) => m.skills),
-      ...business.services.flatMap((s) =>
-        s.questions.flatMap((q) => (q.options ?? []).flatMap((o) => o.requiresSkills ?? [])),
-      ),
-    ]),
-  ).sort();
+  const knownSkills = skillsInUse(business);
 
   const patchMember = (id: string, patch: Partial<BusinessConfig["team"][number]>) =>
     updateBusiness((b) => ({
@@ -1703,7 +1943,7 @@ function TeamTab() {
 const currencies = ["EUR", "SEK", "DKK", "NOK", "GBP", "USD"];
 
 function PoliciesTab() {
-  const { business, updateBusiness } = useNook();
+  const { business, updateBusiness, resetAll } = useNook();
   const p = business.policies;
 
   const patch = (value: Partial<typeof p>) =>
@@ -1803,6 +2043,53 @@ function PoliciesTab() {
           aria-label="Message about review"
           className="mt-4 w-full rounded-sm border border-input bg-background p-3 text-sm outline-none focus:border-foreground"
         />
+      </section>
+
+      <section className="rounded-sm border border-destructive/40 bg-card p-5">
+        <h2 className="font-display text-lg font-semibold">Start over</h2>
+        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+          Replaces your services, questions, team and policies with Nook&apos;s starting setup.
+          Bookings are kept.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              type="button"
+              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-sm border border-destructive/60 px-4 text-sm text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <RotateCcw className="size-4" /> Restore default setup
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restore the default setup?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Your {business.services.length} services with their questions, your{" "}
+                {business.team.length} team members and all policies will be replaced. Bookings are
+                not touched. You can undo this right after.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep my setup</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  const previous = business;
+                  resetAll();
+                  toast.success("Default setup restored", {
+                    duration: 10000,
+                    action: {
+                      label: "Undo",
+                      onClick: () => updateBusiness(() => previous),
+                    },
+                  });
+                }}
+              >
+                Restore defaults
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
     </div>
   );

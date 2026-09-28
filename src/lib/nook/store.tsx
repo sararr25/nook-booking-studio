@@ -17,14 +17,20 @@ import type { Answers, BookingRequest, BusinessConfig } from "./types";
 
 type RequestRow = Database["public"]["Tables"]["booking_requests"]["Row"];
 
+/** Where the owner's studio setup is in the autosave cycle. */
+export type SaveState = "saved" | "unsaved" | "saving" | "error";
+
 type StoreValue = {
   business: BusinessConfig;
   requests: BookingRequest[];
   loaded: boolean;
+  saveState: SaveState;
   updateBusiness: (updater: (draft: BusinessConfig) => BusinessConfig) => void;
   addRequest: (request: BookingRequest) => void;
-  setRequestStatus: (id: string, status: BookingRequest["status"]) => void;
-  updateRequest: (id: string, patch: Partial<BookingRequest>) => void;
+  /** Resolves to true once the database has the change. */
+  setRequestStatus: (id: string, status: BookingRequest["status"]) => Promise<boolean>;
+  /** Resolves to true once the database has the change; the screen rolls back if it fails. */
+  updateRequest: (id: string, patch: Partial<BookingRequest>) => Promise<boolean>;
   resetAll: () => void;
 };
 
@@ -88,6 +94,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
   const [business, setBusiness] = useState<BusinessConfig>(defaultBusiness);
   const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("saved");
   const dirty = useRef(false);
 
   useEffect(() => {
@@ -113,6 +120,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
     if (!loaded || !dirty.current) return;
     const timer = window.setTimeout(async () => {
       dirty.current = false;
+      setSaveState("saving");
       const { error } = await supabase.from("studio_settings").upsert({
         id: "main",
         business_name: business.name,
@@ -122,13 +130,20 @@ export function NookProvider({ children }: { children: ReactNode }) {
         policies: business.policies as unknown as Json,
         config: business as unknown as Json,
       });
-      if (error) toast.error("Could not save your changes. Check your connection and try again.");
+      if (error) {
+        setSaveState("error");
+        toast.error("Could not save your changes. Check your connection and try again.");
+        return;
+      }
+      // A newer edit arrived while this one was saving; its own timer will save it.
+      setSaveState(dirty.current ? "unsaved" : "saved");
     }, 700);
     return () => window.clearTimeout(timer);
   }, [business, loaded]);
 
   const updateBusiness = useCallback((updater: (draft: BusinessConfig) => BusinessConfig) => {
     dirty.current = true;
+    setSaveState("unsaved");
     setBusiness((prev) => updater(prev));
   }, []);
 
@@ -137,31 +152,47 @@ export function NookProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const updateRequest = useCallback((id: string, patch: Partial<BookingRequest>) => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-    void supabase
-      .from("booking_requests")
-      .update(toRowPatch(patch))
-      .eq("id", id)
-      .then(({ error }) => {
-        if (error) {
-          toast.error("Could not save the booking change.");
-          return;
+  const updateRequest = useCallback(
+    async (id: string, patch: Partial<BookingRequest>): Promise<boolean> => {
+      let previous: BookingRequest | undefined;
+      setRequests((prev) =>
+        prev.map((r) => {
+          if (r.id !== id) return r;
+          previous = r;
+          return { ...r, ...patch };
+        }),
+      );
+      const { error } = await supabase
+        .from("booking_requests")
+        .update(toRowPatch(patch))
+        .eq("id", id);
+      if (error) {
+        // Put the booking back the way the database still has it.
+        if (previous) {
+          const restored = previous;
+          setRequests((prev) => prev.map((r) => (r.id === id ? restored : r)));
         }
-        const kind =
-          patch.status === "confirmed" || patch.status === "declined"
-            ? patch.status
-            : !patch.status && (patch.date || patch.time || patch.memberId || patch.quote)
-              ? "changed"
-              : null;
-        if (!kind) return;
+        toast.error("Could not save the booking change. Nothing was changed.");
+        return false;
+      }
+      // Only send a status email when the status really changes; everything else is "changed".
+      const kind =
+        patch.status === "confirmed" || patch.status === "declined"
+          ? patch.status
+          : !patch.status && (patch.date || patch.time || patch.memberId || patch.quote)
+            ? "changed"
+            : null;
+      if (kind) {
         notifyBookingChange({ data: { id, kind } })
           .then((result) => {
             if (result.sent) toast.success("The customer has been emailed.");
           })
           .catch(() => toast.error("Saved, but the email to the customer could not be sent."));
-      });
-  }, []);
+      }
+      return true;
+    },
+    [],
+  );
 
   const setRequestStatus = useCallback(
     (id: string, status: BookingRequest["status"]) => updateRequest(id, { status }),
@@ -178,6 +209,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
       business,
       requests,
       loaded,
+      saveState,
       updateBusiness,
       addRequest,
       setRequestStatus,
@@ -188,6 +220,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
       business,
       requests,
       loaded,
+      saveState,
       updateBusiness,
       addRequest,
       setRequestStatus,

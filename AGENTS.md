@@ -13,6 +13,9 @@
 - Nook is business-agnostic; tattoo imagery appears only in demo data, never system decoration.
 - Standard requests auto-confirm; review requests need owner approval. Confirmation emails carry a deposit link. Deposits are 20% and due within `policies.depositDueHours`; prices remain estimates.
 - Keep option effects synchronized through `describeOptionEffect()`.
+- A booking is never confirmed without an assigned artist. The owner edit form never pre-selects an artist.
+- Owner booking changes only send a "confirmed" email when the status actually changes; other edits send "changed".
+- Owner sections are addressed by `?tab=<section>` on `/owner`. Resetting the whole setup lives only in Policies.
 - The first account is owner; later accounts are customers. Owner settings persist through `NookProvider`; defaults come from `defaultBusiness`.
 
 ## Design rules
