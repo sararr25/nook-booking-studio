@@ -12,6 +12,7 @@ type Props = {
   eligibleTeam: TeamMember[];
   duration: number;
   booked: { date: string; time: string; memberId: string }[];
+  blocked?: { date: string; start: number; end: number }[];
   selected: { date: string; slot: Slot } | null;
   onSelect: (value: { date: string; slot: Slot }) => void;
 };
@@ -21,6 +22,7 @@ export function MonthCalendar({
   eligibleTeam,
   duration,
   booked,
+  blocked = [],
   selected,
   onSelect,
 }: Props) {
@@ -33,7 +35,8 @@ export function MonthCalendar({
       const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
       for (let d = 1; d <= daysInMonth; d += 1) {
         const day = new Date(month.getFullYear(), month.getMonth(), d);
-        if (slotsForDay(business, eligibleTeam, duration, day, booked).length > 0) return month;
+        if (slotsForDay(business, eligibleTeam, duration, day, booked, blocked).length > 0)
+          return month;
       }
     }
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -54,10 +57,10 @@ export function MonthCalendar({
     const map = new Map<string, Slot[]>();
     for (const day of days) {
       if (!day) continue;
-      map.set(dateKey(day), slotsForDay(business, eligibleTeam, duration, day, booked));
+      map.set(dateKey(day), slotsForDay(business, eligibleTeam, duration, day, booked, blocked));
     }
     return map;
-  }, [days, business, eligibleTeam, duration, booked]);
+  }, [days, business, eligibleTeam, duration, booked, blocked]);
 
   const monthLabel = cursor.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const openSlots = openDay ? (availability.get(openDay) ?? []) : [];

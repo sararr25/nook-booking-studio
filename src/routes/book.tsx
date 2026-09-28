@@ -110,6 +110,7 @@ function BookingFlow() {
     setSelected(null);
   };
 
+  const calendarBusy = busyQuery.data?.blocks ?? [];
   const booked = requests
     .filter((r) => r.status !== "declined")
     .map((r) => ({ date: r.date, time: r.time, memberId: r.memberId }));
@@ -381,6 +382,7 @@ function BookingFlow() {
                       eligibleTeam={calendarTeam}
                       duration={quote.duration}
                       booked={booked}
+                      blocked={calendarBusy}
                       selected={selected}
                       onSelect={setSelected}
                     />

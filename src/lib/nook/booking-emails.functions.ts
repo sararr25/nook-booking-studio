@@ -44,7 +44,9 @@ export const markDemoDepositPaid = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: booking } = await supabaseAdmin
       .from("booking_requests")
-      .select("status, deposit_paid_at, appointment_date, appointment_time")
+      .select(
+        "status, deposit_paid_at, appointment_date, appointment_time, customer_name, phone, contact, service_id, member_id, quote",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (!booking || booking.status !== "confirmed") return { paid: false as const };
@@ -57,10 +59,49 @@ export const markDemoDepositPaid = createServerFn({ method: "POST" })
         .eq("id", data.id);
       if (error) return { paid: false as const };
     }
+    // Paid bookings go into the studio's Google Calendar; the event id makes retries harmless.
+    let calendarAdded = false;
+    try {
+      const { createAppointmentEvent } = await import("./google-calendar.server");
+      const quote = (booking.quote ?? {}) as { duration?: number };
+      await createAppointmentEvent({
+        bookingId: data.id,
+        summary: `${booking.customer_name} (${booking.service_id})`,
+        description: [
+          `Artist: ${booking.member_id || "unassigned"}`,
+          `Email: ${booking.contact}`,
+          `Phone: ${booking.phone}`,
+          "Deposit paid",
+        ].join("\n"),
+        date: booking.appointment_date,
+        time: booking.appointment_time.slice(0, 5),
+        durationMinutes: quote.duration ?? 60,
+      });
+      calendarAdded = true;
+    } catch (calendarError) {
+      console.error(
+        "Calendar event failed",
+        calendarError instanceof Error ? calendarError.message : calendarError,
+      );
+    }
     return {
       paid: true as const,
       paidAt,
+      calendarAdded,
       date: booking.appointment_date,
       time: booking.appointment_time.slice(0, 5),
     };
   });
+
+// Public: busy times from the studio's Google Calendar, so customers can't book over them.
+export const getCalendarBusy = createServerFn({ method: "GET" }).handler(async () => {
+  const { fetchBusyBlocks } = await import("./google-calendar.server");
+  const now = new Date();
+  const until = new Date(now.getTime() + 180 * 24 * 60 * 60_000);
+  try {
+    return { connected: true, blocks: await fetchBusyBlocks(now.toISOString(), until.toISOString()) };
+  } catch (error) {
+    console.error("Calendar busy read failed", error instanceof Error ? error.message : error);
+    return { connected: false, blocks: [] };
+  }
+});
