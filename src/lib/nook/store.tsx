@@ -4,56 +4,22 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { defaultBusiness } from "./config";
-import type { BookingRequest, BusinessConfig } from "./types";
+import type { Answers, BookingRequest, BusinessConfig } from "./types";
 
-const CONFIG_KEY = "nook.business.v3";
-const REQUESTS_KEY = "nook.requests.v2";
-
-const seedRequests = (): BookingRequest[] => {
-  const soon = new Date();
-  soon.setDate(soon.getDate() + 9);
-  const key = `${soon.getFullYear()}-${String(soon.getMonth() + 1).padStart(2, "0")}-${String(soon.getDate()).padStart(2, "0")}`;
-  return [
-    {
-      id: "req-seed-1",
-      createdAt: new Date().toISOString(),
-      customerName: "Nadia Berg",
-      contact: "nadia.berg@mail.com",
-      phone: "+46 70 482 19 03",
-      notes: "Covering an old anchor on the forearm, would love something botanical over it.",
-      serviceId: "tattoo",
-      answers: {},
-      date: key,
-      time: "13:00",
-      memberId: "ines",
-      status: "pending",
-      quote: {
-        low: 940,
-        high: 1180,
-        duration: 330,
-        deposit: 210,
-        requiresReview: true,
-        reviewReasons: [
-          "Is this covering or reworking existing ink? Yes",
-          "Above the auto-approval price ceiling",
-        ],
-        lines: [
-          { label: "Custom tattoo base", detail: "€180 · 1 hr 30 min" },
-          { label: "24cm piece", detail: "+€336 · +3 hr 9 min" },
-          { label: "Cover-up", detail: "+€250 · +1 hr 35 min" },
-        ],
-      },
-    },
-  ];
-};
+type RequestRow = Database["public"]["Tables"]["booking_requests"]["Row"];
 
 type StoreValue = {
   business: BusinessConfig;
   requests: BookingRequest[];
+  loaded: boolean;
   updateBusiness: (updater: (draft: BusinessConfig) => BusinessConfig) => void;
   addRequest: (request: BookingRequest) => void;
   setRequestStatus: (id: string, status: BookingRequest["status"]) => void;
@@ -67,77 +33,142 @@ const contextHolder = globalThis as typeof globalThis & {
 };
 const StoreContext = (contextHolder.__nookStoreContext ??= createContext<StoreValue | null>(null));
 
-const read = <T,>(key: string, fallback: T): T => {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const toBusiness = (config: Json | null): BusinessConfig => {
+  if (!isRecord(config) || !Array.isArray(config["services"])) return defaultBusiness;
+  const saved = config as unknown as BusinessConfig;
+  // Configs saved before a policy existed pick up its default value.
+  return { ...saved, policies: { ...defaultBusiness.policies, ...saved.policies } };
 };
+
+const toStatus = (status: string): BookingRequest["status"] =>
+  status === "confirmed" || status === "declined" ? status : "pending";
+
+const toRequest = (row: RequestRow): BookingRequest => {
+  const quote = (isRecord(row.quote) ? row.quote : {}) as Partial<BookingRequest["quote"]>;
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    customerName: row.customer_name,
+    contact: row.contact,
+    phone: row.phone,
+    notes: row.notes,
+    serviceId: row.service_id,
+    answers: (isRecord(row.answers) ? row.answers : {}) as Answers,
+    date: row.appointment_date,
+    time: row.appointment_time.slice(0, 5),
+    memberId: row.member_id || "unassigned",
+    ...(row.flash_design_key ? { flashDesignId: row.flash_design_key } : {}),
+    referencePaths: row.reference_paths,
+    status: toStatus(row.status),
+    quote: {
+      low: quote.low ?? 0,
+      high: quote.high ?? 0,
+      duration: quote.duration ?? 0,
+      deposit: quote.deposit ?? 0,
+      requiresReview: quote.requiresReview ?? false,
+      reviewReasons: quote.reviewReasons ?? [],
+      lines: quote.lines ?? [],
+    },
+  };
+};
+
+const toRowPatch = (patch: Partial<BookingRequest>) => ({
+  ...(patch.status ? { status: patch.status } : {}),
+  ...(patch.date ? { appointment_date: patch.date } : {}),
+  ...(patch.time ? { appointment_time: patch.time } : {}),
+  ...(patch.memberId ? { member_id: patch.memberId } : {}),
+  ...(patch.quote ? { quote: patch.quote as unknown as Json } : {}),
+});
 
 export function NookProvider({ children }: { children: ReactNode }) {
   const [business, setBusiness] = useState<BusinessConfig>(defaultBusiness);
   const [requests, setRequests] = useState<BookingRequest[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const dirty = useRef(false);
 
   useEffect(() => {
-    const saved = read(CONFIG_KEY, defaultBusiness);
-    // Configs saved before a policy existed pick up its default value.
-    setBusiness({ ...saved, policies: { ...defaultBusiness.policies, ...saved.policies } });
-    setRequests(read(REQUESTS_KEY, seedRequests()));
-    setHydrated(true);
+    let cancelled = false;
+    void (async () => {
+      const [settings, bookings] = await Promise.all([
+        supabase.from("studio_settings").select("config").eq("id", "main").maybeSingle(),
+        // Only owners can read requests; everyone else gets an empty list.
+        supabase.from("booking_requests").select("*").order("appointment_date"),
+      ]);
+      if (cancelled) return;
+      setBusiness(toBusiness(settings.data?.config ?? null));
+      setRequests((bookings.data ?? []).map(toRequest));
+      setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Owner edits are saved to the database shortly after the last change.
   useEffect(() => {
-    if (!hydrated) return;
-    window.localStorage.setItem(CONFIG_KEY, JSON.stringify(business));
-  }, [business, hydrated]);
+    if (!loaded || !dirty.current) return;
+    const timer = window.setTimeout(async () => {
+      dirty.current = false;
+      const { error } = await supabase.from("studio_settings").upsert({
+        id: "main",
+        business_name: business.name,
+        location: business.location,
+        currency: business.policies.currency,
+        services: business.services as unknown as Json,
+        policies: business.policies as unknown as Json,
+        config: business as unknown as Json,
+      });
+      if (error) toast.error("Could not save your changes. Check your connection and try again.");
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [business, loaded]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    window.localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
-  }, [requests, hydrated]);
-
-  const updateBusiness = useCallback(
-    (updater: (draft: BusinessConfig) => BusinessConfig) => setBusiness((prev) => updater(prev)),
-    [],
-  );
+  const updateBusiness = useCallback((updater: (draft: BusinessConfig) => BusinessConfig) => {
+    dirty.current = true;
+    setBusiness((prev) => updater(prev));
+  }, []);
 
   const addRequest = useCallback(
     (request: BookingRequest) => setRequests((prev) => [request, ...prev]),
     [],
   );
 
-  const setRequestStatus = useCallback(
-    (id: string, status: BookingRequest["status"]) =>
-      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r))),
-    [],
-  );
+  const updateRequest = useCallback((id: string, patch: Partial<BookingRequest>) => {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    void supabase
+      .from("booking_requests")
+      .update(toRowPatch(patch))
+      .eq("id", id)
+      .then(({ error }) => {
+        if (error) toast.error("Could not save the booking change.");
+      });
+  }, []);
 
-  const updateRequest = useCallback(
-    (id: string, patch: Partial<BookingRequest>) =>
-      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r))),
-    [],
+  const setRequestStatus = useCallback(
+    (id: string, status: BookingRequest["status"]) => updateRequest(id, { status }),
+    [updateRequest],
   );
 
   const resetAll = useCallback(() => {
+    dirty.current = true;
     setBusiness(defaultBusiness);
-    setRequests(seedRequests());
   }, []);
 
   const value = useMemo(
     () => ({
       business,
       requests,
+      loaded,
       updateBusiness,
       addRequest,
       setRequestStatus,
       updateRequest,
       resetAll,
     }),
-    [business, requests, updateBusiness, addRequest, setRequestStatus, updateRequest, resetAll],
+    [business, requests, loaded, updateBusiness, addRequest, setRequestStatus, updateRequest, resetAll],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

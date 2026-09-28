@@ -233,12 +233,14 @@ function OwnerPage() {
               variant="outline"
               type="button"
               onClick={() => {
+                if (!window.confirm("Restore the default services, questions, team and policies?"))
+                  return;
                 resetAll();
-                toast.success("Demo data reset");
+                toast.success("Default setup restored");
               }}
               className="min-h-10"
             >
-              <RotateCcw className="size-3.5" /> Reset demo
+              <RotateCcw className="size-3.5" /> Restore defaults
             </Button>
           </div>
 
