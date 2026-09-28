@@ -928,7 +928,9 @@ const bookingWarnings = (
   const start = toMinutes(booking.time);
   const end = start + booking.duration;
   if (!member.days.includes(weekday))
-    warnings.push(`${member.name} doesn't work on ${weekdays[weekday]}s.`);
+    warnings.push(
+      `${member.name} doesn't work on ${new Date(`${booking.date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "long" })}s.`,
+    );
   if (start < toMinutes(member.start) || end > toMinutes(member.end))
     warnings.push(
       `${member.name} works ${member.start}-${member.end}; this runs outside those hours.`,
