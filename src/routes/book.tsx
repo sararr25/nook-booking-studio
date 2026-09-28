@@ -198,6 +198,7 @@ function BookingFlow() {
       return;
     }
     addRequest(request);
+    void notifyNewBooking({ data: { id: request.id } }).catch(() => undefined);
     setDone({
       pending,
       terms: bookingTerms({
