@@ -558,6 +558,17 @@ const statusGroups: { status: BookingRequest["status"]; title: string; empty: st
   { status: "declined", title: "Declined or cancelled", empty: "" },
 ];
 
+/** Patch where `undefined` removes the key, so optional fields can be cleared. */
+type Patch<T> = { [K in keyof T]?: T[K] | undefined };
+const applyPatch = <T extends object>(target: T, patch: Patch<T>): T => {
+  const next: Record<string, unknown> = { ...target };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) delete next[key];
+    else next[key] = value;
+  }
+  return next as T;
+};
+
 const newId = (prefix: string) => `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
 
 const inputClass =
@@ -1158,16 +1169,16 @@ function QuestionsTab() {
       ),
     }));
 
-  const patchQuestion = (questionId: string, patch: Partial<QuestionItem>) =>
-    setQuestions((qs) => qs.map((q) => (q.id === questionId ? { ...q, ...patch } : q)));
+  const patchQuestion = (questionId: string, patch: Patch<QuestionItem>) =>
+    setQuestions((qs) => qs.map((q) => (q.id === questionId ? applyPatch(q, patch) : q)));
 
   const setOptions = (questionId: string, fn: (options: OptionItem[]) => OptionItem[]) =>
     setQuestions((qs) =>
       qs.map((q) => (q.id === questionId ? { ...q, options: fn(q.options ?? []) } : q)),
     );
 
-  const patchOption = (questionId: string, optionId: string, patch: Partial<OptionItem>) =>
-    setOptions(questionId, (os) => os.map((o) => (o.id === optionId ? { ...o, ...patch } : o)));
+  const patchOption = (questionId: string, optionId: string, patch: Patch<OptionItem>) =>
+    setOptions(questionId, (os) => os.map((o) => (o.id === optionId ? applyPatch(o, patch) : o)));
 
   const moveQuestion = (index: number, delta: number) =>
     setQuestions((qs) => {
