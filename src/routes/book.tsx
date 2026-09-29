@@ -99,7 +99,8 @@ function BookingFlow() {
   const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
   const [artistChoice, setArtistChoice] = useState<string>("auto");
   const [done, setDone] = useState<null | {
-    pending: boolean;
+    reviewPending: boolean;
+    awaitingDeposit: boolean;
     terms: string[];
     date: string;
     time: string;

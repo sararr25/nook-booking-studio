@@ -24,10 +24,6 @@ export const syncOwnerBookingCalendar = createServerFn({ method: "POST" })
       return { synced: true, action: "not-confirmed-or-paid" };
     const { deleteAppointmentEvent, updateAppointmentEvent } =
       await import("./google-calendar.server");
-    if (booking.status === "declined") {
-      await deleteAppointmentEvent(data.id);
-      return { synced: true, action: "removed" };
-    }
     await updateAppointmentEvent({
       bookingId: data.id,
       summary: `${booking.customer_name} (${booking.service_id})`,
