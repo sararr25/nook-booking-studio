@@ -4,7 +4,7 @@ Last verified: 29 September 2026. The connected GitHub repository is `sararr25/n
 
 ## Current change rollout
 
-The pushed revision returns Google OAuth to `/auth` and gates deposit bookings behind an `awaiting_deposit` state. The production build passes and revision `4b14a48` is selected in Lovable's preview. The new migration has not yet been applied to Lovable Cloud, so booking submissions using the new state still need the database update before end-to-end use.
+The pushed revision returns Google OAuth to `/auth` and gates deposit bookings behind an `awaiting_deposit` state. The production build passes and revision `4b14a48` is selected in Lovable's preview. Migration `20260929145901` has now been applied to Lovable Cloud; the database constraint and booking RPC accept `awaiting_deposit`.
 
 ## What is implemented
 
@@ -16,6 +16,7 @@ The pushed revision returns Google OAuth to `/auth` and gates deposit bookings b
 ## Verified
 
 - Lovable's project history selected the GitHub-pushed revision `4b14a48`; its owner overview showed the new “Awaiting deposit” tile.
+- Applying migration `20260929145901_deposit_confirmation_lifecycle.sql` reclassified three existing bookings with unpaid deposits to `awaiting_deposit`. A rollback-only call to `create_booking_request` accepted a sample awaiting-deposit payload, and the verification row was not persisted.
 - The owner Google sign-in page opens in the preview and its button launches Google's account chooser. The successful return to `/auth` and `/owner` remains unverified after this change.
 - Google Calendar integration code is present, but the preview owner overview currently reports “Needs attention”. Runtime connection and event creation remain unverified; check the Lovable project's server-side Google Calendar connector configuration.
 - The external Lovable preview displayed the flash catalog with three available designs, prices, and durations from the connected database.
@@ -24,7 +25,7 @@ The pushed revision returns Google OAuth to `/auth` and gates deposit bookings b
 
 ## Still to verify before public use
 
-1. Complete a controlled booking with a test customer address. Check that a deposit booking starts as pending/awaiting deposit, that its email never says confirmed, and that the Pay deposit link is delivered. Do not rely on a visible time slot alone as proof that submission and email work.
+1. Complete a controlled booking with a test customer address. Check that a deposit booking starts as awaiting deposit, that its email never says confirmed, and that the Pay deposit link is delivered. Do not rely on a visible time slot alone or the rollback-only database check as proof that the full submission and email flow works.
 2. Open the demo deposit link and verify the page says the payment completed and the appointment is confirmed, the owner status changes to confirmed, and exactly one Google Calendar event appears. Change and cancel that booking in the owner portal and verify the event follows those changes.
 3. Add a busy event directly in Google Calendar and confirm that the overlapping time disappears from the customer booking calendar.
 4. Sign in with the owner Google account in the Lovable preview. Confirm OAuth returns to `/auth` and opens `/owner`, then test booking review, pricing import, autosave, and the list/calendar switch using real project data. Google sign-in does not work on localhost.
@@ -33,6 +34,6 @@ The pushed revision returns Google OAuth to `/auth` and gates deposit bookings b
 ## Environment and deployment
 
 - Keep `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY`, and `GOOGLE_CALENDAR_API_KEY` server-side. The Google connector must be linked to this Lovable project. The public Supabase URL and publishable key are in `.env`.
-- Apply new SQL migrations to the connected Lovable Cloud database before using code that depends on them. Git sync only transfers the SQL files.
+- Apply new SQL migrations to the connected Lovable Cloud database before using code that depends on them. Git sync only transfers the SQL files. Migration `20260929145901` was applied to the Nook cloud database on 29 September 2026.
 - After pushing code to `main`, confirm Lovable's **Settings → Git → GitHub** reports the branch in sync. If the preview still shows an older version, select the latest **Pushed from GitHub** item in the project history and use its **Preview** action, then check the external preview.
 - A local build confirms compilation. The external Lovable preview confirms served code and read paths. Neither proves booking submission, email delivery, Google event creation, or a published domain.
