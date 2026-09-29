@@ -20,7 +20,9 @@ export const getRouter = () => {
     handleOAuthReturn((to) => {
       const go = () =>
         void router.navigate(
-          to === "/auth" ? { to, search: { notice: undefined }, replace: true } : { to, replace: true },
+          to === "/auth"
+            ? { to, search: { notice: undefined }, replace: true }
+            : { to, replace: true },
         );
       // Wait until the initial client load settles so navigation doesn't race hydration.
       if (router.state.status === "idle" && router.state.matches.length > 0) {
