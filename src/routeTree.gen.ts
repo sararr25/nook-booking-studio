@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as AuthenticatedOwnerRouteImport } from './routes/_authenticated/owner'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as PaymentDemoBookingIdRouteImport } from './routes/payment-demo.$bookingId'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
@@ -41,6 +42,11 @@ const AuthenticatedOwnerRoute = AuthenticatedOwnerRouteImport.update({
   path: '/owner',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const PaymentDemoBookingIdRoute = PaymentDemoBookingIdRouteImport.update({
   id: '/payment-demo/$bookingId',
   path: '/payment-demo/$bookingId',
@@ -55,17 +61,19 @@ const LovableEmailTransactionalPreviewRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/book': typeof BookRoute
   '/owner': typeof AuthenticatedOwnerRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/book': typeof BookRoute
   '/owner': typeof AuthenticatedOwnerRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -73,9 +81,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/book': typeof BookRoute
   '/_authenticated/owner': typeof AuthenticatedOwnerRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/book'
     | '/owner'
+    | '/auth/callback'
     | '/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/book'
     | '/owner'
+    | '/auth/callback'
     | '/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   id:
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/book'
     | '/_authenticated/owner'
+    | '/auth/callback'
     | '/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
@@ -110,7 +122,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   BookRoute: typeof BookRoute
   PaymentDemoBookingIdRoute: typeof PaymentDemoBookingIdRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -153,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/payment-demo/$bookingId': {
       id: '/payment-demo/$bookingId'
       path: '/payment-demo/$bookingId'
@@ -181,10 +200,20 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   BookRoute: BookRoute,
   PaymentDemoBookingIdRoute: PaymentDemoBookingIdRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
