@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "../components/ui/sonner";
+import { buildOAuthReturnScript } from "../lib/nook/oauth-return-script";
 
 function NotFoundComponent() {
   return (
@@ -108,6 +109,11 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: buildOAuthReturnScript(import.meta.env["VITE_SUPABASE_URL"]),
+          }}
+        />
         <HeadContent />
       </head>
       <body>
