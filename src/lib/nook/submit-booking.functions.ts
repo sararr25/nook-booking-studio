@@ -82,6 +82,7 @@ export const submitBooking = createServerFn({ method: "POST" })
       : quote.deposit > 0
         ? "awaiting_deposit"
         : "confirmed";
+    let calendarUnverified = false;
     if (quote.eligibleTeam.length === 0) {
       if (data.memberId !== "unassigned") throw new Error("Artist is not available");
       status = "pending";
@@ -100,14 +101,20 @@ export const submitBooking = createServerFn({ method: "POST" })
         memberId: row.member_id,
         duration: Number((row.quote as { duration?: number } | null)?.duration ?? 60),
       }));
-      let blocked;
+      // If Google Calendar can't be read, keep the booking but hold it for owner review.
+      let blocked: Awaited<ReturnType<typeof fetchBusyBlocks>> = [];
       try {
         blocked = await fetchBusyBlocks(
           day.toISOString(),
           new Date(day.getTime() + 24 * 60 * 60_000).toISOString(),
         );
-      } catch {
-        throw new Error("Google Calendar could not be verified. Please try again.");
+      } catch (calendarError) {
+        console.error(
+          "Calendar busy check failed",
+          calendarError instanceof Error ? calendarError.message : calendarError,
+        );
+        calendarUnverified = true;
+        status = "pending";
       }
       if (
         !slotsForDay(business, [artist], quote.duration, day, booked, blocked).some(
@@ -116,6 +123,9 @@ export const submitBooking = createServerFn({ method: "POST" })
       )
         throw new Error("This time is no longer available. Choose another time.");
     }
+    const reviewReasons = calendarUnverified
+      ? [...quote.reviewReasons, "Google Calendar availability could not be verified"]
+      : quote.reviewReasons;
     const booking = {
       id: data.id,
       customer_name: data.customerName,

@@ -315,6 +315,7 @@ export type Database = {
     }
     Functions: {
       claim_initial_owner: { Args: never; Returns: boolean }
+      create_booking_request: { Args: { p_booking: Json }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
