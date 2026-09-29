@@ -139,8 +139,8 @@ export const submitBooking = createServerFn({ method: "POST" })
         high: quote.high,
         duration: quote.duration,
         deposit: quote.deposit,
-        requiresReview: quote.requiresReview,
-        reviewReasons: quote.reviewReasons,
+        requiresReview: quote.requiresReview || calendarUnverified,
+        reviewReasons,
         lines: quote.lines,
       },
       appointment_date: data.date,
@@ -160,5 +160,5 @@ export const submitBooking = createServerFn({ method: "POST" })
           ? error.message
           : "Could not save the booking. Please try again.",
       );
-    return { id: data.id, status };
+    return { id: data.id, status, reviewReasons, calendarUnverified };
   });
