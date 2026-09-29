@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { OAUTH_TOKENS_KEY } from "@/lib/nook/oauth-return-script";
 
@@ -43,42 +43,36 @@ export const Route = createFileRoute("/auth_/callback")({
   component: AuthCallback,
 });
 
+let finishing: Promise<string | null> | undefined;
+
+async function finishSignIn(): Promise<string | null> {
+  const result = takeStoredReturn();
+  const { supabase } = await import("@/integrations/supabase/client");
+  if (result && "error" in result) return result.error;
+  if (result) {
+    const { error } = await supabase.auth.setSession({
+      access_token: result.at,
+      refresh_token: result.rt,
+    });
+    if (error) return "Sign in failed. Please try again.";
+  }
+  // Only continue once the auth client confirms a stored, valid session.
+  const { data } = await supabase.auth.getUser();
+  return data.user ? null : "We couldn't finish signing you in. Please try again.";
+}
+
 function AuthCallback() {
-  const navigate = useNavigate();
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const result = takeStoredReturn();
-      const { supabase } = await import("@/integrations/supabase/client");
-      if (result && "error" in result) {
-        if (!cancelled) setFailed(result.error);
-        return;
-      }
-      if (result) {
-        const { error } = await supabase.auth.setSession({
-          access_token: result.at,
-          refresh_token: result.rt,
-        });
-        if (error) {
-          if (!cancelled) setFailed("Sign in failed. Please try again.");
-          return;
-        }
-      }
-      // Only continue once the auth client confirms a stored, valid session.
-      const { data } = await supabase.auth.getUser();
-      if (cancelled) return;
-      if (!data.user) {
-        setFailed("We couldn't finish signing you in. Please try again.");
-        return;
-      }
-      await navigate({ to: "/owner", replace: true });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate]);
+    // Module-level promise so a re-run effect never consumes the one-time result twice.
+    finishing ??= finishSignIn();
+    void finishing.then((problem) => {
+      if (problem) setFailed(problem);
+      // Full navigation so the owner gate reads the freshly stored session.
+      else window.location.replace("/owner");
+    });
+  }, []);
 
   return (
     <main className="grid min-h-screen place-items-center bg-background px-6">
