@@ -58,31 +58,35 @@ export const markDemoDepositPaid = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!booking || Number((booking.quote as { deposit?: number } | null)?.deposit ?? 0) <= 0)
-      return { paid: false as const };
+      return { paid: false as const, reason: "unknown" as const };
+    // A cancelled booking can't be paid for; everything else with a deposit can.
+    if (booking.status === "declined")
+      return { paid: false as const, reason: "cancelled" as const };
     let paidAt = booking.deposit_paid_at;
-    if (booking.status === "awaiting_deposit" && !paidAt) {
+    if (!paidAt) {
       paidAt = new Date().toISOString();
-      const { data: updated, error } = await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from("booking_requests")
         .update({ status: "confirmed", deposit_paid_at: paidAt })
         .eq("id", data.id)
-        .eq("status", "awaiting_deposit")
-        .is("deposit_paid_at", null)
-        .select("id")
+        .neq("status", "declined")
+        .is("deposit_paid_at", null);
+      const { data: latest } = await supabaseAdmin
+        .from("booking_requests")
+        .select("status,deposit_paid_at")
+        .eq("id", data.id)
         .maybeSingle();
-      if (error) return { paid: false as const };
-      if (!updated) {
-        const { data: latest } = await supabaseAdmin
-          .from("booking_requests")
-          .select("status,deposit_paid_at")
-          .eq("id", data.id)
-          .maybeSingle();
-        if (latest?.status !== "confirmed" || !latest.deposit_paid_at)
-          return { paid: false as const };
-        paidAt = latest.deposit_paid_at;
-      }
-    } else if (booking.status !== "confirmed" || !paidAt) {
-      return { paid: false as const };
+      if (error && !latest?.deposit_paid_at) return { paid: false as const, reason: "error" as const };
+      if (!latest?.deposit_paid_at || latest.status === "declined")
+        return { paid: false as const, reason: "cancelled" as const };
+      paidAt = latest.deposit_paid_at;
+    } else if (booking.status !== "confirmed") {
+      // Already paid earlier: make sure the booking reflects that.
+      await supabaseAdmin
+        .from("booking_requests")
+        .update({ status: "confirmed" })
+        .eq("id", data.id)
+        .neq("status", "declined");
     }
     // Paid bookings go into the studio's Google Calendar; the event id makes retries harmless.
     let calendarAdded = false;
