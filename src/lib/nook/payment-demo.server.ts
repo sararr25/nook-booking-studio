@@ -1,6 +1,6 @@
 export type DemoPaymentResult =
   | { paid: true; paidAt: string; calendarAdded: boolean; date: string; time: string }
-  | { paid: false; reason: "cancelled" | "unknown" | "error" | "awaiting_approval" };
+  | { paid: false; reason: "cancelled" | "unknown" | "error" | "awaiting_approval" | "unpaid" };
 
 type QuoteShape = { deposit?: number; duration?: number };
 
@@ -114,6 +114,9 @@ export async function readDemoDepositPayment(bookingId: string): Promise<DemoPay
   if (!booking || deposit <= 0) return { paid: false, reason: "unknown" };
   if (booking.status === "declined") return { paid: false, reason: "cancelled" };
   if (booking.status === "pending") return { paid: false, reason: "awaiting_approval" };
+  if (booking.status === "awaiting_deposit" && !booking.deposit_paid_at) {
+    return { paid: false, reason: "unpaid" };
+  }
   if (booking.status !== "confirmed" || !booking.deposit_paid_at) {
     return { paid: false, reason: "error" };
   }

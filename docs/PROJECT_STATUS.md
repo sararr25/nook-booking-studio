@@ -6,6 +6,8 @@ Last verified: 29 September 2026. The connected GitHub repository is `sararr25/n
 
 The current revision gates deposit bookings behind an `awaiting_deposit` state. The email targets a dedicated server endpoint that records and verifies the demo deposit before redirecting to a read-only receipt. Migration `20260929145901` has been applied to Lovable Cloud; the database constraint and booking RPC accept `awaiting_deposit`.
 
+Previously sent direct receipt links are upgraded in the browser to the same dedicated payment endpoint, so they remain usable after this change.
+
 ## What is implemented
 
 - `/` is the Stillroom Tattoo website. Its hero opens `/book`, while the header owner link opens `/auth`.

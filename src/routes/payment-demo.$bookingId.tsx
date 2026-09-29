@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, CircleAlert, CircleCheck } from "lucide-react";
 import { Wordmark } from "@/components/nook/wordmark";
@@ -34,7 +35,10 @@ export const Route = createFileRoute("/payment-demo/$bookingId")({
 
 type PaymentState =
   | { kind: "paid"; date: string; time: string }
-  | { kind: "failed"; reason: "cancelled" | "unknown" | "error" | "awaiting_approval" };
+  | {
+      kind: "failed";
+      reason: "cancelled" | "unknown" | "error" | "awaiting_approval" | "unpaid";
+    };
 
 function PaymentDemoPage() {
   const { bookingId } = Route.useParams();
@@ -43,6 +47,13 @@ function PaymentDemoPage() {
   const state: PaymentState = result.paid
     ? { kind: "paid", date: result.date, time: result.time }
     : { kind: "failed", reason: result.reason };
+
+  // Links sent before the dedicated payment endpoint existed still point here.
+  // Upgrade those unpaid links with a full navigation so the server records payment first.
+  useEffect(() => {
+    if (state.kind !== "failed" || state.reason !== "unpaid") return;
+    window.location.replace(`/api/public/payment-demo/${bookingId}`);
+  }, [bookingId, state.kind, state.reason]);
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 sm:py-14">
@@ -67,6 +78,8 @@ function PaymentDemoPage() {
                   ? "This booking was cancelled"
                   : state.reason === "awaiting_approval"
                     ? "This booking still needs approval"
+                    : state.reason === "unpaid"
+                      ? "Recording your payment…"
                     : "We couldn't record this payment")}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
@@ -77,6 +90,8 @@ function PaymentDemoPage() {
                   ? "The studio cancelled this appointment, so no deposit is due. Please contact them to rebook."
                   : state.reason === "awaiting_approval"
                     ? "The studio must approve this request before a deposit can be recorded. No money was taken."
+                    : state.reason === "unpaid"
+                      ? "Please keep this page open. No money will be taken."
                     : "This link doesn't match a booking with a deposit. Please contact the studio.")}
             </p>
           </div>
