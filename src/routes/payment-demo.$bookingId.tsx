@@ -47,13 +47,14 @@ function PaymentDemoPage() {
   const state: PaymentState = result.paid
     ? { kind: "paid", date: result.date, time: result.time }
     : { kind: "failed", reason: result.reason };
+  const failureReason = state.kind === "failed" ? state.reason : null;
 
   // Links sent before the dedicated payment endpoint existed still point here.
   // Upgrade those unpaid links with a full navigation so the server records payment first.
   useEffect(() => {
-    if (state.kind !== "failed" || state.reason !== "unpaid") return;
+    if (failureReason !== "unpaid") return;
     window.location.replace(`/api/public/payment-demo/${bookingId}`);
-  }, [bookingId, state.kind, state.reason]);
+  }, [bookingId, failureReason]);
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 sm:py-14">
