@@ -28,6 +28,6 @@ is `src/routes/__root.tsx`.
 | `book.tsx` | `/book` | Customer booking flow |
 | `auth.tsx` | `/auth` | Sign-in and owner account creation |
 | `_authenticated/owner.tsx` | `/owner` | Owner portal; sections use `?tab=<section>` |
-| `payment-demo.$bookingId.tsx` | `/payment-demo/:bookingId` | Demo deposit action; no card collection |
+| `payment-demo.$bookingId.tsx` | `/payment-demo/:bookingId` | Demo deposit action; confirms the booking and adds it to the owner's calendar; no card collection |
 
 `_authenticated/route.tsx` protects the owner route. Keep any new owner sections under that layout.

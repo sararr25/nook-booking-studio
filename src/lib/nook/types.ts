@@ -73,7 +73,7 @@ export type Policies = {
   autoApproveMaxDuration: number; // minutes
   reviewNote: string;
   cancellationHours: number;
-  /** Hours the customer has to pay the deposit after the booking is confirmed. */
+  /** Hours the customer has to pay the deposit before the booking is confirmed. */
   depositDueHours: number;
 };
 
@@ -124,6 +124,6 @@ export type BookingRequest = {
   memberId: string;
   flashDesignId?: string;
   referencePaths?: string[];
-  status: "confirmed" | "pending" | "declined";
+  status: "confirmed" | "awaiting_deposit" | "pending" | "declined";
   depositPaidAt?: string;
 };

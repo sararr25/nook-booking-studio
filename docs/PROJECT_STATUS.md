@@ -2,12 +2,16 @@
 
 Last verified: 29 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`. Commit `346a353` contains the booking and owner improvements; subsequent documentation commits do not change app behavior.
 
+## Current change rollout
+
+The working tree now returns Google OAuth to `/auth` and gates deposit bookings behind an `awaiting_deposit` state. The production build passes. The new migration has not yet been applied to Lovable Cloud, and the updated revision has not yet been selected in the preview; the new booking lifecycle is not live until those steps are complete.
+
 ## What is implemented
 
 - `/` is the Stillroom Tattoo website. Its hero opens `/book`, while the header owner link opens `/auth`.
 - `/book` has adaptive service details, dynamic one-off flash selection, quote and artist matching, server-checked availability, and customer details. Public booking insertion uses a database function that rejects overlapping sittings and duplicate flash reservations.
 - `/owner` has booking list and calendar views, pricing controls, reviewed price-list imports from XLSX, CSV, text-based PDF, or a public Google Sheet, plus availability, questions, team, flash, and policies.
-- The owner calendar displays Nook bookings alongside Google Calendar busy blocks. The public calendar withholds times when Google Calendar cannot be verified. Opening the demo deposit link for a confirmed booking attempts to add its event to Google Calendar; paid booking changes and cancellations attempt to update or remove that event.
+- The owner calendar displays Nook bookings alongside Google Calendar busy blocks. The public calendar withholds times when Google Calendar cannot be verified. A booking with a deposit stays pending while it awaits payment; opening its demo deposit link marks it paid, confirms the appointment and attempts to add its event to Google Calendar. Paid booking changes and cancellations attempt to update or remove that event.
 
 ## Verified
 
@@ -18,10 +22,10 @@ Last verified: 29 September 2026. The connected GitHub repository is `sararr25/n
 
 ## Still to verify before public use
 
-1. Complete a controlled booking with a test customer address. Check the saved request, owner status, and email delivery. Do not rely on a visible time slot alone as proof that submission and email work.
-2. Open the demo deposit link for a confirmed booking and verify that exactly one Google Calendar event appears. Change and cancel that booking in the owner portal and verify the event follows those changes.
+1. Complete a controlled booking with a test customer address. Check that a deposit booking starts as pending/awaiting deposit, that its email never says confirmed, and that the Pay deposit link is delivered. Do not rely on a visible time slot alone as proof that submission and email work.
+2. Open the demo deposit link and verify the page says the payment completed and the appointment is confirmed, the owner status changes to confirmed, and exactly one Google Calendar event appears. Change and cancel that booking in the owner portal and verify the event follows those changes.
 3. Add a busy event directly in Google Calendar and confirm that the overlapping time disappears from the customer booking calendar.
-4. Sign in with an owner account and test booking review, pricing import, autosave, and the list/calendar switch using real project data. Google sign-in does not work on localhost.
+4. Sign in with the owner Google account in the Lovable preview. Confirm OAuth returns to `/auth` and opens `/owner`, then test booking review, pricing import, autosave, and the list/calendar switch using real project data. Google sign-in does not work on localhost.
 5. Publish the Lovable site when the end-to-end checks are complete. GitHub sync and the preview do not publish the website automatically. At the last check, the project was not published.
 
 ## Environment and deployment

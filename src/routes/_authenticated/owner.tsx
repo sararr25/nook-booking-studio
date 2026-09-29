@@ -110,7 +110,7 @@ const tabIntro: Record<Tab, { title: string; lead: string }> = {
   Overview: { title: "", lead: "" },
   Bookings: {
     title: "Bookings",
-    lead: "Approve, adjust or decline requests. Standard ones confirm on their own.",
+    lead: "Review requests, track deposits and see confirmed appointments.",
   },
   Availability: {
     title: "Availability",
@@ -391,6 +391,7 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
     staleTime: 60_000,
   });
   const pending = requests.filter((request) => request.status === "pending");
+  const awaitingDeposit = requests.filter((request) => request.status === "awaiting_deposit");
   const confirmed = requests.filter((request) => request.status === "confirmed");
   const upcoming = requests
     .filter((request) => request.status !== "declined" && request.date >= todayKey())
@@ -401,9 +402,15 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
     {
       title: "Needs your review",
       count: pending.length,
-      detail: pending[0] ? `Next: ${pending[0].customerName}` : "Nothing waiting",
+      detail: pending[0] ? `Next: ${pending[0].customerName}` : "Nothing waiting for review",
       tab: "Bookings",
       urgent: pending.length > 0,
+    },
+    {
+      title: "Awaiting deposit",
+      count: awaitingDeposit.length,
+      detail: awaitingDeposit[0] ? `Next: ${awaitingDeposit[0].customerName}` : "No deposits due",
+      tab: "Bookings",
     },
     {
       title: "Confirmed",
@@ -421,7 +428,7 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
 
   return (
     <div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {tiles.map((tile) => (
           <button
             key={tile.title}
@@ -721,6 +728,7 @@ function FlashTab() {
 
 const statusGroups: { status: BookingRequest["status"]; title: string; empty: string }[] = [
   { status: "pending", title: "Needs your review", empty: "Nothing waiting for review." },
+  { status: "awaiting_deposit", title: "Pending — awaiting deposit", empty: "No deposits due." },
   { status: "confirmed", title: "Confirmed", empty: "No confirmed bookings yet." },
   { status: "declined", title: "Declined or cancelled", empty: "" },
 ];
@@ -868,6 +876,7 @@ function RequestsTab() {
                   const member = business.team.find((m) => m.id === r.memberId);
                   const service = business.services.find((s) => s.id === r.serviceId);
                   const isPending = r.status === "pending";
+                  const isAwaitingDeposit = r.status === "awaiting_deposit";
                   const isConfirmed = r.status === "confirmed";
                   const hasArtist = Boolean(member);
                   return (
@@ -884,7 +893,7 @@ function RequestsTab() {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-display text-lg font-semibold">{r.customerName}</h3>
                             <StatusPill status={r.status} />
-                            {isConfirmed && r.quote.deposit > 0 && (
+                            {(isConfirmed || isAwaitingDeposit) && r.quote.deposit > 0 && (
                               <span
                                 className={cn(
                                   "border px-2 py-0.5 font-mono text-xs",
@@ -1006,8 +1015,13 @@ function RequestsTab() {
                                 setEditing(r.id);
                                 return;
                               }
-                              if (await setRequestStatus(r.id, "confirmed"))
-                                toast.success(`${r.customerName} confirmed.`);
+                              const nextStatus = r.quote.deposit > 0 ? "awaiting_deposit" : "confirmed";
+                              if (await setRequestStatus(r.id, nextStatus))
+                                toast.success(
+                                  nextStatus === "awaiting_deposit"
+                                    ? `${r.customerName} approved; awaiting deposit.`
+                                    : `${r.customerName} confirmed.`,
+                                );
                             }}
                             className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
                           >
@@ -1046,7 +1060,7 @@ function RequestsTab() {
                             <X className="size-4" /> Decline
                           </button>
                         )}
-                        {isConfirmed && (
+                        {(isConfirmed || isAwaitingDeposit) && (
                           <button
                             type="button"
                             onClick={async () => {
@@ -1318,14 +1332,20 @@ function EditBooking({
       memberId,
       date,
       time,
-      // Only a real status change sends the "confirmed" email; edits to a confirmed booking are "changed".
-      ...(wasConfirmed ? {} : { status: "confirmed" as const }),
+      // A request still needs its deposit before Nook marks it confirmed.
+      ...(wasConfirmed
+        ? {}
+        : { status: deposit > 0 ? ("awaiting_deposit" as const) : ("confirmed" as const) }),
       quote: { ...request.quote, low, high, duration, deposit },
     });
     setSaving(false);
     if (!saved) return;
     toast.success(
-      wasConfirmed ? "Booking changed." : `${request.customerName} confirmed with ${member?.name}.`,
+      wasConfirmed
+        ? "Booking changed."
+        : deposit > 0
+          ? `${request.customerName} approved; awaiting deposit with ${member?.name}.`
+          : `${request.customerName} confirmed with ${member?.name}.`,
     );
     onDone();
   };
@@ -1446,8 +1466,15 @@ function NoArtistPill() {
 function StatusPill({ status }: { status: BookingRequest["status"] }) {
   const map = {
     confirmed: "border-highlight/40 text-highlight",
+    awaiting_deposit: "border-brand/50 text-brand",
     pending: "border-brand/50 text-brand",
     declined: "border-border text-muted-foreground",
+  } as const;
+  const labels = {
+    confirmed: "Confirmed",
+    awaiting_deposit: "Pending · awaiting deposit",
+    pending: "Pending review",
+    declined: "Declined",
   } as const;
   return (
     <span
@@ -1456,7 +1483,7 @@ function StatusPill({ status }: { status: BookingRequest["status"] }) {
         map[status],
       )}
     >
-      {status}
+      {labels[status]}
     </span>
   );
 }
@@ -2409,7 +2436,7 @@ function PoliciesTab() {
 
       <PolicyGroup
         title="Confirms on its own"
-        lead="Requests inside both limits are confirmed straight away. Anything else comes to you first."
+        lead="Requests inside both limits are approved automatically; appointments with a deposit stay pending until it is paid. Anything else comes to you first."
       >
         <NumberField
           label="Price under"

@@ -11,7 +11,7 @@ import {
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
 
-export type BookingEmailKind = "received" | "confirmed" | "changed" | "declined";
+export type BookingEmailKind = "received" | "awaiting_deposit" | "confirmed" | "changed" | "declined";
 
 export interface BookingUpdateProps {
   kind?: BookingEmailKind;
@@ -23,11 +23,13 @@ export interface BookingUpdateProps {
   deposit?: string;
   depositDueHours?: number;
   paymentUrl?: string;
+  pendingDeposit?: boolean;
   reason?: string;
 }
 
 const headings: Record<BookingEmailKind, string> = {
   received: "We got your request",
+  awaiting_deposit: "Your booking is pending",
   confirmed: "Your booking is confirmed",
   changed: "Your booking has changed",
   declined: "About your booking request",
@@ -43,16 +45,18 @@ function BookingUpdate({
   deposit = "",
   depositDueHours = 24,
   paymentUrl = "",
+  pendingDeposit = false,
   reason = "",
 }: BookingUpdateProps) {
   const intro: Record<BookingEmailKind, string> = {
     received: `Thanks for your request. ${studioName} will review it and email you once it is confirmed.`,
+    awaiting_deposit: `Your appointment is pending until the deposit is paid. This is a demo, so no money will be taken.`,
     confirmed: `${studioName} has confirmed your appointment.`,
     changed: `${studioName} updated your appointment. Here are the new details.`,
     declined: `${studioName} can't take this booking. Feel free to send a new request with different details.`,
   };
   const showDetails = kind !== "declined";
-  const showDeposit = (kind === "confirmed" || kind === "changed") && deposit !== "";
+  const showDeposit = pendingDeposit && deposit !== "";
   return (
     <Html lang="en">
       <Head />
@@ -95,7 +99,7 @@ function BookingUpdate({
           {showDeposit && (
             <Section style={{ margin: "20px 0 8px" }}>
               <Text style={{ fontSize: "15px", lineHeight: "1.6", margin: "0 0 16px" }}>
-                A deposit of {deposit} is due within {depositDueHours} hours to hold your spot.
+                A deposit of {deposit} is due within {depositDueHours} hours to confirm your appointment.
               </Text>
               {paymentUrl && (
                 <>
@@ -122,7 +126,7 @@ function BookingUpdate({
                       margin: "10px 0 0",
                     }}
                   >
-                    Payment demo only. No money will be taken.
+                    Your appointment remains pending until this demo deposit is marked paid. No money will be taken.
                   </Text>
                 </>
               )}

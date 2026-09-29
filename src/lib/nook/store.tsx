@@ -65,7 +65,9 @@ const toBusiness = (config: Json | null): BusinessConfig => {
 };
 
 const toStatus = (status: string): BookingRequest["status"] =>
-  status === "confirmed" || status === "declined" ? status : "pending";
+  status === "confirmed" || status === "awaiting_deposit" || status === "declined"
+    ? status
+    : "pending";
 
 const toRequest = (row: RequestRow): BookingRequest => {
   const quote = (isRecord(row.quote) ? row.quote : {}) as Partial<BookingRequest["quote"]>;
@@ -224,7 +226,9 @@ export function NookProvider({
       // Only send a status email when the status really changes; everything else is "changed".
       const kind =
         patch.status && patch.status !== previous?.status
-          ? patch.status === "confirmed" || patch.status === "declined"
+          ? patch.status === "confirmed" ||
+            patch.status === "awaiting_deposit" ||
+            patch.status === "declined"
             ? patch.status
             : null
           : patch.date || patch.time || patch.memberId || patch.quote

@@ -38,6 +38,7 @@ export async function sendBookingEmail(
   const low = quote.low ?? 0;
   const high = quote.high ?? 0;
   const deposit = quote.deposit ?? 0;
+  const pendingDeposit = booking.status === "awaiting_deposit" && !booking.deposit_paid_at;
 
   try {
     const result = await sendTemplateEmail("booking-update", email, {
@@ -50,10 +51,8 @@ export async function sendBookingEmail(
         priceRange: high > 0 ? `${money(low, currency)} to ${money(high, currency)}` : "Free",
         deposit: deposit > 0 ? money(deposit, currency) : "",
         depositDueHours: config.policies?.depositDueHours ?? 24,
-        paymentUrl:
-          deposit > 0 && (kind === "confirmed" || kind === "changed")
-            ? `${demoPaymentBaseUrl}/payment-demo/${bookingId}`
-            : "",
+        pendingDeposit,
+        paymentUrl: deposit > 0 && pendingDeposit ? `${demoPaymentBaseUrl}/payment-demo/${bookingId}` : "",
         reason: reason ?? "",
       },
       idempotencyKey: `booking-${kind}-${bookingId}-${eventKey}`,

@@ -197,7 +197,7 @@ function BookingFlow() {
         memberId: selected.slot.memberId,
         ...(flashDesignId ? { flashDesignId } : {}),
         referencePaths: uploadedPaths,
-        status: pending ? "pending" : "confirmed",
+        status: pending ? "pending" : quote.deposit > 0 ? "awaiting_deposit" : "confirmed",
         quote: {
           low: quote.low,
           high: quote.high,
@@ -244,7 +244,8 @@ function BookingFlow() {
       setDone({
         id: request.id,
         emailSent,
-        pending: saved.status === "pending",
+        reviewPending: saved.status === "pending",
+        awaitingDeposit: saved.status === "awaiting_deposit",
         terms: bookingTerms({
           free: quote.high === 0,
           review: saved.status === "pending",
@@ -1057,7 +1058,7 @@ function QuoteStep({
         {quote.deposit > 0 && (
           <span>
             {formatMoney(quote.deposit, currency)} deposit ({service.depositPercent}%), due within{" "}
-            {depositDueHours}h of confirmation
+            {depositDueHours}h to confirm your appointment
           </span>
         )}
       </p>
@@ -1136,7 +1137,7 @@ function QuoteStep({
             </>
           ) : (
             <p className="mt-2 text-sm">
-              Standard request. It&apos;s confirmed by email as soon as you book.
+              Standard request. Your appointment stays pending until the deposit is paid.
             </p>
           )}
         </div>
@@ -1220,13 +1221,13 @@ function bookingTerms({
     return [
       review
         ? "The studio confirms your request first, then you get an email."
-        : "Confirmed by email as soon as you book. Nothing to pay.",
+        : "Your appointment is confirmed as soon as you book. Nothing to pay.",
     ];
   return [
     "The price is an estimate. The final price is agreed at the studio.",
     review
       ? `The studio confirms your request first. Then you get an email with a link to pay the ${depositPercent}% deposit (${deposit}) within ${depositDueHours} hours.`
-      : `You get a confirmation email straight away, with a link to pay the ${depositPercent}% deposit (${deposit}) within ${depositDueHours} hours.`,
+      : `Your booking stays pending until you pay the ${depositPercent}% deposit (${deposit}) within ${depositDueHours} hours. The email includes a payment link.`,
     "Your slot is secured once the deposit is paid.",
   ];
 }
@@ -1235,7 +1236,8 @@ function Confirmation({
   done,
 }: {
   done: {
-    pending: boolean;
+    reviewPending: boolean;
+    awaitingDeposit: boolean;
     terms: string[];
     date: string;
     time: string;
@@ -1254,14 +1256,22 @@ function Confirmation({
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto w-full max-w-2xl px-5 py-20">
-        <p className="eyebrow">{done.pending ? "Request sent" : "Request confirmed"}</p>
+        <p className="eyebrow">
+          {done.reviewPending ? "Request sent" : done.awaitingDeposit ? "Pending deposit" : "Appointment confirmed"}
+        </p>
         <h1 className="display mt-4 text-3xl sm:text-4xl">
-          {done.pending ? "The studio will review your request." : "Your request is confirmed."}
+          {done.reviewPending
+            ? "The studio will review your request."
+            : done.awaitingDeposit
+              ? "Your appointment is pending until the deposit is paid."
+              : "Your appointment is confirmed."}
         </h1>
         <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-          {done.pending
+          {done.reviewPending
             ? "We've held this slot while your request is reviewed, usually within a day. You'll get an email either way."
-            : "Pay the deposit from your email to secure your slot. The final price is agreed at the studio."}
+            : done.awaitingDeposit
+              ? "Use the Pay deposit link in your email to confirm your appointment. This demo does not take a real payment."
+              : "The final price is agreed at the studio."}
         </p>
         <p className="mt-3 font-mono text-xs text-muted-foreground">Reference: {done.id}</p>
         <p role="status" className="mt-3 text-sm">

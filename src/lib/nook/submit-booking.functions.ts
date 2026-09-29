@@ -77,7 +77,11 @@ export const submitBooking = createServerFn({ method: "POST" })
     latest.setDate(latest.getDate() + business.policies.horizonDays);
     if (Number.isNaN(day.getTime()) || day < earliest || day > latest || dateKey(day) !== data.date)
       throw new Error("Choose a date within the booking window");
-    let status: "pending" | "confirmed" = quote.requiresReview ? "pending" : "confirmed";
+    let status: "pending" | "awaiting_deposit" | "confirmed" = quote.requiresReview
+      ? "pending"
+      : quote.deposit > 0
+        ? "awaiting_deposit"
+        : "confirmed";
     if (quote.eligibleTeam.length === 0) {
       if (data.memberId !== "unassigned") throw new Error("Artist is not available");
       status = "pending";

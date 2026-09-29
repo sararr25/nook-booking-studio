@@ -73,13 +73,13 @@ function PaymentDemoPage() {
             )}
             <h1 id="payment-title" className="mt-5 text-balance text-4xl font-bold sm:text-5xl">
               {state.kind === "loading" && "Recording your deposit"}
-              {state.kind === "paid" && "Deposit paid"}
+              {state.kind === "paid" && "Payment complete!"}
               {state.kind === "failed" && "We couldn't record this payment"}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
               {state.kind === "loading" && "One moment."}
               {state.kind === "paid" &&
-                "Your spot is held and the studio can see the payment. This is a demo, so no money was taken."}
+                "Your deposit has been marked as paid and your appointment is confirmed. This is a demo, so no money was taken."}
               {state.kind === "failed" &&
                 "The booking may not be confirmed yet, or the link is wrong. Please contact the studio."}
             </p>
@@ -101,7 +101,7 @@ function PaymentDemoPage() {
             <div className="flex items-baseline justify-between gap-4">
               <dt className="text-muted-foreground">Payment status</dt>
               <dd className="font-mono font-medium text-brand">
-                {state.kind === "paid" ? "Paid (demo)" : state.kind === "failed" ? "Not paid" : "..."}
+                {state.kind === "paid" ? "Confirmed · paid (demo)" : state.kind === "failed" ? "Not paid" : "..."}
               </dd>
             </div>
           </dl>

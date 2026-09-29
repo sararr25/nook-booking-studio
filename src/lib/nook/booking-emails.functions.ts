@@ -15,7 +15,11 @@ export const notifyNewBooking = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!booking || booking.status === "declined") return { sent: false };
-    const kind = booking.status === "confirmed" ? "confirmed" : "received";
+    const kind = booking.status === "awaiting_deposit"
+      ? "awaiting_deposit"
+      : booking.status === "confirmed"
+        ? "confirmed"
+        : "received";
     return sendBookingEmail(data.id, kind, "new");
   });
 
@@ -26,7 +30,7 @@ export const notifyBookingChange = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        kind: z.enum(["confirmed", "changed", "declined"]),
+        kind: z.enum(["awaiting_deposit", "confirmed", "changed", "declined"]),
         reason: z.string().trim().max(1000).optional(),
       })
       .parse(input),
@@ -53,15 +57,32 @@ export const markDemoDepositPaid = createServerFn({ method: "POST" })
       )
       .eq("id", data.id)
       .maybeSingle();
-    if (!booking || booking.status !== "confirmed") return { paid: false as const };
+    if (!booking || Number((booking.quote as { deposit?: number } | null)?.deposit ?? 0) <= 0)
+      return { paid: false as const };
     let paidAt = booking.deposit_paid_at;
-    if (!paidAt) {
+    if (booking.status === "awaiting_deposit" && !paidAt) {
       paidAt = new Date().toISOString();
-      const { error } = await supabaseAdmin
+      const { data: updated, error } = await supabaseAdmin
         .from("booking_requests")
-        .update({ deposit_paid_at: paidAt })
-        .eq("id", data.id);
+        .update({ status: "confirmed", deposit_paid_at: paidAt })
+        .eq("id", data.id)
+        .eq("status", "awaiting_deposit")
+        .is("deposit_paid_at", null)
+        .select("id")
+        .maybeSingle();
       if (error) return { paid: false as const };
+      if (!updated) {
+        const { data: latest } = await supabaseAdmin
+          .from("booking_requests")
+          .select("status,deposit_paid_at")
+          .eq("id", data.id)
+          .maybeSingle();
+        if (latest?.status !== "confirmed" || !latest.deposit_paid_at)
+          return { paid: false as const };
+        paidAt = latest.deposit_paid_at;
+      }
+    } else if (booking.status !== "confirmed" || !paidAt) {
+      return { paid: false as const };
     }
     // Paid bookings go into the studio's Google Calendar; the event id makes retries harmless.
     let calendarAdded = false;

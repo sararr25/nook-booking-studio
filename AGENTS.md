@@ -11,7 +11,7 @@
 
 ## Product rules
 - Nook is business-agnostic; tattoo imagery appears only in demo data, never system decoration.
-- Standard requests auto-confirm; review requests need owner approval. Confirmation emails carry a deposit link. Deposits are 20% and due within `policies.depositDueHours`; prices remain estimates.
+- Requests that need review stay `pending` until the owner approves them. Any booking with a deposit stays `awaiting_deposit` until the customer opens the demo payment link; only then is it `confirmed`. Zero-deposit bookings can confirm immediately. The email while a deposit is due must say the appointment is pending, never confirmed. Deposits are set per service and due within `policies.depositDueHours`; prices remain estimates.
 - Keep option effects synchronized through `describeOptionEffect()`.
 - A booking is never confirmed without an assigned artist. The owner edit form never pre-selects an artist.
 - Owner booking changes only send a "confirmed" email when the status actually changes; other edits send "changed".
@@ -34,6 +34,6 @@
 - Keep `NookProvider` beside each Nook content route to preserve context during hot reload.
 - Store studio setup as one JSON document in `studio_settings.config`; bookings stay in `booking_requests`.
 - If loading the setup or bookings fails, show the error and block editing. Never fall back to `defaultBusiness`, or autosave would overwrite the real setup.
-- `/payment-demo/$bookingId` marks a confirmed deposit paid; never collects card data.
+- `/payment-demo/$bookingId` marks a pending deposit paid, moves the booking to confirmed, and adds it to the owner's Google Calendar; never collects card data.
 - Keep server credentials out of Git. Apply `supabase/migrations` to the connected database before using code that depends on new SQL; Git sync does not run migrations.
 - For release evidence and open end-to-end checks, update `docs/PROJECT_STATUS.md`. Confirm the latest GitHub revision is selected in Lovable's preview before reporting live behavior.

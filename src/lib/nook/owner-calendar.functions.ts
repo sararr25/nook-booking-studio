@@ -20,7 +20,8 @@ export const syncOwnerBookingCalendar = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (error || !booking) throw new Error("Booking not found");
-    if (!booking.deposit_paid_at) return { synced: true, action: "not-paid" };
+    if (booking.status !== "confirmed" || !booking.deposit_paid_at)
+      return { synced: true, action: "not-confirmed-or-paid" };
     const { deleteAppointmentEvent, updateAppointmentEvent } =
       await import("./google-calendar.server");
     if (booking.status === "declined") {
