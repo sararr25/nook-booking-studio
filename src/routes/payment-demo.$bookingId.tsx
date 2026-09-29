@@ -77,14 +77,19 @@ function PaymentDemoPage() {
             <h1 id="payment-title" className="mt-5 text-balance text-4xl font-bold sm:text-5xl">
               {state.kind === "loading" && "Recording your deposit"}
               {state.kind === "paid" && "Payment complete!"}
-              {state.kind === "failed" && "We couldn't record this payment"}
+              {state.kind === "failed" &&
+                (state.reason === "cancelled"
+                  ? "This booking was cancelled"
+                  : "We couldn't record this payment")}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
               {state.kind === "loading" && "One moment."}
               {state.kind === "paid" &&
                 "Your deposit has been marked as paid and your appointment is confirmed. This is a demo, so no money was taken."}
               {state.kind === "failed" &&
-                "The booking may not be confirmed yet, or the link is wrong. Please contact the studio."}
+                (state.reason === "cancelled"
+                  ? "The studio cancelled this appointment, so no deposit is due. Please contact them to rebook."
+                  : "This link doesn't match a booking with a deposit. Please contact the studio.")}
             </p>
           </div>
 
