@@ -1,10 +1,10 @@
 # Nook Booking Studio — project status
 
-Last verified: 29 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`. Commit `346a353` contains the booking and owner improvements; subsequent documentation commits do not change app behavior.
+Last verified: 29 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`. Commit `4b14a48` contains the owner sign-in and deposit lifecycle changes.
 
 ## Current change rollout
 
-The working tree now returns Google OAuth to `/auth` and gates deposit bookings behind an `awaiting_deposit` state. The production build passes. The new migration has not yet been applied to Lovable Cloud, and the updated revision has not yet been selected in the preview; the new booking lifecycle is not live until those steps are complete.
+The pushed revision returns Google OAuth to `/auth` and gates deposit bookings behind an `awaiting_deposit` state. The production build passes and revision `4b14a48` is selected in Lovable's preview. The new migration has not yet been applied to Lovable Cloud, so booking submissions using the new state still need the database update before end-to-end use.
 
 ## What is implemented
 
@@ -15,7 +15,9 @@ The working tree now returns Google OAuth to `/auth` and gates deposit bookings 
 
 ## Verified
 
-- The repository and Lovable Git settings showed the same `main` commit. The GitHub-pushed revision was selected in Lovable's project history so that both the editor and external preview served the current UI.
+- Lovable's project history selected the GitHub-pushed revision `4b14a48`; its owner overview showed the new “Awaiting deposit” tile.
+- The owner Google sign-in page opens in the preview and its button launches Google's account chooser. The successful return to `/auth` and `/owner` remains unverified after this change.
+- Google Calendar integration code is present, but the preview owner overview currently reports “Needs attention”. Runtime connection and event creation remain unverified; check the Lovable project's server-side Google Calendar connector configuration.
 - The external Lovable preview displayed the flash catalog with three available designs, prices, and durations from the connected database.
 - A flash booking was followed through quote and date selection without submission. The server returned available days and times for a 75-minute sitting after checking studio and Google Calendar availability.
 - The SQL migrations for booking integrity and the flash seed were applied to Lovable Cloud and verified by a read-only query. Local TypeScript, build, targeted lint, and a SQL smoke test passed for commit `346a353`.
