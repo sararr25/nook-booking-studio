@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
+import { ArrowLeft, CircleAlert, CircleCheck } from "lucide-react";
 import { Wordmark } from "@/components/nook/wordmark";
 import { markDemoDepositPaid } from "@/lib/nook/booking-emails.functions";
 
 export const Route = createFileRoute("/payment-demo/$bookingId")({
+  loader: ({ params }) => markDemoDepositPaid({ data: { id: params.bookingId } }),
   head: () => ({
     meta: [
       { title: "Deposit payment demo | Nook" },
@@ -27,33 +26,16 @@ export const Route = createFileRoute("/payment-demo/$bookingId")({
 });
 
 type PaymentState =
-  | { kind: "loading" }
   | { kind: "paid"; date: string; time: string }
   | { kind: "failed"; reason: "cancelled" | "unknown" | "error" };
 
 function PaymentDemoPage() {
   const { bookingId } = Route.useParams();
   const shortReference = bookingId.slice(0, 8).toUpperCase();
-  const markPaid = useServerFn(markDemoDepositPaid);
-  const [state, setState] = useState<PaymentState>({ kind: "loading" });
-
-  useEffect(() => {
-    let cancelled = false;
-    markPaid({ data: { id: bookingId } })
-      .then((result) => {
-        if (cancelled) return;
-        setState(
-          result.paid
-            ? { kind: "paid", date: result.date, time: result.time }
-            : { kind: "failed", reason: result.reason },
-        );
-      })
-      .catch(() => !cancelled && setState({ kind: "failed", reason: "error" }));
-    return () => {
-      cancelled = true;
-    };
-  }, [bookingId, markPaid]);
-
+  const result = Route.useLoaderData();
+  const state: PaymentState = result.paid
+    ? { kind: "paid", date: result.date, time: result.time }
+    : { kind: "failed", reason: result.reason };
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 sm:py-14">
@@ -65,9 +47,6 @@ function PaymentDemoPage() {
 
         <section className="nook-ticket mt-8" aria-labelledby="payment-title" aria-live="polite">
           <div className="px-6 py-7 sm:px-8 sm:py-9">
-            {state.kind === "loading" && (
-              <LoaderCircle className="size-7 animate-spin text-brand" aria-hidden="true" />
-            )}
             {state.kind === "paid" && (
               <CircleCheck className="size-7 text-highlight" aria-hidden="true" />
             )}
@@ -75,7 +54,6 @@ function PaymentDemoPage() {
               <CircleAlert className="size-7 text-brand" aria-hidden="true" />
             )}
             <h1 id="payment-title" className="mt-5 text-balance text-4xl font-bold sm:text-5xl">
-              {state.kind === "loading" && "Recording your deposit"}
               {state.kind === "paid" && "Payment complete!"}
               {state.kind === "failed" &&
                 (state.reason === "cancelled"
@@ -83,7 +61,6 @@ function PaymentDemoPage() {
                   : "We couldn't record this payment")}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              {state.kind === "loading" && "One moment."}
               {state.kind === "paid" &&
                 "Your deposit has been marked as paid and your appointment is confirmed. This is a demo, so no money was taken."}
               {state.kind === "failed" &&
@@ -109,7 +86,7 @@ function PaymentDemoPage() {
             <div className="flex items-baseline justify-between gap-4">
               <dt className="text-muted-foreground">Payment status</dt>
               <dd className="font-mono font-medium text-brand">
-                {state.kind === "paid" ? "Confirmed · paid (demo)" : state.kind === "failed" ? "Not paid" : "..."}
+                {state.kind === "paid" ? "Confirmed · paid (demo)" : "Not paid"}
               </dd>
             </div>
           </dl>
