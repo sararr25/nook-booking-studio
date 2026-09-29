@@ -27,7 +27,7 @@ function takeStoredReturn(): StoredReturn | null {
   }
 }
 
-export const Route = createFileRoute("/auth/callback")({
+export const Route = createFileRoute("/auth_/callback")({
   ssr: false,
   head: () => ({
     meta: [
