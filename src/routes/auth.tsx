@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/nook/wordmark";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { POST_AUTH_KEY } from "@/components/nook/oauth-return";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -75,18 +74,15 @@ function OwnerAuth() {
 
   const signInWithGoogle = async () => {
     setBusy(true);
-    sessionStorage.setItem(POST_AUTH_KEY, "/owner");
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth/callback`,
     });
     setBusy(false);
     if (result.error) {
-      sessionStorage.removeItem(POST_AUTH_KEY);
       toast.error(String(result.error));
       return;
     }
     if (result.redirected) return;
-    sessionStorage.removeItem(POST_AUTH_KEY);
     await navigate({ to: "/owner" });
   };
 

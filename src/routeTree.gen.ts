@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as AuthenticatedOwnerRouteImport } from './routes/_authenticated/owner'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as PaymentDemoBookingIdRouteImport } from './routes/payment-demo.$bookingId'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
@@ -41,6 +42,11 @@ const AuthenticatedOwnerRoute = AuthenticatedOwnerRouteImport.update({
   path: '/owner',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth_/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PaymentDemoBookingIdRoute = PaymentDemoBookingIdRouteImport.update({
   id: '/payment-demo/$bookingId',
   path: '/payment-demo/$bookingId',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/book': typeof BookRoute
   '/owner': typeof AuthenticatedOwnerRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/book': typeof BookRoute
   '/owner': typeof AuthenticatedOwnerRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/book': typeof BookRoute
   '/_authenticated/owner': typeof AuthenticatedOwnerRoute
+  '/auth_/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/book'
     | '/owner'
+    | '/auth/callback'
     | '/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/book'
     | '/owner'
+    | '/auth/callback'
     | '/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   id:
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/book'
     | '/_authenticated/owner'
+    | '/auth_/callback'
     | '/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
@@ -112,6 +124,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   BookRoute: typeof BookRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   PaymentDemoBookingIdRoute: typeof PaymentDemoBookingIdRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
@@ -153,6 +166,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/payment-demo/$bookingId': {
       id: '/payment-demo/$bookingId'
       path: '/payment-demo/$bookingId'
@@ -186,6 +206,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   BookRoute: BookRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   PaymentDemoBookingIdRoute: PaymentDemoBookingIdRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
