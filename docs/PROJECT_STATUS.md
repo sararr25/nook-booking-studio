@@ -4,7 +4,7 @@ Last verified: 29 September 2026. The connected GitHub repository is `sararr25/n
 
 ## Current change rollout
 
-The current revision gates deposit bookings behind an `awaiting_deposit` state and records a demo payment in the payment page's server-side loader before rendering the result. The build passes. Migration `20260929145901` has been applied to Lovable Cloud; the database constraint and booking RPC accept `awaiting_deposit`.
+The current revision gates deposit bookings behind an `awaiting_deposit` state. The email targets a dedicated server endpoint that records and verifies the demo deposit before redirecting to a read-only receipt. Migration `20260929145901` has been applied to Lovable Cloud; the database constraint and booking RPC accept `awaiting_deposit`.
 
 ## What is implemented
 
@@ -22,7 +22,7 @@ The current revision gates deposit bookings behind an `awaiting_deposit` state a
 - The external Lovable preview displayed the flash catalog with three available designs, prices, and durations from the connected database.
 - A flash booking was followed through quote and date selection without submission. The server returned available days and times for a 75-minute sitting after checking studio and Google Calendar availability.
 - The SQL migrations for booking integrity and the flash seed were applied to Lovable Cloud and verified by a read-only query. Local TypeScript, build, targeted lint, and a SQL smoke test passed for commit `346a353`.
-- The payment-demo route now invokes the payment operation during server-side page loading instead of relying on a browser effect. A safe nonexistent-reference check returned the expected unpaid page with HTTP 200 and no browser errors; no customer booking was changed for this check.
+- The former page-loader payment path was observed returning HTTP 200 while leaving a real awaiting-deposit booking unchanged. The email link now uses a dedicated server endpoint, and the receipt reports success only after a database re-read confirms both the paid timestamp and confirmed status.
 
 ## Still to verify before public use
 

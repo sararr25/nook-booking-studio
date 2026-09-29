@@ -49,77 +49,15 @@ export const notifyBookingChange = createServerFn({ method: "POST" })
 export const markDemoDepositPaid = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: booking } = await supabaseAdmin
-      .from("booking_requests")
-      .select(
-        "status, deposit_paid_at, appointment_date, appointment_time, customer_name, phone, contact, service_id, member_id, quote",
-      )
-      .eq("id", data.id)
-      .maybeSingle();
-    if (!booking || Number((booking.quote as { deposit?: number } | null)?.deposit ?? 0) <= 0)
-      return { paid: false as const, reason: "unknown" as const };
-    // A cancelled booking can't be paid for; everything else with a deposit can.
-    if (booking.status === "declined")
-      return { paid: false as const, reason: "cancelled" as const };
-    let paidAt = booking.deposit_paid_at;
-    if (!paidAt) {
-      paidAt = new Date().toISOString();
-      const { error } = await supabaseAdmin
-        .from("booking_requests")
-        .update({ status: "confirmed", deposit_paid_at: paidAt })
-        .eq("id", data.id)
-        .neq("status", "declined")
-        .is("deposit_paid_at", null);
-      const { data: latest } = await supabaseAdmin
-        .from("booking_requests")
-        .select("status,deposit_paid_at")
-        .eq("id", data.id)
-        .maybeSingle();
-      if (error && !latest?.deposit_paid_at) return { paid: false as const, reason: "error" as const };
-      if (!latest?.deposit_paid_at || latest.status === "declined")
-        return { paid: false as const, reason: "cancelled" as const };
-      paidAt = latest.deposit_paid_at;
-    } else if (booking.status !== "confirmed") {
-      // Already paid earlier: make sure the booking reflects that.
-      await supabaseAdmin
-        .from("booking_requests")
-        .update({ status: "confirmed" })
-        .eq("id", data.id)
-        .neq("status", "declined");
-    }
-    // Paid bookings go into the studio's Google Calendar; the event id makes retries harmless.
-    let calendarAdded = false;
-    try {
-      const { createAppointmentEvent } = await import("./google-calendar.server");
-      const quote = (booking.quote ?? {}) as { duration?: number };
-      await createAppointmentEvent({
-        bookingId: data.id,
-        summary: `${booking.customer_name} (${booking.service_id})`,
-        description: [
-          `Artist: ${booking.member_id || "unassigned"}`,
-          `Email: ${booking.contact}`,
-          `Phone: ${booking.phone}`,
-          "Deposit paid",
-        ].join("\n"),
-        date: booking.appointment_date,
-        time: booking.appointment_time.slice(0, 5),
-        durationMinutes: quote.duration ?? 60,
-      });
-      calendarAdded = true;
-    } catch (calendarError) {
-      console.error(
-        "Calendar event failed",
-        calendarError instanceof Error ? calendarError.message : calendarError,
-      );
-    }
-    return {
-      paid: true as const,
-      paidAt,
-      calendarAdded,
-      date: booking.appointment_date,
-      time: booking.appointment_time.slice(0, 5),
-    };
+    const { recordDemoDepositPayment } = await import("./payment-demo.server");
+    return recordDemoDepositPayment(data.id);
+  });
+
+export const getDemoDepositStatus = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const { readDemoDepositPayment } = await import("./payment-demo.server");
+    return readDemoDepositPayment(data.id);
   });
 
 // Public: busy times from the studio's Google Calendar, so customers can't book over them.

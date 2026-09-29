@@ -1,6 +1,7 @@
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import type { BookingEmailKind } from "@/lib/email-templates/booking-update";
 import { currentStudioName } from "@/lib/nook/studio-brand";
+import { getRequest } from "@tanstack/react-start/server";
 
 type QuoteShape = { low?: number; high?: number; deposit?: number };
 type ConfigShape = { name?: string; policies?: { currency?: string; depositDueHours?: number } };
@@ -16,9 +17,10 @@ export async function sendBookingEmail(
   eventKey: string,
   reason?: string,
 ) {
-  const demoPaymentBaseUrl =
-    process.env["PUBLIC_SITE_URL"] ??
-    "https://id-preview--664e83fd-ad41-4b0f-9b00-51c7ba92a361.lovable.app";
+  const request = getRequest();
+  const demoPaymentBaseUrl = request
+    ? new URL(request.url).origin
+    : (process.env["PUBLIC_SITE_URL"] ?? "http://localhost:8080");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: booking, error }, { data: settings }] = await Promise.all([
     supabaseAdmin.from("booking_requests").select("*").eq("id", bookingId).maybeSingle(),
@@ -52,7 +54,10 @@ export async function sendBookingEmail(
         deposit: deposit > 0 ? money(deposit, currency) : "",
         depositDueHours: config.policies?.depositDueHours ?? 24,
         pendingDeposit,
-        paymentUrl: deposit > 0 && pendingDeposit ? `${demoPaymentBaseUrl}/payment-demo/${bookingId}` : "",
+        paymentUrl:
+          deposit > 0 && pendingDeposit
+            ? `${demoPaymentBaseUrl}/api/public/payment-demo/${bookingId}`
+            : "",
         reason: reason ?? "",
       },
       idempotencyKey: `booking-${kind}-${bookingId}-${eventKey}`,

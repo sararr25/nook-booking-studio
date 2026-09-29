@@ -1,10 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, CircleAlert, CircleCheck } from "lucide-react";
 import { Wordmark } from "@/components/nook/wordmark";
-import { markDemoDepositPaid } from "@/lib/nook/booking-emails.functions";
+import { getDemoDepositStatus } from "@/lib/nook/booking-emails.functions";
 
 export const Route = createFileRoute("/payment-demo/$bookingId")({
-  loader: ({ params }) => markDemoDepositPaid({ data: { id: params.bookingId } }),
+  loader: ({ params }) => {
+    const validId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      params.bookingId,
+    );
+    if (!validId) return { paid: false as const, reason: "unknown" as const };
+    return getDemoDepositStatus({ data: { id: params.bookingId } });
+  },
   head: () => ({
     meta: [
       { title: "Deposit payment demo | Nook" },
@@ -27,7 +33,7 @@ export const Route = createFileRoute("/payment-demo/$bookingId")({
 
 type PaymentState =
   | { kind: "paid"; date: string; time: string }
-  | { kind: "failed"; reason: "cancelled" | "unknown" | "error" };
+  | { kind: "failed"; reason: "cancelled" | "unknown" | "error" | "awaiting_approval" };
 
 function PaymentDemoPage() {
   const { bookingId } = Route.useParams();
@@ -58,6 +64,8 @@ function PaymentDemoPage() {
               {state.kind === "failed" &&
                 (state.reason === "cancelled"
                   ? "This booking was cancelled"
+                  : state.reason === "awaiting_approval"
+                    ? "This booking still needs approval"
                   : "We couldn't record this payment")}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
@@ -66,6 +74,8 @@ function PaymentDemoPage() {
               {state.kind === "failed" &&
                 (state.reason === "cancelled"
                   ? "The studio cancelled this appointment, so no deposit is due. Please contact them to rebook."
+                  : state.reason === "awaiting_approval"
+                    ? "The studio must approve this request before a deposit can be recorded. No money was taken."
                   : "This link doesn't match a booking with a deposit. Please contact the studio.")}
             </p>
           </div>
