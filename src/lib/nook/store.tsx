@@ -150,6 +150,35 @@ export function NookProvider({
     };
   }, [includeBookings]);
 
+  // Keep the owner's booking list current: a customer paying a deposit elsewhere
+  // should appear as confirmed without reloading the page.
+  useEffect(() => {
+    if (!includeBookings || !loaded || loadError) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const { data, error } = await supabase
+        .from("booking_requests")
+        .select("*")
+        .order("appointment_date");
+      if (cancelled || error || !data) return;
+      setRequests(data.map(toRequest));
+    };
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refresh();
+    }, 20_000);
+    const onFocus = () => void refresh();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [includeBookings, loaded, loadError]);
+
+
+
   // Owner edits are saved to the database shortly after the last change.
   useEffect(() => {
     if (!loaded || !dirty.current) return;
