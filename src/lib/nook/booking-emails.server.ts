@@ -1,5 +1,6 @@
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import type { BookingEmailKind } from "@/lib/email-templates/booking-update";
+import { currentStudioName } from "@/lib/nook/studio-brand";
 
 type QuoteShape = { low?: number; high?: number; deposit?: number };
 type ConfigShape = { name?: string; policies?: { currency?: string; depositDueHours?: number } };
@@ -41,7 +42,7 @@ export async function sendBookingEmail(
     const result = await sendTemplateEmail("booking-update", email, {
       templateData: {
         kind,
-        studioName: config.name ?? settings?.business_name ?? "the studio",
+        studioName: currentStudioName(config.name ?? settings?.business_name),
         customerName: booking.customer_name,
         date: booking.appointment_date,
         time: booking.appointment_time.slice(0, 5),

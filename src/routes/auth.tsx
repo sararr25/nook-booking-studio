@@ -15,7 +15,7 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Owner sign in | Nook" },
-      { name: "description", content: "Secure sign in for the Ember & Thread owner workspace." },
+      { name: "description", content: "Secure sign in for the Stillroom Tattoo owner workspace." },
       { property: "og:title", content: "Owner sign in | Nook" },
       {
         property: "og:description",
@@ -95,7 +95,7 @@ function OwnerAuth() {
             Review requests, shape your calendar, set honest prices and keep the flash book current.
           </p>
         </div>
-        <p className="text-xs text-muted-foreground">Ember & Thread · Malmö</p>
+        <p className="text-xs text-muted-foreground">Stillroom Tattoo · Malmö</p>
       </section>
       <section className="flex items-center rounded-sm border border-border bg-card px-6 py-14 lg:rounded-l-none sm:px-12">
         <div className="mx-auto w-full max-w-sm">
@@ -107,7 +107,7 @@ function OwnerAuth() {
           <p className="mt-3 text-sm text-muted-foreground">
             {notice
               ? "This area is reserved for the studio owner."
-              : "Sign in to manage Ember & Thread."}
+              : "Sign in to manage Stillroom Tattoo."}
           </p>
           <form onSubmit={submit} className="mt-8 space-y-4">
             {mode === "signup" && <AuthField label="Your name" value={name} onChange={setName} />}

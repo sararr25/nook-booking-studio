@@ -142,7 +142,7 @@ export const template = {
   displayName: "Booking update",
   previewData: {
     kind: "confirmed",
-    studioName: "Ember & Thread",
+    studioName: "Stillroom Tattoo",
     customerName: "Jane",
     date: "12 Oct 2026",
     time: "14:00",

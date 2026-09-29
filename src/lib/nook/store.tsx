@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { defaultBusiness } from "./config";
+import { currentStudioName } from "./studio-brand";
 import { notifyBookingChange } from "./booking-emails.functions";
 import type { Answers, BookingRequest, BusinessConfig } from "./types";
 
@@ -49,7 +50,11 @@ const toBusiness = (config: Json | null): BusinessConfig => {
   if (!isRecord(config) || !Array.isArray(config["services"])) return defaultBusiness;
   const saved = config as unknown as BusinessConfig;
   // Configs saved before a policy existed pick up its default value.
-  return { ...saved, policies: { ...defaultBusiness.policies, ...saved.policies } };
+  return {
+    ...saved,
+    name: currentStudioName(saved.name),
+    policies: { ...defaultBusiness.policies, ...saved.policies },
+  };
 };
 
 const toStatus = (status: string): BookingRequest["status"] =>

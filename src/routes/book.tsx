@@ -47,13 +47,13 @@ import swallow from "@/assets/flash-swallow.jpg";
 export const Route = createFileRoute("/book")({
   head: () => ({
     meta: [
-      { title: "Book a sitting | Ember & Thread on Nook" },
+      { title: "Book a sitting | Stillroom Tattoo on Nook" },
       {
         name: "description",
         content:
           "Answer a few questions about your piece, see a price range and sitting length, then pick from dates that fit.",
       },
-      { property: "og:title", content: "Book a sitting | Ember & Thread" },
+      { property: "og:title", content: "Book a sitting | Stillroom Tattoo" },
       {
         property: "og:description",
         content: "A short questionnaire, an honest quote, then real availability.",

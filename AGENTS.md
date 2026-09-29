@@ -19,6 +19,8 @@
 - The first account is owner; later accounts are customers. Owner settings persist through `NookProvider`; defaults come from `defaultBusiness`.
 
 ## Design rules
+- `/` is the Stillroom Tattoo studio website, with its own scoped tokens in `src/studio.css`; Nook remains the business-agnostic booking and owner interface on `/book` and `/owner`.
+- The studio homepage sends customers to `/book` and the top-right owner link to `/auth`.
 - Use warm stone `--background`, paper `--card`, near-black `--ink`, rust `--brand`, and green only for positive status. Never pure white or black.
 - Use Bricolage Grotesque headings, Manrope body, and IBM Plex Mono for numeric details. Booking/owner titles max `text-5xl`; landing max `text-6xl`; labels are at least 12px.
 - Controls and surfaces use 2px radius. Only avatars and tiny badges are round. Use hard print shadows only.

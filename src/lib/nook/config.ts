@@ -1,10 +1,10 @@
 import type { BusinessConfig } from "./types";
 
 export const defaultBusiness: BusinessConfig = {
-  id: "ember-thread",
-  name: "Ember & Thread",
+  id: "stillroom-tattoo",
+  name: "Stillroom Tattoo",
   archetype: "Tattoo studio",
-  tagline: "Fine line, blackwork and cover-ups.",
+  tagline: "A quieter place to make your mark.",
   location: "Ostergatan 14, Malmo",
   policies: {
     currency: "EUR",
