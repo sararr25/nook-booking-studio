@@ -24,7 +24,11 @@ export const notifyBookingChange = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z
-      .object({ id: z.string().uuid(), kind: z.enum(["confirmed", "changed", "declined"]) })
+      .object({
+        id: z.string().uuid(),
+        kind: z.enum(["confirmed", "changed", "declined"]),
+        reason: z.string().trim().max(1000).optional(),
+      })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -33,7 +37,7 @@ export const notifyBookingChange = createServerFn({ method: "POST" })
       _role: "owner",
     });
     if (!isOwner) throw new Response("Forbidden", { status: 403 });
-    return sendBookingEmail(data.id, data.kind, Date.now().toString());
+    return sendBookingEmail(data.id, data.kind, Date.now().toString(), data.reason);
   });
 
 // Demo only: opening the email's payment link marks the deposit as paid.
@@ -99,7 +103,10 @@ export const getCalendarBusy = createServerFn({ method: "GET" }).handler(async (
   const now = new Date();
   const until = new Date(now.getTime() + 180 * 24 * 60 * 60_000);
   try {
-    return { connected: true, blocks: await fetchBusyBlocks(now.toISOString(), until.toISOString()) };
+    return {
+      connected: true,
+      blocks: await fetchBusyBlocks(now.toISOString(), until.toISOString()),
+    };
   } catch (error) {
     console.error("Calendar busy read failed", error instanceof Error ? error.message : error);
     return { connected: false, blocks: [] };

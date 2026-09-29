@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -32,6 +34,10 @@ import { buildQuote, describeOptionEffect, formatDuration, formatMoney } from "@
 import type { BookingRequest, BusinessConfig, TeamMember } from "@/lib/nook/types";
 import { artistImage } from "@/lib/nook/artist-images";
 import { supabase } from "@/integrations/supabase/client";
+import { loadFlashDesigns } from "@/lib/nook/flash";
+import { getCalendarBusy } from "@/lib/nook/booking-emails.functions";
+import { OwnerCalendar } from "@/components/nook/owner-calendar";
+import { PricingImport } from "@/components/nook/pricing-import";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -45,16 +51,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Wordmark } from "@/components/nook/wordmark";
-import botanical from "@/assets/flash-botanical.jpg";
-import moth from "@/assets/flash-moth.jpg";
-import sun from "@/assets/flash-sun.jpg";
-import swallow from "@/assets/flash-swallow.jpg";
 
 const tabs = [
   "Overview",
   "Bookings",
   "Availability",
-  "Services",
+  "Pricing",
   "Questions",
   "Team",
   "Flash",
@@ -65,7 +67,9 @@ type Tab = (typeof tabs)[number];
 /** Overview has no slug so /owner stays the home of the panel. */
 const tabSlug = (tab: Tab) => (tab === "Overview" ? undefined : tab.toLowerCase());
 const tabFromSlug = (slug: unknown): Tab =>
-  tabs.find((tab) => tab !== "Overview" && tab.toLowerCase() === slug) ?? "Overview";
+  slug === "services"
+    ? "Pricing"
+    : (tabs.find((tab) => tab !== "Overview" && tab.toLowerCase() === slug) ?? "Overview");
 
 export const Route = createFileRoute("/_authenticated/owner")({
   validateSearch: (search: Record<string, unknown>): { tab?: string } => {
@@ -94,7 +98,7 @@ export const Route = createFileRoute("/_authenticated/owner")({
 
 function OwnerRoute() {
   return (
-    <NookProvider>
+    <NookProvider includeBookings>
       <OwnerPage />
     </NookProvider>
   );
@@ -112,9 +116,9 @@ const tabIntro: Record<Tab, { title: string; lead: string }> = {
     title: "Availability",
     lead: "When each person works. Nook only offers slots long enough for the job.",
   },
-  Services: {
-    title: "Services",
-    lead: "The starting price and time for each service. Answers move them from there.",
+  Pricing: {
+    title: "Pricing",
+    lead: "Set each service's starting price, then adjust answer-based rules in Questions.",
   },
   Questions: {
     title: "Questions",
@@ -185,31 +189,52 @@ function OwnerPage() {
                 <span className="sr-only">Sign out</span>
               </Button>
             </div>
-            <nav className="mt-4 flex gap-1 overflow-x-auto [scrollbar-width:none] lg:mt-8 lg:block lg:space-y-1">
+            <label className="mt-4 block lg:hidden">
+              <span className="mb-1 block text-xs font-medium">Owner section</span>
+              <select
+                value={tab}
+                onChange={(event) => openTab(event.target.value as Tab)}
+                className="min-h-11 w-full border border-border bg-card px-3 text-sm"
+              >
+                {tabs.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                    {item === "Bookings" && pending ? ` (${pending} to review)` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <nav className="mt-8 hidden lg:block lg:space-y-1">
               {tabs.map((item) => {
                 const Icon = tabIcons[item];
                 const slug = tabSlug(item);
                 return (
-                  <Link
-                    key={item}
-                    to="/owner"
-                    search={slug ? { tab: slug } : {}}
-                    aria-current={tab === item ? "page" : undefined}
-                    className={cn(
-                      "flex h-10 shrink-0 items-center gap-2.5 rounded-sm border px-3 text-sm transition-colors lg:w-full",
-                      tab === item
-                        ? "nook-selected font-semibold text-foreground"
-                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                  <div key={item}>
+                    {(item === "Overview" || item === "Pricing") && (
+                      <p className="mb-2 mt-6 px-3 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                        {item === "Overview" ? "Daily work" : "Studio setup"}
+                      </p>
                     )}
-                  >
-                    <Icon className="size-4" />
-                    {item}
-                    {item === "Bookings" && pending > 0 && (
-                      <span className="ml-auto rounded-full bg-brand px-1.5 font-mono text-xs text-brand-foreground">
-                        {pending}
-                      </span>
-                    )}
-                  </Link>
+                    <Link
+                      to="/owner"
+                      search={slug ? { tab: slug } : {}}
+                      aria-current={tab === item ? "page" : undefined}
+                      className={cn(
+                        "flex h-10 shrink-0 items-center gap-2.5 rounded-sm border px-3 text-sm transition-colors lg:w-full",
+                        tab === item
+                          ? "nook-selected font-semibold text-foreground"
+                          : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {item}
+                      {item === "Bookings" && pending > 0 && (
+                        <span className="ml-auto rounded-full bg-brand px-1.5 font-mono text-xs text-brand-foreground">
+                          {pending}
+                        </span>
+                      )}
+                    </Link>
+                  </div>
                 );
               })}
             </nav>
@@ -289,7 +314,7 @@ function OwnerPage() {
               {tab === "Overview" && <OverviewTab onOpen={openTab} />}
               {tab === "Bookings" && <RequestsTab />}
               {tab === "Availability" && <AvailabilityTab onOpen={openTab} />}
-              {tab === "Services" && <ServicesTab />}
+              {tab === "Pricing" && <ServicesTab />}
               {tab === "Questions" && <QuestionsTab />}
               {tab === "Team" && <TeamTab />}
               {tab === "Flash" && <FlashTab />}
@@ -306,7 +331,7 @@ const tabIcons: Record<Tab, typeof Home> = {
   Overview: Home,
   Bookings: CalendarRange,
   Availability: CalendarDays,
-  Services: Tag,
+  Pricing: Tag,
   Questions: ListChecks,
   Team: UsersRound,
   Flash: Images,
@@ -322,8 +347,9 @@ const saveLabels: Record<SaveState, string> = {
 
 /** Studio setup saves itself; this says where that save is so edits never feel lost. */
 function SaveStatus({ state }: { state: SaveState }) {
+  const { retrySave } = useNook();
   return (
-    <p
+    <div
       role="status"
       aria-live="polite"
       className={cn(
@@ -339,7 +365,12 @@ function SaveStatus({ state }: { state: SaveState }) {
         <Check className="size-3.5 text-highlight" />
       )}
       {saveLabels[state]}
-    </p>
+      {state === "error" && (
+        <button type="button" onClick={retrySave} className="ml-2 min-h-10 underline">
+          Retry save
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -352,10 +383,17 @@ const formatWhen = (date: string, time: string) =>
 
 function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
   const { business, requests } = useNook();
+  const flashQuery = useQuery({ queryKey: ["owner-flash"], queryFn: loadFlashDesigns });
+  const fetchCalendar = useServerFn(getCalendarBusy);
+  const calendar = useQuery({
+    queryKey: ["owner-google-calendar"],
+    queryFn: () => fetchCalendar(),
+    staleTime: 60_000,
+  });
   const pending = requests.filter((request) => request.status === "pending");
   const confirmed = requests.filter((request) => request.status === "confirmed");
   const upcoming = requests
-    .filter((request) => request.status !== "declined")
+    .filter((request) => request.status !== "declined" && request.date >= todayKey())
     .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
     .slice(0, 5);
   const currency = business.policies.currency;
@@ -375,7 +413,7 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
     },
     {
       title: "Flash designs",
-      count: flashDesigns.length,
+      count: flashQuery.data?.filter((design) => design.available).length ?? 0,
       detail: "Ready to book",
       tab: "Flash",
     },
@@ -479,7 +517,13 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Calendar sync</dt>
-              <dd className="text-highlight">Google Calendar</dd>
+              <dd className={calendar.data?.connected ? "text-highlight" : "text-destructive"}>
+                {calendar.isPending
+                  ? "Checking…"
+                  : calendar.data?.connected
+                    ? "Connected"
+                    : "Needs attention"}
+              </dd>
             </div>
           </dl>
         </section>
@@ -490,6 +534,12 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
 
 function AvailabilityTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
   const { business } = useNook();
+  const fetchCalendar = useServerFn(getCalendarBusy);
+  const calendar = useQuery({
+    queryKey: ["owner-google-calendar"],
+    queryFn: () => fetchCalendar(),
+    staleTime: 60_000,
+  });
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_18rem]">
       <section>
@@ -529,7 +579,11 @@ function AvailabilityTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
         <CalendarDays className="size-5" />
         <h2 className="mt-4 font-semibold">Google Calendar</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Connected to the studio&apos;s main calendar. Busy times there can&apos;t be booked.
+          {calendar.isPending
+            ? "Checking the studio calendar…"
+            : calendar.data?.connected
+              ? "Connected to the studio's main calendar. Busy times are checked before booking."
+              : "Calendar could not be verified. Customer time selection is paused until it reconnects."}
         </p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           When a customer pays the deposit, the appointment is added to the calendar.
@@ -539,16 +593,9 @@ function AvailabilityTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
   );
 }
 
-const flashDesigns = [
-  { id: "botanical", title: "Wildflower stem", price: 160, duration: 75, image: botanical },
-  { id: "moth", title: "Night moth", price: 220, duration: 120, image: moth },
-  { id: "sun", title: "Ornamental sun", price: 190, duration: 90, image: sun },
-  { id: "swallow", title: "Fine-line swallow", price: 180, duration: 90, image: swallow },
-];
-
 function FlashTab() {
   const currency = useNook().business.policies.currency;
-  const [uploads, setUploads] = useState<{ name: string; url: string }[]>([]);
+  const designs = useQuery({ queryKey: ["owner-flash"], queryFn: loadFlashDesigns });
   const upload = async (files: File[]) => {
     for (const file of files) {
       const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
@@ -569,9 +616,7 @@ function FlashTab() {
         toast.error(rowError.message);
         continue;
       }
-      const { data } = await supabase.storage.from("flash-gallery").createSignedUrl(path, 3600);
-      if (data?.signedUrl)
-        setUploads((current) => [...current, { name: file.name, url: data.signedUrl }]);
+      await designs.refetch();
       toast.success(`${file.name} added to the flash book`);
     }
   };
@@ -595,10 +640,11 @@ function FlashTab() {
         </label>
       </div>
       <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {flashDesigns.map((design) => (
+        {designs.isError && <p role="alert">Could not load flash designs. Reload to try again.</p>}
+        {designs.data?.map((design) => (
           <article key={design.id} className="nook-choice overflow-hidden border border-border">
             <img
-              src={design.image}
+              src={design.imageUrl}
               alt={design.title}
               loading="lazy"
               width={912}
@@ -608,17 +654,64 @@ function FlashTab() {
             <div className="border-t border-border p-3">
               <h3 className="text-sm font-semibold">{design.title}</h3>
               <p className="mt-1 font-mono text-xs text-muted-foreground">
-                {formatMoney(design.price, currency)}, {formatDuration(design.duration)}
+                {formatMoney(design.price, currency)}, {formatDuration(design.duration_minutes)}
+                {!design.available && " · Reserved"}
               </p>
+              {design.available && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <label className="text-xs">
+                    Price ({currency})
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={design.price}
+                      onBlur={async (event) => {
+                        const price = Number(event.target.value);
+                        if (!Number.isFinite(price) || price < 0) return;
+                        const { error } = await supabase
+                          .from("flash_designs")
+                          .update({ price })
+                          .eq("id", design.id);
+                        if (error) toast.error(error.message);
+                        else {
+                          toast.success("Flash price saved");
+                          void designs.refetch();
+                        }
+                      }}
+                      className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    Minutes
+                    <input
+                      type="number"
+                      min="15"
+                      max="720"
+                      defaultValue={design.duration_minutes}
+                      onBlur={async (event) => {
+                        const duration_minutes = Number(event.target.value);
+                        if (
+                          !Number.isFinite(duration_minutes) ||
+                          duration_minutes < 15 ||
+                          duration_minutes > 720
+                        )
+                          return;
+                        const { error } = await supabase
+                          .from("flash_designs")
+                          .update({ duration_minutes })
+                          .eq("id", design.id);
+                        if (error) toast.error(error.message);
+                        else {
+                          toast.success("Flash time saved");
+                          void designs.refetch();
+                        }
+                      }}
+                      className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
             </div>
-          </article>
-        ))}
-        {uploads.map((item) => (
-          <article key={item.url} className="nook-choice nook-selected overflow-hidden border">
-            <img src={item.url} alt={item.name} className="aspect-[4/5] w-full object-cover" />
-            <p className="truncate border-t border-border p-3 text-xs">
-              <span className="font-semibold">New</span> {item.name}
-            </p>
           </article>
         ))}
       </div>
@@ -656,22 +749,107 @@ const dangerButton =
 
 function RequestsTab() {
   const { business, requests, setRequestStatus, updateRequest } = useNook();
+  const [view, setView] = useState<"list" | "calendar">("list");
+  const [search, setSearch] = useState("");
+  const [scope, setScope] = useState<"all" | "upcoming" | "history">("all");
+  const fetchCalendar = useServerFn(getCalendarBusy);
+  const calendar = useQuery({
+    queryKey: ["owner-google-calendar"],
+    queryFn: () => fetchCalendar(),
+    enabled: view === "calendar",
+    staleTime: 60_000,
+  });
   const [editing, setEditing] = useState<string | null>(null);
   const [openDetails, setOpenDetails] = useState<string | null>(null);
+  const [decision, setDecision] = useState<{ id: string; kind: "decline" | "cancel" } | null>(null);
+  const [decisionReason, setDecisionReason] = useState("");
   const currency = business.policies.currency;
+
+  if (view === "calendar")
+    return (
+      <div>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setView("list")} className={ghostButton}>
+            List
+          </button>
+          <button
+            type="button"
+            aria-current="page"
+            className="nook-selected min-h-11 border px-4 text-sm"
+          >
+            Calendar
+          </button>
+        </div>
+        <OwnerCalendar
+          requests={requests}
+          busy={calendar.data?.blocks ?? []}
+          connected={calendar.data?.connected === true}
+        />
+      </div>
+    );
 
   if (requests.length === 0)
     return (
-      <p className="text-sm text-muted-foreground">
-        No bookings yet. Try the customer flow and they will show up here.
-      </p>
+      <div>
+        <button type="button" onClick={() => setView("calendar")} className={ghostButton}>
+          Calendar view
+        </button>
+        <p className="mt-5 text-sm text-muted-foreground">
+          No bookings yet. Try the customer flow and they will show up here.
+        </p>
+      </div>
     );
 
   return (
     <div className="space-y-12">
+      <div className="flex flex-wrap items-end gap-2">
+        <button
+          type="button"
+          aria-current="page"
+          className="nook-selected min-h-11 border px-4 text-sm"
+        >
+          List
+        </button>
+        <button type="button" onClick={() => setView("calendar")} className={ghostButton}>
+          <CalendarDays className="size-4" /> Calendar
+        </button>
+        <label className="ml-auto text-xs">
+          Search bookings
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Name, email, service or date"
+            className="mt-1 block min-h-11 w-64 max-w-full border border-border bg-card px-3 text-sm"
+          />
+        </label>
+        <label className="text-xs">
+          Show
+          <select
+            value={scope}
+            onChange={(event) => setScope(event.target.value as typeof scope)}
+            className="mt-1 block min-h-11 border border-border bg-card px-3 text-sm"
+          >
+            <option value="all">All</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="history">History</option>
+          </select>
+        </label>
+      </div>
       {statusGroups.map((group) => {
         const items = requests
           .filter((r) => r.status === group.status)
+          .filter(
+            (r) =>
+              scope === "all" ||
+              (scope === "upcoming"
+                ? r.date >= todayKey() && r.status !== "declined"
+                : r.date < todayKey() || r.status === "declined"),
+          )
+          .filter((r) =>
+            `${r.customerName} ${r.contact} ${r.serviceId} ${r.date} ${r.memberId}`
+              .toLowerCase()
+              .includes(search.toLowerCase().trim()),
+          )
           .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
         if (items.length === 0 && !group.empty) return null;
         return (
@@ -706,6 +884,18 @@ function RequestsTab() {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-display text-lg font-semibold">{r.customerName}</h3>
                             <StatusPill status={r.status} />
+                            {isConfirmed && r.quote.deposit > 0 && (
+                              <span
+                                className={cn(
+                                  "border px-2 py-0.5 font-mono text-xs",
+                                  r.depositPaidAt
+                                    ? "border-highlight/40 text-highlight"
+                                    : "border-brand/50 text-brand",
+                                )}
+                              >
+                                {r.depositPaidAt ? "Deposit paid" : "Awaiting deposit"}
+                              </span>
+                            )}
                             {!hasArtist && r.status !== "declined" && <NoArtistPill />}
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
@@ -781,6 +971,7 @@ function RequestsTab() {
 
                       {openDetails === r.id && (
                         <div className="mt-4 border-t border-dashed border-border pt-3">
+                          <BookingBrief request={r} business={business} />
                           <p className="eyebrow">Quote breakdown</p>
                           {r.quote.lines.length === 0 ? (
                             <p className="mt-2 text-sm text-muted-foreground">No extras.</p>
@@ -800,12 +991,6 @@ function RequestsTab() {
                             <p className="mt-2 font-mono text-xs">
                               Deposit {formatMoney(r.quote.deposit, currency)}
                               {r.depositPaidAt ? " · paid" : " · not paid yet"}
-                            </p>
-                          )}
-                          {(r.referencePaths?.length ?? 0) > 0 && (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              {r.referencePaths?.length} reference photo
-                              {r.referencePaths?.length === 1 ? "" : "s"} attached
                             </p>
                           )}
                         </div>
@@ -853,8 +1038,8 @@ function RequestsTab() {
                           <button
                             type="button"
                             onClick={async () => {
-                              if (await setRequestStatus(r.id, "declined"))
-                                toast("Request declined");
+                              setDecision({ id: r.id, kind: "decline" });
+                              setDecisionReason("");
                             }}
                             className={cn(dangerButton, "min-h-11")}
                           >
@@ -865,9 +1050,8 @@ function RequestsTab() {
                           <button
                             type="button"
                             onClick={async () => {
-                              if (!window.confirm(`Cancel ${r.customerName}'s booking?`)) return;
-                              if (await setRequestStatus(r.id, "declined"))
-                                toast("Booking cancelled.");
+                              setDecision({ id: r.id, kind: "cancel" });
+                              setDecisionReason("");
                             }}
                             className={cn(dangerButton, "min-h-11")}
                           >
@@ -900,7 +1084,132 @@ function RequestsTab() {
           </section>
         );
       })}
+      <AlertDialog
+        open={Boolean(decision)}
+        onOpenChange={(open) => {
+          if (!open) setDecision(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {decision?.kind === "cancel" ? "Cancel this booking?" : "Decline this request?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              The booking status will change and Nook will email the customer. You can add a short
+              note explaining the decision.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <label className="text-sm font-medium">
+            Note to customer
+            <textarea
+              value={decisionReason}
+              onChange={(event) => setDecisionReason(event.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="Optional reason or next step"
+              className="mt-2 w-full border border-border bg-card p-3 text-sm"
+            />
+          </label>
+          <p className="border-l-2 border-brand bg-background p-3 text-xs text-muted-foreground">
+            Email preview: The studio can’t take this booking.{" "}
+            {decisionReason
+              ? `Studio note: ${decisionReason}`
+              : "The customer can send a new request."}
+          </p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep booking</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!decision) return;
+                if (await setRequestStatus(decision.id, "declined", decisionReason.trim()))
+                  toast(decision.kind === "cancel" ? "Booking cancelled" : "Request declined");
+                setDecision(null);
+              }}
+              className="bg-destructive text-destructive-foreground"
+            >
+              {decision?.kind === "cancel" ? "Cancel and email" : "Decline and email"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function BookingBrief({
+  request,
+  business,
+}: {
+  request: BookingRequest;
+  business: BusinessConfig;
+}) {
+  const service = business.services.find((item) => item.id === request.serviceId);
+  const references = useQuery({
+    queryKey: ["booking-references", request.id, request.referencePaths],
+    queryFn: async () =>
+      Promise.all(
+        (request.referencePaths ?? []).map(async (path) => {
+          const { data, error } = await supabase.storage
+            .from("booking-references")
+            .createSignedUrl(path, 900);
+          if (error || !data) throw error ?? new Error("Could not open reference image");
+          return { path, url: data.signedUrl };
+        }),
+      ),
+    enabled: (request.referencePaths?.length ?? 0) > 0,
+  });
+  const answerLabel = (questionId: string, value: string | string[] | number | boolean) => {
+    const question = service?.questions.find((item) => item.id === questionId);
+    const label = (id: string) =>
+      question?.options?.find((option) => option.id === id)?.label ?? id;
+    return Array.isArray(value)
+      ? value.map(label).join(", ")
+      : typeof value === "string"
+        ? label(value)
+        : String(value);
+  };
+  return (
+    <section className="mb-6">
+      <h4 className="text-sm font-semibold">Client brief</h4>
+      <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+        {Object.entries(request.answers).map(([id, value]) => (
+          <div key={id}>
+            <dt className="text-xs text-muted-foreground">
+              {service?.questions.find((q) => q.id === id)?.label ?? id}
+            </dt>
+            <dd className="mt-0.5 text-sm">{answerLabel(id, value)}</dd>
+          </div>
+        ))}
+      </dl>
+      {request.flashDesignId && (
+        <p className="mt-3 text-xs">Flash design: {request.flashDesignId}</p>
+      )}
+      {references.isError && (
+        <p role="alert" className="mt-3 text-sm text-destructive">
+          Could not load reference photos. Try reopening details.
+        </p>
+      )}
+      {references.data && references.data.length > 0 && (
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
+          {references.data.map(({ path, url }, index) => (
+            <a
+              key={path}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open reference photo ${index + 1}`}
+            >
+              <img
+                src={url}
+                alt={`Customer reference ${index + 1}`}
+                className="aspect-square w-full border border-border object-cover"
+              />
+            </a>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1330,14 +1639,16 @@ const editServices = (
 
 function ServicesTab() {
   const { business, updateBusiness } = useNook();
+  const [selectedId, setSelectedId] = useState(business.services[0]?.id ?? "");
 
-  const addService = () =>
+  const addService = () => {
+    const id = newId("service");
     updateBusiness((b) => ({
       ...b,
       services: [
         ...b.services,
         {
-          id: newId("service"),
+          id,
           name: "New service",
           blurb: "",
           basePrice: 100,
@@ -1347,65 +1658,146 @@ function ServicesTab() {
         },
       ],
     }));
+    setSelectedId(id);
+  };
 
   return (
-    <div className="space-y-4">
-      {business.services.map((s) => (
-        <div key={s.id} className="rounded-sm border border-border bg-card p-5">
-          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-            <TextField
-              label="Name"
-              value={s.name}
-              onChange={(v) => updateBusiness((b) => editServices(b, s.id, { name: v }))}
-            />
+    <div className="space-y-8">
+      <PricingImport business={business} updateBusiness={updateBusiness} />
+      <section>
+        <h2 className="font-display text-xl font-semibold">Base price and sitting length</h2>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          Start with one service. Answer choices in Questions add a fixed amount or percentage;
+          customers see a price estimate before choosing a time.
+        </p>
+        <div role="tablist" aria-label="Service prices" className="mt-5 flex flex-wrap gap-2">
+          {business.services.map((service) => (
             <button
+              key={service.id}
               type="button"
-              onClick={() => {
-                if (!window.confirm(`Remove ${s.name} and its questions?`)) return;
-                updateBusiness((b) => ({
-                  ...b,
-                  services: b.services.filter((x) => x.id !== s.id),
-                }));
-              }}
-              className={cn(dangerButton, "sm:mt-6")}
+              role="tab"
+              aria-selected={service.id === selectedId}
+              onClick={() => setSelectedId(service.id)}
+              className={cn(
+                "min-h-11 border px-4 text-sm",
+                service.id === selectedId ? "nook-selected font-semibold" : "border-border",
+              )}
             >
-              <Trash2 className="size-4" /> Remove
+              {service.name}
             </button>
-          </div>
-          <div className="mt-4">
-            <TextField
-              label="Short description"
-              multiline
-              value={s.blurb}
-              onChange={(v) => updateBusiness((b) => editServices(b, s.id, { blurb: v }))}
-            />
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <NumberField
-              label={`Base price (${business.policies.currency})`}
-              value={s.basePrice}
-              step={10}
-              onChange={(v) => updateBusiness((b) => editServices(b, s.id, { basePrice: v }))}
-            />
-            <NumberField
-              label="Base duration (min)"
-              value={s.baseDuration}
-              step={15}
-              onChange={(v) => updateBusiness((b) => editServices(b, s.id, { baseDuration: v }))}
-            />
-            <NumberField
-              label="Deposit (%)"
-              value={s.depositPercent}
-              step={5}
-              onChange={(v) => updateBusiness((b) => editServices(b, s.id, { depositPercent: v }))}
-            />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            {s.questions.length} question{s.questions.length === 1 ? "" : "s"}. Edit them in
-            Questions.
-          </p>
+          ))}
         </div>
-      ))}
+      </section>
+      {business.services
+        .filter((service) => service.id === selectedId)
+        .map((s) => (
+          <div key={s.id} className="rounded-sm border border-border bg-card p-5">
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+              <TextField
+                label="Name"
+                value={s.name}
+                onChange={(v) => updateBusiness((b) => editServices(b, s.id, { name: v }))}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!window.confirm(`Remove ${s.name} and its questions?`)) return;
+                  updateBusiness((b) => ({
+                    ...b,
+                    services: b.services.filter((x) => x.id !== s.id),
+                  }));
+                }}
+                className={cn(dangerButton, "sm:mt-6")}
+              >
+                <Trash2 className="size-4" /> Remove
+              </button>
+            </div>
+            <div className="mt-4">
+              <TextField
+                label="Short description"
+                multiline
+                value={s.blurb}
+                onChange={(v) => updateBusiness((b) => editServices(b, s.id, { blurb: v }))}
+              />
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <NumberField
+                label={`Base price (${business.policies.currency})`}
+                value={s.basePrice}
+                step={10}
+                onChange={(v) => updateBusiness((b) => editServices(b, s.id, { basePrice: v }))}
+              />
+              <NumberField
+                label="Base duration (min)"
+                value={s.baseDuration}
+                step={15}
+                onChange={(v) => updateBusiness((b) => editServices(b, s.id, { baseDuration: v }))}
+              />
+              <NumberField
+                label="Deposit (%)"
+                value={s.depositPercent}
+                step={5}
+                onChange={(v) =>
+                  updateBusiness((b) => editServices(b, s.id, { depositPercent: v }))
+                }
+              />
+            </div>
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="text-sm font-semibold">Customer estimate starts here</p>
+              <p className="mt-1 font-mono text-lg">
+                {formatMoney(s.basePrice, business.policies.currency)} ·{" "}
+                {formatDuration(s.baseDuration)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                The booking questions may add price and time. Deposit: {s.depositPercent}% after
+                approval.
+              </p>
+            </div>
+            <div className="mt-5 border-t border-border pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">Answer-based price changes</h3>
+                <Link
+                  to="/owner"
+                  search={{ tab: "questions" }}
+                  className="min-h-10 text-sm text-brand underline"
+                >
+                  Edit question rules
+                </Link>
+              </div>
+              {s.questions.every(
+                (question) =>
+                  !(question.options ?? []).some((option) =>
+                    describeOptionEffect(option, business.policies.currency),
+                  ),
+              ) && (
+                <p className="mt-2 text-sm text-muted-foreground">No answer-based changes yet.</p>
+              )}
+              <ul className="mt-2 divide-y divide-border">
+                {s.questions.flatMap((question) =>
+                  (question.options ?? [])
+                    .filter((option) => describeOptionEffect(option, business.policies.currency))
+                    .map((option) => (
+                      <li
+                        key={`${question.id}-${option.id}`}
+                        className="flex flex-wrap justify-between gap-2 py-2 text-sm"
+                      >
+                        <span>
+                          {question.label} · {option.label}
+                        </span>
+                        <span className="font-mono text-xs text-brand">
+                          {describeOptionEffect(option, business.policies.currency)}
+                        </span>
+                      </li>
+                    )),
+                )}
+              </ul>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {s.questions.length} question{s.questions.length === 1 ? "" : "s"}. Edit them in
+              Questions.
+            </p>
+          </div>
+        ))}
       <button type="button" onClick={addService} className={ghostButton}>
         <Plus className="size-4" /> Add service
       </button>
@@ -1979,11 +2371,16 @@ function PoliciesTab() {
   return (
     <div className="max-w-3xl space-y-4">
       <PolicyGroup title="Studio" lead="What customers see at the top of the booking page.">
-        <TextField
-          label="Studio name"
-          value={business.name}
-          onChange={(v) => updateBusiness((b) => ({ ...b, name: v }))}
-        />
+        <div>
+          <p className="eyebrow mb-2">Studio name</p>
+          <p className="border border-border bg-background px-3 py-2.5 text-sm font-medium">
+            {business.name}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            The public homepage uses this brand. Update both together when changing the studio
+            identity.
+          </p>
+        </div>
         <TextField
           label="Address"
           value={business.location}
@@ -2029,7 +2426,7 @@ function PoliciesTab() {
         />
       </PolicyGroup>
 
-      <PolicyGroup title="Deposit" lead="The percentage is set per service in Services.">
+      <PolicyGroup title="Deposit" lead="The percentage is set per service in Pricing.">
         <NumberField
           label="Due within (hours)"
           value={p.depositDueHours}

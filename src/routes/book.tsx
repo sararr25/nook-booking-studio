@@ -1,5 +1,8 @@
 import { notifyNewBooking } from "@/lib/nook/booking-emails.functions";
-import { useMemo, useState } from "react";
+import { getAvailableSlots } from "@/lib/nook/availability.functions";
+import { submitBooking } from "@/lib/nook/submit-booking.functions";
+import { loadFlashDesigns, type FlashDesign } from "@/lib/nook/flash";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -22,7 +25,6 @@ import { SiteHeader } from "@/components/nook/site-header";
 import { MonthCalendar } from "@/components/nook/month-calendar";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getCalendarBusy } from "@/lib/nook/booking-emails.functions";
 import { BookingTicket } from "@/components/nook/booking-ticket";
 import { Wordmark } from "@/components/nook/wordmark";
 import { NookProvider, useNook } from "@/lib/nook/store";
@@ -41,7 +43,6 @@ import { artistImage } from "@/lib/nook/artist-images";
 import { supabase } from "@/integrations/supabase/client";
 import botanical from "@/assets/flash-botanical.jpg";
 import moth from "@/assets/flash-moth.jpg";
-import sun from "@/assets/flash-sun.jpg";
 import swallow from "@/assets/flash-swallow.jpg";
 
 export const Route = createFileRoute("/book")({
@@ -76,13 +77,9 @@ function BookingPage() {
 const stepNames = ["Service", "Details", "Quote", "Date & time", "Your details"];
 
 function BookingFlow() {
-  const { business, requests, addRequest } = useNook();
-  const fetchBusy = useServerFn(getCalendarBusy);
-  const busyQuery = useQuery({
-    queryKey: ["calendar-busy"],
-    queryFn: () => fetchBusy(),
-    staleTime: 60_000,
-  });
+  const { business, addRequest } = useNook();
+  const fetchAvailable = useServerFn(getAvailableSlots);
+  const submitOnServer = useServerFn(submitBooking);
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState(business.services[0]?.id ?? "tattoo");
   const [answers, setAnswers] = useState<Answers>({});
@@ -91,7 +88,14 @@ function BookingFlow() {
   const [contact, setContact] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [attempted, setAttempted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [flashDesignId, setFlashDesignId] = useState<string | undefined>();
+  const flashQuery = useQuery({
+    queryKey: ["booking-flash"],
+    queryFn: loadFlashDesigns,
+    enabled: serviceId === "flash",
+  });
   const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
   const [artistChoice, setArtistChoice] = useState<string>("auto");
   const [done, setDone] = useState<null | {
@@ -100,12 +104,33 @@ function BookingFlow() {
     date: string;
     time: string;
     who: string;
+    id: string;
+    emailSent: boolean;
   }>(null);
 
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
   const questions = service ? visibleQuestions(service, answers) : [];
-  const flashDesign = bookingFlashDesigns.find((d) => d.id === flashDesignId);
-  const quote = service ? buildQuote(business, service, answers, flashDesign?.skills) : null;
+  const flashDesign = flashQuery.data?.find((d) => d.id === flashDesignId && d.available);
+  const pricedService =
+    service && flashDesign
+      ? { ...service, basePrice: flashDesign.price, baseDuration: flashDesign.duration_minutes }
+      : service;
+  const quote = pricedService ? buildQuote(business, pricedService, answers) : null;
+  const needsReview = Boolean(quote?.requiresReview || quote?.eligibleTeam.length === 0);
+  const slotsQuery = useQuery({
+    queryKey: ["available-slots", serviceId, answers, artistChoice, flashDesignId],
+    queryFn: () =>
+      fetchAvailable({
+        data: {
+          serviceId,
+          answers,
+          ...(artistChoice !== "auto" ? { artistId: artistChoice } : {}),
+          ...(flashDesignId ? { flashId: flashDesignId } : {}),
+        },
+      }),
+    enabled: step >= 3 && (quote?.eligibleTeam.length ?? 0) > 0,
+    staleTime: 30_000,
+  });
   if (!service) return <div className="p-8">No services are available.</div>;
   if (!quote) return <div className="p-8">No quote is available.</div>;
   const recommendation = recommendArtist(quote);
@@ -113,16 +138,10 @@ function BookingFlow() {
     artistChoice === "auto"
       ? recommendation?.member
       : (quote.eligibleTeam.find((m) => m.id === artistChoice) ?? recommendation?.member);
-  const calendarTeam = chosenMember ? [chosenMember] : quote.eligibleTeam;
   const chooseArtist = (id: string) => {
     setArtistChoice(id);
     setSelected(null);
   };
-
-  const calendarBusy = busyQuery.data?.blocks ?? [];
-  const booked = requests
-    .filter((r) => r.status !== "declined")
-    .map((r) => ({ date: r.date, time: r.time, memberId: r.memberId }));
 
   const allAnswered = questions.every((q) => isAnswered(q, answers));
 
@@ -141,98 +160,117 @@ function BookingFlow() {
     });
 
   const submit = async () => {
+    if (submitting) return;
+    setAttempted(true);
     if (!selected || !name.trim() || !/^\S+@\S+\.\S+$/.test(contact.trim())) {
-      toast.error("Add your name and a valid email.");
       return;
     }
     if (phone.replace(/[^0-9]/g, "").length < 6) {
-      toast.error("Add a phone number so the studio can reach you.");
       return;
     }
-    const pending = quote.requiresReview;
-    const requestId = crypto.randomUUID();
-    const uploadedPaths: string[] = [];
-    for (const file of referenceFiles) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-      const path = `${requestId}/${crypto.randomUUID()}-${safeName}`;
-      const { error } = await supabase.storage.from("booking-references").upload(path, file);
-      if (error) {
-        toast.error(`Could not upload ${file.name}`);
+    setSubmitting(true);
+    try {
+      const pending = needsReview;
+      const requestId = crypto.randomUUID();
+      const uploadedPaths: string[] = [];
+      for (const file of referenceFiles) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+        const path = `${requestId}/${crypto.randomUUID()}-${safeName}`;
+        const { error } = await supabase.storage.from("booking-references").upload(path, file);
+        if (error) {
+          toast.error(`Could not upload ${file.name}`);
+          return;
+        }
+        uploadedPaths.push(path);
+      }
+      const request: BookingRequest = {
+        id: requestId,
+        createdAt: new Date().toISOString(),
+        customerName: name.trim(),
+        contact: contact.trim(),
+        phone: phone.trim(),
+        notes: notes.trim(),
+        serviceId: service.id,
+        answers,
+        date: selected.date,
+        time: selected.slot.time,
+        memberId: selected.slot.memberId,
+        ...(flashDesignId ? { flashDesignId } : {}),
+        referencePaths: uploadedPaths,
+        status: pending ? "pending" : "confirmed",
+        quote: {
+          low: quote.low,
+          high: quote.high,
+          duration: quote.duration,
+          deposit: quote.deposit,
+          requiresReview: quote.requiresReview,
+          reviewReasons: quote.reviewReasons,
+          lines: quote.lines,
+        },
+      };
+      let saved;
+      try {
+        saved = await submitOnServer({
+          data: {
+            id: request.id,
+            customerName: request.customerName,
+            contact: request.contact,
+            phone: request.phone ?? "",
+            notes: request.notes,
+            serviceId: request.serviceId,
+            answers: request.answers,
+            date: request.date,
+            time: request.time,
+            memberId: request.memberId,
+            ...(request.flashDesignId ? { flashDesignId: request.flashDesignId } : {}),
+            referencePaths: uploadedPaths,
+            quotedLow: request.quote.low,
+            quotedHigh: request.quote.high,
+            quotedDuration: request.quote.duration,
+          },
+        });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Could not save your booking");
+        void slotsQuery.refetch();
         return;
       }
-      uploadedPaths.push(path);
+      addRequest({ ...request, status: saved.status });
+      let emailSent = false;
+      try {
+        emailSent = (await notifyNewBooking({ data: { id: request.id } })).sent;
+      } catch {
+        emailSent = false;
+      }
+      setDone({
+        id: request.id,
+        emailSent,
+        pending: saved.status === "pending",
+        terms: bookingTerms({
+          free: quote.high === 0,
+          review: saved.status === "pending",
+          deposit: formatMoney(quote.deposit, business.policies.currency),
+          depositPercent: service.depositPercent,
+          depositDueHours: business.policies.depositDueHours,
+        }),
+        date: selected.date,
+        time: selected.slot.time,
+        who: selected.slot.memberName,
+      });
+    } finally {
+      setSubmitting(false);
     }
-    const request: BookingRequest = {
-      id: requestId,
-      createdAt: new Date().toISOString(),
-      customerName: name.trim(),
-      contact: contact.trim(),
-      phone: phone.trim(),
-      notes: notes.trim(),
-      serviceId: service.id,
-      answers,
-      date: selected.date,
-      time: selected.slot.time,
-      memberId: selected.slot.memberId,
-      ...(flashDesignId ? { flashDesignId } : {}),
-      referencePaths: uploadedPaths,
-      status: pending ? "pending" : "confirmed",
-      quote: {
-        low: quote.low,
-        high: quote.high,
-        duration: quote.duration,
-        deposit: quote.deposit,
-        requiresReview: quote.requiresReview,
-        reviewReasons: quote.reviewReasons,
-        lines: quote.lines,
-      },
-    };
-    const { error } = await supabase.from("booking_requests").insert({
-      id: request.id,
-      customer_name: request.customerName,
-      contact: request.contact,
-      phone: request.phone ?? "",
-      notes: request.notes,
-      service_id: request.serviceId,
-      answers: request.answers,
-      quote: request.quote,
-      appointment_date: request.date,
-      appointment_time: request.time,
-      flash_design_id: null,
-      member_id: request.memberId,
-      flash_design_key: request.flashDesignId ?? null,
-      reference_paths: uploadedPaths,
-      status: request.status,
-    });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    addRequest(request);
-    void notifyNewBooking({ data: { id: request.id } }).catch(() => undefined);
-    setDone({
-      pending,
-      terms: bookingTerms({
-        free: quote.high === 0,
-        review: pending,
-        deposit: formatMoney(quote.deposit, business.policies.currency),
-        depositPercent: service.depositPercent,
-        depositDueHours: business.policies.depositDueHours,
-      }),
-      date: selected.date,
-      time: selected.slot.time,
-      who: selected.slot.memberName,
-    });
   };
 
   if (done) return <Confirmation done={done} />;
 
-  const needsFlashPick = service.id === "flash" && !flashDesignId;
+  const needsFlashPick = service.id === "flash" && !flashDesign;
   const canContinue =
     (step === 0 && Boolean(service)) ||
     (step === 1 && allAnswered && !needsFlashPick) ||
     step === 2 ||
-    (step === 3 && Boolean(selected)) ||
+    (step === 3 &&
+      Boolean(selected) &&
+      (quote.eligibleTeam.length === 0 || slotsQuery.data?.connected === true)) ||
     (step === 4 && (!quote.requiresPhotos || referenceFiles.length > 0));
 
   const blockedReason = canContinue
@@ -312,13 +350,22 @@ function BookingFlow() {
             {step === 1 && (
               <section>
                 <h1 className="display nook-title max-w-xl text-balance text-3xl sm:text-4xl lg:text-5xl">
-                  How big is your tattoo?
+                  {service.id === "flash"
+                    ? "Choose your flash and details"
+                    : service.id === "consultation"
+                      ? "Tell us what you have in mind"
+                      : "Tell us about your piece"}
                 </h1>
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                   This helps us estimate time and price.
                 </p>
                 {service.id === "flash" && (
-                  <FlashPicker selected={flashDesignId} onSelect={setFlashDesignId} />
+                  <FlashPicker
+                    designs={flashQuery.data ?? []}
+                    currency={business.policies.currency}
+                    selected={flashDesignId}
+                    onSelect={setFlashDesignId}
+                  />
                 )}
                 {service.id === "tattoo" && (
                   <div className="mt-8 max-w-2xl">
@@ -379,19 +426,31 @@ function BookingFlow() {
                 <p className="mt-3 max-w-lg text-sm text-muted-foreground">
                   {quote.eligibleTeam.length === 0
                     ? `No one on the team is matched yet, so tell us when you'd like to come in. Earliest is ${business.policies.leadTimeDays} days out.`
-                    : `Showing days with a free ${formatDuration(quote.duration)} block for ${chosenMember ? chosenMember.name : "no one yet"}. Earliest is ${business.policies.leadTimeDays} days out.`}
+                    : `Showing verified times for a ${formatDuration(quote.duration)} sitting. Earliest is ${business.policies.leadTimeDays} days out.`}
                 </p>
                 <div className="mt-8">
                   {quote.eligibleTeam.length === 0 ? (
                     <NoMatchPicker business={business} selected={selected} onSelect={setSelected} />
+                  ) : slotsQuery.isPending ? (
+                    <p role="status" className="text-sm text-muted-foreground">
+                      Checking studio and Google Calendar availability…
+                    </p>
+                  ) : slotsQuery.isError || !slotsQuery.data?.connected ? (
+                    <div role="alert" className="border border-destructive/40 p-5 text-sm">
+                      We can’t verify the calendar right now. Please try again before choosing a
+                      time.
+                      <button
+                        type="button"
+                        onClick={() => void slotsQuery.refetch()}
+                        className="ml-2 underline"
+                      >
+                        Retry
+                      </button>
+                    </div>
                   ) : (
                     <MonthCalendar
-                      key={chosenMember?.id ?? "any"}
-                      business={business}
-                      eligibleTeam={calendarTeam}
-                      duration={quote.duration}
-                      booked={booked}
-                      blocked={calendarBusy}
+                      key={`${artistChoice}:${serviceId}:${flashDesignId ?? ""}:${quote.duration}`}
+                      availableDays={slotsQuery.data.days}
                       selected={selected}
                       onSelect={setSelected}
                     />
@@ -403,15 +462,42 @@ function BookingFlow() {
             {step === 4 && (
               <section>
                 <h1 className="display text-3xl sm:text-4xl lg:text-5xl">Almost done!</h1>
+                <div className="mt-6 lg:hidden">
+                  <SummaryPanel
+                    quote={quote}
+                    currency={business.policies.currency}
+                    depositPercent={service.depositPercent}
+                    depositDueHours={business.policies.depositDueHours}
+                    serviceName={service.name}
+                    selected={selected}
+                    artistName={selected?.slot.memberName}
+                  />
+                  <div className="mt-3 flex gap-5">
+                    <button
+                      type="button"
+                      onClick={() => setStep(2)}
+                      className="min-h-11 text-sm text-brand underline"
+                    >
+                      Edit artist
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(3)}
+                      className="min-h-11 text-sm text-brand underline"
+                    >
+                      Edit date
+                    </button>
+                  </div>
+                </div>
                 <h2 className="mt-4 text-base font-bold">
                   {service.id === "tattoo"
                     ? `Your details${referenceFiles.length ? ` · ${referenceFiles.length} reference ${referenceFiles.length === 1 ? "picture" : "pictures"} attached` : ""}`
                     : "Add a reference photo"}
                 </h2>
                 <p className="mt-1 max-w-lg text-sm text-muted-foreground">
-                  {quote.requiresReview
+                  {needsReview
                     ? business.policies.reviewNote
-                    : "This one fits the studio's standard rules, so the confirmation email goes out as soon as you book."}
+                    : "This request confirms automatically. Your slot is secured after the deposit is paid."}
                 </p>
 
                 <div className="mt-7 max-w-xl space-y-5">
@@ -423,33 +509,52 @@ function BookingFlow() {
                   <Field label="Your name">
                     <input
                       value={name}
+                      aria-invalid={attempted && !name.trim()}
+                      autoComplete="name"
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Nadia Berg"
                       className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
                     />
                   </Field>
+                  {attempted && !name.trim() && (
+                    <p role="alert" className="text-xs text-destructive">
+                      Enter your name.
+                    </p>
+                  )}
                   <Field label="Email">
                     <input
                       type="email"
                       autoComplete="email"
                       required
                       value={contact}
+                      aria-invalid={attempted && !/^\S+@\S+\.\S+$/.test(contact.trim())}
                       onChange={(e) => setContact(e.target.value)}
                       placeholder="you@email.com"
                       className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
                     />
                   </Field>
+                  {attempted && !/^\S+@\S+\.\S+$/.test(contact.trim()) && (
+                    <p role="alert" className="text-xs text-destructive">
+                      Enter a valid email address.
+                    </p>
+                  )}
                   <Field label="Phone">
                     <input
                       type="tel"
                       autoComplete="tel"
                       required
                       value={phone}
+                      aria-invalid={attempted && phone.replace(/[^0-9]/g, "").length < 6}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+46 70 123 45 67"
                       className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
                     />
                   </Field>
+                  {attempted && phone.replace(/[^0-9]/g, "").length < 6 && (
+                    <p role="alert" className="text-xs text-destructive">
+                      Enter a phone number so the studio can reach you.
+                    </p>
+                  )}
                   <Field label="Anything else" optional>
                     <textarea
                       value={notes}
@@ -484,7 +589,7 @@ function BookingFlow() {
                 depositDueHours={business.policies.depositDueHours}
                 serviceName={service.name}
                 selected={selected}
-                artistName={chosenMember?.name}
+                artistName={selected?.slot.memberName ?? chosenMember?.name}
               />
             </div>
           </aside>
@@ -499,7 +604,7 @@ function BookingFlow() {
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {formatDuration(quote.duration)}
-                  {quote.requiresReview ? ", needs a quick review" : ", confirms instantly"}
+                  {needsReview ? ", needs a quick review" : ", confirms instantly"}
                 </p>
               </div>
               {blockedReason && (
@@ -522,15 +627,17 @@ function BookingFlow() {
               )}
               <Button
                 type="button"
-                disabled={!canContinue}
+                disabled={!canContinue || submitting}
                 onClick={() => (step === 4 ? submit() : setStep((s) => s + 1))}
                 className="min-h-11 min-w-32 px-5 disabled:bg-secondary disabled:text-muted-foreground disabled:opacity-100 sm:min-w-40"
               >
-                {step === 4
-                  ? quote.requiresReview
-                    ? "Send request"
-                    : "Confirm booking"
-                  : "Continue"}
+                {submitting
+                  ? "Saving booking…"
+                  : step === 4
+                    ? needsReview
+                      ? "Send request"
+                      : "Confirm booking"
+                    : "Continue"}
                 {step < 4 && <ArrowRight className="size-4" />}
               </Button>
             </div>
@@ -581,7 +688,7 @@ function NoMatchPicker({
     <div className="rounded-sm border border-border bg-secondary p-5">
       <p className="text-sm">
         Nobody on the team matches this combination yet. Tell us a date and time you'd prefer and
-        Ines will follow up to confirm or offer alternatives. Your request still goes in.
+        The studio will follow up to confirm or offer alternatives. Your request still goes in.
       </p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <Field label="Preferred date">
@@ -673,41 +780,14 @@ function BookingHeader({ step, onBack }: { step: number; onBack: () => void }) {
   );
 }
 
-const bookingFlashDesigns = [
-  {
-    id: "botanical",
-    title: "Wildflower stem",
-    detail: "Fine line · €160",
-    skills: ["fineline"],
-    image: botanical,
-  },
-  {
-    id: "moth",
-    title: "Night moth",
-    detail: "Fine line · €220",
-    skills: ["fineline"],
-    image: moth,
-  },
-  {
-    id: "sun",
-    title: "Ornamental sun",
-    detail: "Blackwork · €190",
-    skills: ["blackwork"],
-    image: sun,
-  },
-  {
-    id: "swallow",
-    title: "Fine-line swallow",
-    detail: "Fine line · €180",
-    skills: ["fineline"],
-    image: swallow,
-  },
-];
-
 function FlashPicker({
+  designs,
+  currency,
   selected,
   onSelect,
 }: {
+  designs: FlashDesign[];
+  currency: string;
   selected: string | undefined;
   onSelect: (id: string) => void;
 }) {
@@ -721,36 +801,38 @@ function FlashPicker({
         Each design is tattooed once. Select one to reserve it with your request.
       </p>
       <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-        {bookingFlashDesigns.map((design) => (
-          <Button
-            variant="ghost"
-            key={design.id}
-            type="button"
-            aria-pressed={selected === design.id}
-            onClick={() => onSelect(design.id)}
-            className={cn(
-              "nook-choice nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal border border-border p-0 text-left",
-              selected === design.id && "nook-selected",
-            )}
-          >
-            <img
-              src={design.image}
-              alt={design.title}
-              loading="lazy"
-              width={912}
-              height={1104}
-              className="aspect-[4/5] w-full object-cover"
-            />
-            <span className="block min-w-0 px-2.5 py-3 sm:p-3">
-              <span className="block text-[13px] font-semibold leading-snug sm:text-sm">
-                {design.title}
+        {designs
+          .filter((design) => design.available)
+          .map((design) => (
+            <Button
+              variant="ghost"
+              key={design.id}
+              type="button"
+              aria-pressed={selected === design.id}
+              onClick={() => onSelect(design.id)}
+              className={cn(
+                "nook-choice nook-lift h-auto flex-col items-stretch overflow-hidden whitespace-normal border border-border p-0 text-left",
+                selected === design.id && "nook-selected",
+              )}
+            >
+              <img
+                src={design.imageUrl}
+                alt={design.title}
+                loading="lazy"
+                width={912}
+                height={1104}
+                className="aspect-[4/5] w-full object-cover"
+              />
+              <span className="block min-w-0 px-2.5 py-3 sm:p-3">
+                <span className="block text-[13px] font-semibold leading-snug sm:text-sm">
+                  {design.title}
+                </span>
+                <span className="mt-1 block text-xs leading-snug text-muted-foreground">
+                  {formatMoney(design.price, currency)} · {formatDuration(design.duration_minutes)}
+                </span>
               </span>
-              <span className="mt-1 block text-xs leading-snug text-muted-foreground">
-                {design.detail}
-              </span>
-            </span>
-          </Button>
-        ))}
+            </Button>
+          ))}
       </div>
     </div>
   );
@@ -1031,15 +1113,23 @@ function QuoteStep({
         <div
           className={cn(
             "rounded-sm border p-5",
-            quote.requiresReview ? "border-brand bg-card" : "border-border bg-card",
+            quote.requiresReview || quote.eligibleTeam.length === 0
+              ? "border-brand bg-card"
+              : "border-border bg-card",
           )}
         >
           <p className="eyebrow">Approval</p>
-          {quote.requiresReview ? (
+          {quote.requiresReview || quote.eligibleTeam.length === 0 ? (
             <>
-              <p className="mt-2 text-sm font-medium">Goes to Ines for a quick look</p>
+              <p className="mt-2 text-sm font-medium">Goes to the studio for a quick look</p>
               <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-foreground/75">
-                {quote.reviewReasons.map((r) => (
+                {(quote.eligibleTeam.length === 0
+                  ? [
+                      "The studio will match an artist before confirming your time.",
+                      ...quote.reviewReasons,
+                    ]
+                  : quote.reviewReasons
+                ).map((r) => (
                   <li key={r}>{r}</li>
                 ))}
               </ul>
@@ -1099,11 +1189,11 @@ function SummaryPanel({
           : `${formatMoney(quote.low, currency)}-${formatMoney(quote.high, currency)}`
       }
       rows={rows}
-      review={quote.requiresReview}
+      review={quote.requiresReview || quote.eligibleTeam.length === 0}
       note={quote.requiresPhotos ? "Reference pictures required." : undefined}
       terms={bookingTerms({
         free: quote.high === 0,
-        review: quote.requiresReview,
+        review: quote.requiresReview || quote.eligibleTeam.length === 0,
         deposit: formatMoney(quote.deposit, currency),
         depositPercent,
         depositDueHours,
@@ -1144,7 +1234,15 @@ function bookingTerms({
 function Confirmation({
   done,
 }: {
-  done: { pending: boolean; terms: string[]; date: string; time: string; who: string };
+  done: {
+    pending: boolean;
+    terms: string[];
+    date: string;
+    time: string;
+    who: string;
+    id: string;
+    emailSent: boolean;
+  };
 }) {
   const pretty = new Date(`${done.date}T00:00:00`).toLocaleDateString("en-GB", {
     weekday: "long",
@@ -1156,14 +1254,20 @@ function Confirmation({
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto w-full max-w-2xl px-5 py-20">
-        <p className="eyebrow">{done.pending ? "Request sent" : "Booked"}</p>
+        <p className="eyebrow">{done.pending ? "Request sent" : "Request confirmed"}</p>
         <h1 className="display mt-4 text-3xl sm:text-4xl">
-          {done.pending ? "Ines will come back to you." : "You're booked."}
+          {done.pending ? "The studio will review your request." : "Your request is confirmed."}
         </h1>
         <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
           {done.pending
             ? "We've held this slot while your request is reviewed, usually within a day. You'll get an email either way."
-            : "Your confirmation email is on its way, with the deposit link and how to find the studio."}
+            : "Pay the deposit from your email to secure your slot. The final price is agreed at the studio."}
+        </p>
+        <p className="mt-3 font-mono text-xs text-muted-foreground">Reference: {done.id}</p>
+        <p role="status" className="mt-3 text-sm">
+          {done.emailSent
+            ? "We sent the next steps to your email."
+            : "The booking was saved, but the email could not be sent. Keep your reference and contact the studio for the deposit link."}
         </p>
 
         <dl className="mt-10 divide-y divide-border border-y border-border text-sm">
@@ -1190,14 +1294,8 @@ function Confirmation({
 
         <div className="mt-10 flex flex-wrap gap-3">
           <Link
-            to="/owner"
-            className="inline-flex min-h-11 items-center rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
-          >
-            See it on the owner side
-          </Link>
-          <Link
             to="/"
-            className="inline-flex min-h-11 items-center rounded-sm border border-border px-5 text-sm transition-colors hover:bg-secondary"
+            className="inline-flex min-h-11 items-center rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
           >
             Back home
           </Link>
@@ -1218,8 +1316,17 @@ function ReferenceUpload({
     () => files.map((file) => ({ file, url: URL.createObjectURL(file) })),
     [files],
   );
-  const add = (list: FileList | null) =>
-    onChange([...files, ...Array.from(list ?? [])].slice(0, 5));
+  useEffect(() => () => previews.forEach(({ url }) => URL.revokeObjectURL(url)), [previews]);
+  const add = (list: FileList | null) => {
+    const incoming = Array.from(list ?? []);
+    const accepted = incoming.filter(
+      (file) =>
+        ["image/jpeg", "image/png", "image/webp"].includes(file.type) && file.size <= 10_000_000,
+    );
+    if (accepted.length !== incoming.length)
+      toast.error("Use JPG, PNG or WebP images under 10 MB.");
+    onChange([...files, ...accepted].slice(0, 5));
+  };
   return (
     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
       <label
@@ -1254,7 +1361,7 @@ function ReferenceUpload({
               type="button"
               aria-label={`Remove ${file.name}`}
               onClick={() => onChange(files.filter((candidate) => candidate !== file))}
-              className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-card"
+              className="absolute right-1 top-1 flex size-11 items-center justify-center rounded-sm bg-card"
             >
               <Trash2 className="size-3.5" />
             </button>

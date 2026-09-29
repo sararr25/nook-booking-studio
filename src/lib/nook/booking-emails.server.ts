@@ -14,6 +14,7 @@ export async function sendBookingEmail(
   bookingId: string,
   kind: BookingEmailKind,
   eventKey: string,
+  reason?: string,
 ) {
   const demoPaymentBaseUrl =
     process.env["PUBLIC_SITE_URL"] ??
@@ -53,6 +54,7 @@ export async function sendBookingEmail(
           deposit > 0 && (kind === "confirmed" || kind === "changed")
             ? `${demoPaymentBaseUrl}/payment-demo/${bookingId}`
             : "",
+        reason: reason ?? "",
       },
       idempotencyKey: `booking-${kind}-${bookingId}-${eventKey}`,
     });

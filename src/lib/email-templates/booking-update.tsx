@@ -23,6 +23,7 @@ export interface BookingUpdateProps {
   deposit?: string;
   depositDueHours?: number;
   paymentUrl?: string;
+  reason?: string;
 }
 
 const headings: Record<BookingEmailKind, string> = {
@@ -42,6 +43,7 @@ function BookingUpdate({
   deposit = "",
   depositDueHours = 24,
   paymentUrl = "",
+  reason = "",
 }: BookingUpdateProps) {
   const intro: Record<BookingEmailKind, string> = {
     received: `Thanks for your request. ${studioName} will review it and email you once it is confirmed.`,
@@ -68,6 +70,9 @@ function BookingUpdate({
           </Heading>
           <Text style={{ fontSize: "15px", lineHeight: "1.6" }}>Hi {customerName},</Text>
           <Text style={{ fontSize: "15px", lineHeight: "1.6" }}>{intro[kind]}</Text>
+          {kind === "declined" && reason && (
+            <Text style={{ fontSize: "15px", lineHeight: "1.6" }}>Studio note: {reason}</Text>
+          )}
           {showDetails && (
             <Section
               style={{

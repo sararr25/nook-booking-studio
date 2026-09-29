@@ -9,11 +9,13 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { defaultBusiness } from "./config";
 import { currentStudioName } from "./studio-brand";
 import { notifyBookingChange } from "./booking-emails.functions";
+import { syncOwnerBookingCalendar } from "./owner-calendar.functions";
 import type { Answers, BookingRequest, BusinessConfig } from "./types";
 
 type RequestRow = Database["public"]["Tables"]["booking_requests"]["Row"];
@@ -28,10 +30,15 @@ type StoreValue = {
   /** Set when the studio setup or bookings could not be read; nothing may be saved then. */
   loadError: string | null;
   saveState: SaveState;
+  retrySave: () => void;
   updateBusiness: (updater: (draft: BusinessConfig) => BusinessConfig) => void;
   addRequest: (request: BookingRequest) => void;
   /** Resolves to true once the database has the change. */
-  setRequestStatus: (id: string, status: BookingRequest["status"]) => Promise<boolean>;
+  setRequestStatus: (
+    id: string,
+    status: BookingRequest["status"],
+    reason?: string,
+  ) => Promise<boolean>;
   /** Resolves to true once the database has the change; the screen rolls back if it fails. */
   updateRequest: (id: string, patch: Partial<BookingRequest>) => Promise<boolean>;
   resetAll: () => void;
@@ -98,12 +105,20 @@ const toRowPatch = (patch: Partial<BookingRequest>) => ({
   ...(patch.quote ? { quote: patch.quote as unknown as Json } : {}),
 });
 
-export function NookProvider({ children }: { children: ReactNode }) {
+export function NookProvider({
+  children,
+  includeBookings = false,
+}: {
+  children: ReactNode;
+  includeBookings?: boolean;
+}) {
+  const syncCalendar = useServerFn(syncOwnerBookingCalendar);
   const [business, setBusiness] = useState<BusinessConfig>(defaultBusiness);
   const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
+  const [saveRevision, setSaveRevision] = useState(0);
   const dirty = useRef(false);
 
   useEffect(() => {
@@ -112,7 +127,9 @@ export function NookProvider({ children }: { children: ReactNode }) {
       const [settings, bookings] = await Promise.all([
         supabase.from("studio_settings").select("config").eq("id", "main").maybeSingle(),
         // Only owners can read requests; everyone else gets an empty list.
-        supabase.from("booking_requests").select("*").order("appointment_date"),
+        includeBookings
+          ? supabase.from("booking_requests").select("*").order("appointment_date")
+          : Promise.resolve({ data: [] as RequestRow[], error: null }),
       ]);
       if (cancelled) return;
       // Never fall back to the defaults on a failed read: the next autosave would overwrite the real setup.
@@ -129,7 +146,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [includeBookings]);
 
   // Owner edits are saved to the database shortly after the last change.
   useEffect(() => {
@@ -147,6 +164,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
         config: business as unknown as Json,
       });
       if (error) {
+        dirty.current = true;
         setSaveState("error");
         toast.error("Could not save your changes. Check your connection and try again.");
         return;
@@ -155,7 +173,13 @@ export function NookProvider({ children }: { children: ReactNode }) {
       setSaveState(dirty.current ? "unsaved" : "saved");
     }, 700);
     return () => window.clearTimeout(timer);
-  }, [business, loaded]);
+  }, [business, loaded, saveRevision]);
+
+  const retrySave = useCallback(() => {
+    dirty.current = true;
+    setSaveState("unsaved");
+    setSaveRevision((revision) => revision + 1);
+  }, []);
 
   const updateBusiness = useCallback((updater: (draft: BusinessConfig) => BusinessConfig) => {
     dirty.current = true;
@@ -169,12 +193,11 @@ export function NookProvider({ children }: { children: ReactNode }) {
   );
 
   const updateRequest = useCallback(
-    async (id: string, patch: Partial<BookingRequest>): Promise<boolean> => {
-      let previous: BookingRequest | undefined;
+    async (id: string, patch: Partial<BookingRequest>, reason?: string): Promise<boolean> => {
+      const previous = requests.find((request) => request.id === id);
       setRequests((prev) =>
         prev.map((r) => {
           if (r.id !== id) return r;
-          previous = r;
           return { ...r, ...patch };
         }),
       );
@@ -191,27 +214,38 @@ export function NookProvider({ children }: { children: ReactNode }) {
         toast.error("Could not save the booking change. Nothing was changed.");
         return false;
       }
+      if (patch.status || patch.date || patch.time || patch.memberId || patch.quote) {
+        try {
+          await syncCalendar({ data: { id } });
+        } catch {
+          toast.error("Booking saved, but Google Calendar did not sync. Retry from the calendar.");
+        }
+      }
       // Only send a status email when the status really changes; everything else is "changed".
       const kind =
-        patch.status === "confirmed" || patch.status === "declined"
-          ? patch.status
-          : !patch.status && (patch.date || patch.time || patch.memberId || patch.quote)
+        patch.status && patch.status !== previous?.status
+          ? patch.status === "confirmed" || patch.status === "declined"
+            ? patch.status
+            : null
+          : patch.date || patch.time || patch.memberId || patch.quote
             ? "changed"
             : null;
       if (kind) {
-        notifyBookingChange({ data: { id, kind } })
+        notifyBookingChange({ data: { id, kind, ...(reason ? { reason } : {}) } })
           .then((result) => {
             if (result.sent) toast.success("The customer has been emailed.");
+            else toast.error("Booking saved, but the customer email was not sent.");
           })
           .catch(() => toast.error("Saved, but the email to the customer could not be sent."));
       }
       return true;
     },
-    [],
+    [requests, syncCalendar],
   );
 
   const setRequestStatus = useCallback(
-    (id: string, status: BookingRequest["status"]) => updateRequest(id, { status }),
+    (id: string, status: BookingRequest["status"], reason?: string) =>
+      updateRequest(id, { status }, reason),
     [updateRequest],
   );
 
@@ -227,6 +261,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
       loaded,
       loadError,
       saveState,
+      retrySave,
       updateBusiness,
       addRequest,
       setRequestStatus,
@@ -239,6 +274,7 @@ export function NookProvider({ children }: { children: ReactNode }) {
       loaded,
       loadError,
       saveState,
+      retrySave,
       updateBusiness,
       addRequest,
       setRequestStatus,

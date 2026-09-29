@@ -14,17 +14,17 @@ function headers() {
   };
 }
 
-async function call(path: string, body: unknown): Promise<unknown> {
+async function call(path: string, body?: unknown, method = "POST"): Promise<unknown> {
   const response = await fetch(`${GATEWAY_URL}${path}`, {
-    method: "POST",
+    method,
     headers: headers(),
-    body: JSON.stringify(body),
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(`Google Calendar request failed [${response.status}]: ${errorBody}`);
   }
-  return response.json();
+  return response.status === 204 ? null : response.json();
 }
 
 /** Splits a UTC instant into the studio's local date and minutes after midnight. */
@@ -55,7 +55,17 @@ export async function fetchBusyBlocks(timeMin: string, timeMax: string): Promise
     timeMax,
     timeZone: STUDIO_TIME_ZONE,
     items: [{ id: "primary" }],
-  })) as { calendars?: { primary?: { busy?: { start: string; end: string }[] } } };
+  })) as {
+    calendars?: {
+      primary?: {
+        busy?: { start: string; end: string }[];
+        errors?: { reason?: string }[];
+      };
+    };
+  };
+  if (!result.calendars?.primary || result.calendars.primary.errors?.length) {
+    throw new Error("Google Calendar availability could not be verified");
+  }
   const blocks: BusyBlock[] = [];
   for (const busy of result.calendars?.primary?.busy ?? []) {
     let cursor = new Date(busy.start);
@@ -99,11 +109,55 @@ export async function createAppointmentEvent(input: {
       id: eventId,
       summary: input.summary,
       description: input.description,
-      start: { dateTime: `${input.date}T${pad(hours)}:${pad(minutes)}:00`, timeZone: STUDIO_TIME_ZONE },
+      start: {
+        dateTime: `${input.date}T${pad(hours)}:${pad(minutes)}:00`,
+        timeZone: STUDIO_TIME_ZONE,
+      },
       end: { dateTime: endLabel, timeZone: STUDIO_TIME_ZONE },
     });
   } catch (error) {
     if (error instanceof Error && error.message.includes("[409]")) return;
+    throw error;
+  }
+}
+
+export async function updateAppointmentEvent(input: Parameters<typeof createAppointmentEvent>[0]) {
+  const [hours = 0, minutes = 0] = input.time.split(":").map(Number);
+  const endTotal = hours * 60 + minutes + Math.max(15, input.durationMinutes);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const endDate = new Date(`${input.date}T00:00:00Z`);
+  endDate.setUTCDate(endDate.getUTCDate() + Math.floor(endTotal / 1440));
+  const endLabel = `${endDate.toISOString().slice(0, 10)}T${pad(Math.floor((endTotal % 1440) / 60))}:${pad(endTotal % 60)}:00`;
+  const eventId = `nook${input.bookingId.replace(/-/g, "")}`;
+  try {
+    await call(
+      `/calendars/primary/events/${eventId}`,
+      {
+        summary: input.summary,
+        description: input.description,
+        start: {
+          dateTime: `${input.date}T${pad(hours)}:${pad(minutes)}:00`,
+          timeZone: STUDIO_TIME_ZONE,
+        },
+        end: { dateTime: endLabel, timeZone: STUDIO_TIME_ZONE },
+      },
+      "PATCH",
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("[404]")) {
+      await createAppointmentEvent(input);
+      return;
+    }
+    throw error;
+  }
+}
+
+export async function deleteAppointmentEvent(bookingId: string) {
+  const eventId = `nook${bookingId.replace(/-/g, "")}`;
+  try {
+    await call(`/calendars/primary/events/${eventId}`, undefined, "DELETE");
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("[404]")) return;
     throw error;
   }
 }

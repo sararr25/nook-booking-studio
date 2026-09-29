@@ -175,16 +175,6 @@ export const toTimeLabel = (minutes: number) => {
 export const dateKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-/** Deterministic pseudo-random so the demo calendar is stable between renders. */
-const seeded = (seed: string) => {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i += 1) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return ((h >>> 0) % 1000) / 1000;
-};
-
 export type Slot = { time: string; memberId: string; memberName: string };
 
 export const slotsForDay = (
@@ -192,7 +182,7 @@ export const slotsForDay = (
   eligibleTeam: TeamMember[],
   duration: number,
   date: Date,
-  booked: { date: string; time: string; memberId: string }[],
+  booked: { date: string; time: string; memberId: string; duration: number }[],
   /** Studio-wide busy times (e.g. Google Calendar), minutes after midnight. */
   blocked: { date: string; start: number; end: number }[] = [],
 ): Slot[] => {
@@ -206,15 +196,16 @@ export const slotsForDay = (
   const slots: Slot[] = [];
   for (const member of eligibleTeam) {
     if (!member.days.includes(date.getDay())) continue;
-    if (seeded(`${member.id}-${key}-off`) > 0.78) continue; // day already blocked out
     const start = toMinutes(member.start);
     const end = toMinutes(member.end);
     for (let t = start; t + duration <= end; t += 60) {
-      if (seeded(`${member.id}-${key}-${t}`) > 0.55) continue;
       const time = toTimeLabel(t);
       const clash = booked.some(
         (b) =>
-          b.date === key && b.memberId === member.id && Math.abs(toMinutes(b.time) - t) < duration,
+          b.date === key &&
+          b.memberId === member.id &&
+          toMinutes(b.time) < t + duration &&
+          t < toMinutes(b.time) + b.duration,
       );
       if (clash) continue;
       if (blocked.some((b) => b.date === key && b.start < t + duration && b.end > t)) continue;
