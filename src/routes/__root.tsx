@@ -111,7 +111,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: buildOAuthReturnScript(import.meta.env["VITE_SUPABASE_URL"]),
+            __html: buildOAuthReturnScript(),
           }}
         />
         <HeadContent />
