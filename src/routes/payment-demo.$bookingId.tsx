@@ -80,7 +80,7 @@ function PaymentDemoPage() {
                     ? "This booking still needs approval"
                     : state.reason === "unpaid"
                       ? "Recording your payment…"
-                    : "We couldn't record this payment")}
+                      : "We couldn't record this payment")}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
               {state.kind === "paid" &&
@@ -92,7 +92,7 @@ function PaymentDemoPage() {
                     ? "The studio must approve this request before a deposit can be recorded. No money was taken."
                     : state.reason === "unpaid"
                       ? "Please keep this page open. No money will be taken."
-                    : "This link doesn't match a booking with a deposit. Please contact the studio.")}
+                      : "This link doesn't match a booking with a deposit. Please contact the studio.")}
             </p>
           </div>
 
