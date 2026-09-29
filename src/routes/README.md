@@ -19,3 +19,15 @@ is `src/routes/__root.tsx`.
 | `__root.tsx` | app shell — wraps every page; preserve `<Outlet />` |
 
 `routeTree.gen.ts` is auto-generated. Don't edit it by hand.
+
+## Nook routes
+
+| File | URL | Purpose |
+| --- | --- | --- |
+| `index.tsx` | `/` | Stillroom Tattoo website |
+| `book.tsx` | `/book` | Customer booking flow |
+| `auth.tsx` | `/auth` | Sign-in and owner account creation |
+| `_authenticated/owner.tsx` | `/owner` | Owner portal; sections use `?tab=<section>` |
+| `payment-demo.$bookingId.tsx` | `/payment-demo/:bookingId` | Demo deposit action; no card collection |
+
+`_authenticated/route.tsx` protects the owner route. Keep any new owner sections under that layout.

@@ -26,7 +26,7 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Current state
 
-What the prototype does today, on top of the brief above:
+What the app does today, on top of the brief above:
 
 - **Customer flow** (`/book`): service, adaptive questions (each answer shows what it adds, e.g. "+€10, +5 min"), estimate with team match, month calendar with real availability, contact details. A booking ticket on the side keeps the running summary and the terms.
 - **Booking rule**: standard requests get a confirmation email with a link to the demo deposit flow; unusual requests are reviewed by the studio first. Prices are estimates. The deposit percentage is set per service and the deadline is editable in owner Policies. Booking email delivery is attempted and reported separately from saving the booking. The demo payment flow is not a live payment processor.
@@ -37,7 +37,7 @@ What the prototype does today, on top of the brief above:
 - **Start over**: restoring the default setup lives at the bottom of Policies, behind a confirmation dialog, with Undo right after. Bookings are never touched.
 - **Owner account**: the first account created on `/auth` becomes the owner; later sign-ups are customers. Email and password accounts work locally and on Lovable because both use the same backend. Google sign-in goes through Lovable and only works on the Lovable preview and published domains, not on `localhost`.
 - **Availability and booking integrity**: public availability returns only open times. The server checks the saved setup, existing sittings and Google Calendar before submission. A database function locks the artist/date and flash design during insertion to reject concurrent overlaps. Apply the migrations in `supabase/migrations` before serving the new booking flow.
-- **Google Calendar**: the owner calendar shows Nook bookings beside Google busy blocks. Confirmed bookings are added to Google after the demo deposit is marked paid; paid booking changes and cancellations update or remove their event. The server requires `LOVABLE_API_KEY` and `GOOGLE_CALENDAR_API_KEY` for calendar access. When Calendar cannot be checked, public time selection pauses and the owner sees the connection state.
+- **Google Calendar**: the owner calendar shows Nook bookings beside Google busy blocks. The app attempts to add a confirmed booking to Google after its demo deposit is marked paid, and to update or remove the event after later changes or cancellation. The server requires `LOVABLE_API_KEY` and `GOOGLE_CALENDAR_API_KEY` for calendar access. When Calendar cannot be checked, public time selection pauses and the owner sees the connection state.
 
 ### Import an existing price list
 
@@ -47,9 +47,11 @@ For a reliable spreadsheet import, use columns `Service`, `Price`, and optionall
 
 Design rules for anyone (or any agent) editing the UI are in `AGENTS.md`.
 
+For the verified release state, setup requirements, and remaining acceptance checks, see [Project status](docs/PROJECT_STATUS.md).
+
 ## Development
 
-The project uses [bun](https://bun.sh) (`bun.lock`). Environment variables for the backend are in `.env`.
+The project uses [bun](https://bun.sh) (`bun.lock`). `.env` contains the public Supabase project URL and publishable key. Server-only credentials such as `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY`, and `GOOGLE_CALENDAR_API_KEY` must be set in the runtime environment; do not commit them.
 
 ```sh
 bun install
@@ -57,3 +59,5 @@ bun run dev
 ```
 
 Without bun, once dependencies are installed you can start the dev server with `npx vite dev`.
+
+Run `bun run build` before shipping. Apply the SQL migrations in `supabase/migrations` to the connected database before testing the latest booking flow. Git sync copies migration files into Lovable but does not execute them.

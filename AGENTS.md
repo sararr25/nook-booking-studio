@@ -35,3 +35,5 @@
 - Store studio setup as one JSON document in `studio_settings.config`; bookings stay in `booking_requests`.
 - If loading the setup or bookings fails, show the error and block editing. Never fall back to `defaultBusiness`, or autosave would overwrite the real setup.
 - `/payment-demo/$bookingId` marks a confirmed deposit paid; never collects card data.
+- Keep server credentials out of Git. Apply `supabase/migrations` to the connected database before using code that depends on new SQL; Git sync does not run migrations.
+- For release evidence and open end-to-end checks, update `docs/PROJECT_STATUS.md`. Confirm the latest GitHub revision is selected in Lovable's preview before reporting live behavior.
