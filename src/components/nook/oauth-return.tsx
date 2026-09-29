@@ -4,11 +4,6 @@ import { toast } from "sonner";
 
 export const POST_AUTH_KEY = "nook.postAuthPath";
 
-function safePath(value: string | null): "/owner" {
-  // Only same-origin owner destination is supported after OAuth.
-  return value === "/owner" ? "/owner" : "/owner";
-}
-
 /**
  * Full-page OAuth returns to a public page with tokens in the URL fragment.
  * Pages like the studio homepage never load the auth client, so the fragment
@@ -42,14 +37,14 @@ export function OAuthReturnHandler() {
         access_token: accessToken,
         refresh_token: refreshToken,
       });
-      const destination = safePath(sessionStorage.getItem(POST_AUTH_KEY));
+      // Google sign-in is only offered on the owner login, so /owner is the only destination.
       sessionStorage.removeItem(POST_AUTH_KEY);
       if (error) {
         toast.error("Sign in failed. Please try again.");
         void navigate({ to: "/auth", search: { notice: undefined } });
         return;
       }
-      void navigate({ to: destination });
+      void navigate({ to: "/owner" });
     })();
   }, [navigate]);
 
