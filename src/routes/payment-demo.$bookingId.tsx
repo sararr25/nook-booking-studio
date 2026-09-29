@@ -29,7 +29,7 @@ export const Route = createFileRoute("/payment-demo/$bookingId")({
 type PaymentState =
   | { kind: "loading" }
   | { kind: "paid"; date: string; time: string }
-  | { kind: "failed" };
+  | { kind: "failed"; reason: "cancelled" | "unknown" | "error" };
 
 function PaymentDemoPage() {
   const { bookingId } = Route.useParams();
@@ -43,14 +43,17 @@ function PaymentDemoPage() {
       .then((result) => {
         if (cancelled) return;
         setState(
-          result.paid ? { kind: "paid", date: result.date, time: result.time } : { kind: "failed" },
+          result.paid
+            ? { kind: "paid", date: result.date, time: result.time }
+            : { kind: "failed", reason: result.reason },
         );
       })
-      .catch(() => !cancelled && setState({ kind: "failed" }));
+      .catch(() => !cancelled && setState({ kind: "failed", reason: "error" }));
     return () => {
       cancelled = true;
     };
   }, [bookingId, markPaid]);
+
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 sm:py-14">
