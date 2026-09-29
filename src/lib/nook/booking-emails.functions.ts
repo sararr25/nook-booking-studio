@@ -15,11 +15,12 @@ export const notifyNewBooking = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!booking || booking.status === "declined") return { sent: false };
-    const kind = booking.status === "awaiting_deposit"
-      ? "awaiting_deposit"
-      : booking.status === "confirmed"
-        ? "confirmed"
-        : "received";
+    const kind =
+      booking.status === "awaiting_deposit"
+        ? "awaiting_deposit"
+        : booking.status === "confirmed"
+          ? "confirmed"
+          : "received";
     return sendBookingEmail(data.id, kind, "new");
   });
 

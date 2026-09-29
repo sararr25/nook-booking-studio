@@ -5,9 +5,10 @@ import { getDemoDepositStatus } from "@/lib/nook/booking-emails.functions";
 
 export const Route = createFileRoute("/payment-demo/$bookingId")({
   loader: ({ params }) => {
-    const validId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      params.bookingId,
-    );
+    const validId =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        params.bookingId,
+      );
     if (!validId) return { paid: false as const, reason: "unknown" as const };
     return getDemoDepositStatus({ data: { id: params.bookingId } });
   },
@@ -66,7 +67,7 @@ function PaymentDemoPage() {
                   ? "This booking was cancelled"
                   : state.reason === "awaiting_approval"
                     ? "This booking still needs approval"
-                  : "We couldn't record this payment")}
+                    : "We couldn't record this payment")}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
               {state.kind === "paid" &&
@@ -76,7 +77,7 @@ function PaymentDemoPage() {
                   ? "The studio cancelled this appointment, so no deposit is due. Please contact them to rebook."
                   : state.reason === "awaiting_approval"
                     ? "The studio must approve this request before a deposit can be recorded. No money was taken."
-                  : "This link doesn't match a booking with a deposit. Please contact the studio.")}
+                    : "This link doesn't match a booking with a deposit. Please contact the studio.")}
             </p>
           </div>
 
