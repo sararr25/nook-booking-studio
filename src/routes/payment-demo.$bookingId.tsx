@@ -29,7 +29,7 @@ export const Route = createFileRoute("/payment-demo/$bookingId")({
 type PaymentState =
   | { kind: "loading" }
   | { kind: "paid"; date: string; time: string }
-  | { kind: "failed" };
+  | { kind: "failed"; reason: "cancelled" | "unknown" | "error" };
 
 function PaymentDemoPage() {
   const { bookingId } = Route.useParams();
@@ -43,14 +43,17 @@ function PaymentDemoPage() {
       .then((result) => {
         if (cancelled) return;
         setState(
-          result.paid ? { kind: "paid", date: result.date, time: result.time } : { kind: "failed" },
+          result.paid
+            ? { kind: "paid", date: result.date, time: result.time }
+            : { kind: "failed", reason: result.reason },
         );
       })
-      .catch(() => !cancelled && setState({ kind: "failed" }));
+      .catch(() => !cancelled && setState({ kind: "failed", reason: "error" }));
     return () => {
       cancelled = true;
     };
   }, [bookingId, markPaid]);
+
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 sm:py-14">
@@ -74,14 +77,19 @@ function PaymentDemoPage() {
             <h1 id="payment-title" className="mt-5 text-balance text-4xl font-bold sm:text-5xl">
               {state.kind === "loading" && "Recording your deposit"}
               {state.kind === "paid" && "Payment complete!"}
-              {state.kind === "failed" && "We couldn't record this payment"}
+              {state.kind === "failed" &&
+                (state.reason === "cancelled"
+                  ? "This booking was cancelled"
+                  : "We couldn't record this payment")}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
               {state.kind === "loading" && "One moment."}
               {state.kind === "paid" &&
                 "Your deposit has been marked as paid and your appointment is confirmed. This is a demo, so no money was taken."}
               {state.kind === "failed" &&
-                "The booking may not be confirmed yet, or the link is wrong. Please contact the studio."}
+                (state.reason === "cancelled"
+                  ? "The studio cancelled this appointment, so no deposit is due. Please contact them to rebook."
+                  : "This link doesn't match a booking with a deposit. Please contact the studio.")}
             </p>
           </div>
 
