@@ -16,6 +16,7 @@ import { Route as BookRouteImport } from './routes/book'
 import { Route as AuthenticatedOwnerRouteImport } from './routes/_authenticated/owner'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as PaymentDemoBookingIdRouteImport } from './routes/payment-demo.$bookingId'
+import { Route as ApiPublicPaymentDemoBookingIdRouteImport } from './routes/api/public/payment-demo.$bookingId'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -52,6 +53,12 @@ const PaymentDemoBookingIdRoute = PaymentDemoBookingIdRouteImport.update({
   path: '/payment-demo/$bookingId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentDemoBookingIdRoute =
+  ApiPublicPaymentDemoBookingIdRouteImport.update({
+    id: '/api/public/payment-demo/$bookingId',
+    path: '/api/public/payment-demo/$bookingId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailTransactionalPreviewRoute =
   LovableEmailTransactionalPreviewRouteImport.update({
     id: '/lovable/email/transactional/preview',
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/owner': typeof AuthenticatedOwnerRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
+  '/api/public/payment-demo/$bookingId': typeof ApiPublicPaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/owner': typeof AuthenticatedOwnerRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
+  '/api/public/payment-demo/$bookingId': typeof ApiPublicPaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/owner': typeof AuthenticatedOwnerRoute
   '/auth_/callback': typeof AuthCallbackRoute
   '/payment-demo/$bookingId': typeof PaymentDemoBookingIdRoute
+  '/api/public/payment-demo/$bookingId': typeof ApiPublicPaymentDemoBookingIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/owner'
     | '/auth/callback'
     | '/payment-demo/$bookingId'
+    | '/api/public/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/owner'
     | '/auth/callback'
     | '/payment-demo/$bookingId'
+    | '/api/public/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   id:
     | '__root__'
@@ -116,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner'
     | '/auth_/callback'
     | '/payment-demo/$bookingId'
+    | '/api/public/payment-demo/$bookingId'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
@@ -126,6 +139,7 @@ export interface RootRouteChildren {
   BookRoute: typeof BookRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   PaymentDemoBookingIdRoute: typeof PaymentDemoBookingIdRoute
+  ApiPublicPaymentDemoBookingIdRoute: typeof ApiPublicPaymentDemoBookingIdRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
@@ -180,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentDemoBookingIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payment-demo/$bookingId': {
+      id: '/api/public/payment-demo/$bookingId'
+      path: '/api/public/payment-demo/$bookingId'
+      fullPath: '/api/public/payment-demo/$bookingId'
+      preLoaderRoute: typeof ApiPublicPaymentDemoBookingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/preview': {
       id: '/lovable/email/transactional/preview'
       path: '/lovable/email/transactional/preview'
@@ -208,6 +229,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookRoute: BookRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   PaymentDemoBookingIdRoute: PaymentDemoBookingIdRoute,
+  ApiPublicPaymentDemoBookingIdRoute: ApiPublicPaymentDemoBookingIdRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport

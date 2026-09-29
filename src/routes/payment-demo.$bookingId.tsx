@@ -1,10 +1,18 @@
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, CircleAlert, CircleCheck } from "lucide-react";
 import { Wordmark } from "@/components/nook/wordmark";
-import { markDemoDepositPaid } from "@/lib/nook/booking-emails.functions";
+import { getDemoDepositStatus } from "@/lib/nook/booking-emails.functions";
 
 export const Route = createFileRoute("/payment-demo/$bookingId")({
-  loader: ({ params }) => markDemoDepositPaid({ data: { id: params.bookingId } }),
+  loader: ({ params }) => {
+    const validId =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        params.bookingId,
+      );
+    if (!validId) return { paid: false as const, reason: "unknown" as const };
+    return getDemoDepositStatus({ data: { id: params.bookingId } });
+  },
   head: () => ({
     meta: [
       { title: "Deposit payment demo | Nook" },
@@ -27,7 +35,10 @@ export const Route = createFileRoute("/payment-demo/$bookingId")({
 
 type PaymentState =
   | { kind: "paid"; date: string; time: string }
-  | { kind: "failed"; reason: "cancelled" | "unknown" | "error" };
+  | {
+      kind: "failed";
+      reason: "cancelled" | "unknown" | "error" | "awaiting_approval" | "unpaid";
+    };
 
 function PaymentDemoPage() {
   const { bookingId } = Route.useParams();
@@ -36,6 +47,14 @@ function PaymentDemoPage() {
   const state: PaymentState = result.paid
     ? { kind: "paid", date: result.date, time: result.time }
     : { kind: "failed", reason: result.reason };
+  const failureReason = state.kind === "failed" ? state.reason : null;
+
+  // Links sent before the dedicated payment endpoint existed still point here.
+  // Upgrade those unpaid links with a full navigation so the server records payment first.
+  useEffect(() => {
+    if (failureReason !== "unpaid") return;
+    window.location.replace(`/api/public/payment-demo/${bookingId}`);
+  }, [bookingId, failureReason]);
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 sm:py-14">
@@ -58,7 +77,11 @@ function PaymentDemoPage() {
               {state.kind === "failed" &&
                 (state.reason === "cancelled"
                   ? "This booking was cancelled"
-                  : "We couldn't record this payment")}
+                  : state.reason === "awaiting_approval"
+                    ? "This booking still needs approval"
+                    : state.reason === "unpaid"
+                      ? "Recording your payment…"
+                      : "We couldn't record this payment")}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
               {state.kind === "paid" &&
@@ -66,7 +89,11 @@ function PaymentDemoPage() {
               {state.kind === "failed" &&
                 (state.reason === "cancelled"
                   ? "The studio cancelled this appointment, so no deposit is due. Please contact them to rebook."
-                  : "This link doesn't match a booking with a deposit. Please contact the studio.")}
+                  : state.reason === "awaiting_approval"
+                    ? "The studio must approve this request before a deposit can be recorded. No money was taken."
+                    : state.reason === "unpaid"
+                      ? "Please keep this page open. No money will be taken."
+                      : "This link doesn't match a booking with a deposit. Please contact the studio.")}
             </p>
           </div>
 
