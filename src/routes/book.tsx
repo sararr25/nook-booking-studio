@@ -235,7 +235,15 @@ function BookingFlow() {
         void slotsQuery.refetch();
         return;
       }
-      addRequest({ ...request, status: saved.status });
+      addRequest({
+        ...request,
+        status: saved.status,
+        quote: {
+          ...request.quote,
+          requiresReview: saved.status === "pending",
+          reviewReasons: saved.reviewReasons,
+        },
+      });
       let emailSent = false;
       try {
         emailSent = (await notifyNewBooking({ data: { id: request.id } })).sent;
