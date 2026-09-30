@@ -301,19 +301,21 @@ function BookingFlow() {
     <div className="min-h-screen bg-background">
       <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col border-x border-border bg-card">
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
-        <BookingConversation
-          business={business}
-          currentServiceId={serviceId}
-          currentAnswers={answers}
-          onApply={(nextServiceId, nextAnswers, conversationNotes) => {
-            setServiceId(nextServiceId);
-            setAnswers(nextAnswers);
-            setSelected(null);
-            setArtistChoice("auto");
-            setNotes((previous) => [previous, conversationNotes].filter(Boolean).join("\n"));
-            setStep(nextServiceId === "flash" ? 1 : 2);
-          }}
-        />
+        {step <= 1 && (
+          <BookingConversation
+            business={business}
+            currentServiceId={serviceId}
+            currentAnswers={answers}
+            onApply={(nextServiceId, nextAnswers, conversationNotes) => {
+              setServiceId(nextServiceId);
+              setAnswers(nextAnswers);
+              setSelected(null);
+              setArtistChoice("auto");
+              setNotes((previous) => [previous, conversationNotes].filter(Boolean).join("\n"));
+              setStep(nextServiceId === "flash" ? 1 : 2);
+            }}
+          />
+        )}
         {/* Content row stretches so the action bar sits at the bottom even on short steps. */}
         <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[1fr_auto] lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div
