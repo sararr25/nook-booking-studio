@@ -50,7 +50,11 @@ export function BookingTicket({
         <span
           className={cn("nook-stamp", review || pendingDeposit ? "text-brand" : "text-highlight")}
         >
-          {review ? "Needs review" : pendingDeposit ? "Awaiting deposit" : "Confirms instantly"}
+          {review
+            ? "To be confirmed by the studio"
+            : pendingDeposit
+              ? "Instant confirmation after deposit"
+              : "Instant confirmation"}
         </span>
         {note && <p className="mt-3 text-xs text-muted-foreground">{note}</p>}
       </div>

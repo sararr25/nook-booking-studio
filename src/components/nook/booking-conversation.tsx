@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, MessageCircle, Send, X } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { askBookingAssistant } from "@/lib/nook/booking-assistant.functions";
 import { buildQuote, formatMoney, isAnswered, visibleQuestions } from "@/lib/nook/engine";
 import type { Answers, BusinessConfig, Question, Service } from "@/lib/nook/types";
 import { TypedQuestion } from "./typed-question";
@@ -49,6 +51,18 @@ function answerQuestion(question: Question, input: string): Answers[string] | nu
   return matchOption(question, input)?.id ?? null;
 }
 
+function looksLikeQuestion(input: string) {
+  return (
+    input.includes("?") ||
+    /^(what|how|when|where|why|will|can|could|should|do|does|is|are|would|mi|devo|posso|cosa|come|quanto|quali|serve|bisogna)\b/i.test(
+      input,
+    ) ||
+    /\b(first tattoo|before my (tattoo|session)|pain|hurt|shav\w*|prepare|prep|seduta|depil\w*|mangiare prima)\b/i.test(
+      input,
+    )
+  );
+}
+
 export function BookingConversation({
   business,
   currentServiceId,
@@ -61,6 +75,8 @@ export function BookingConversation({
   const [skipped, setSkipped] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [draft, setDraft] = useState("");
+  const [responding, setResponding] = useState(false);
+  const askOnServer = useServerFn(askBookingAssistant);
   const [started, setStarted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -105,15 +121,39 @@ export function BookingConversation({
     );
   }
 
+  async function answerOpenQuestion(input: string) {
+    if (responding) return;
+    const history = messages.slice(-8);
+    setResponding(true);
+    setMessages((previous) => [...previous, { role: "customer", text: input }]);
+    setDraft("");
+    try {
+      const result = await askOnServer({ data: { message: input, history } });
+      setMessages((previous) => [...previous, { role: "assistant", text: result.answer }]);
+    } catch {
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          text: "I can't answer that reliably right now. You can ask the studio directly or add it to your booking notes for the artist.",
+        },
+      ]);
+    } finally {
+      setResponding(false);
+    }
+  }
+
   function sendAnswer(raw: string) {
     const input = raw.trim();
-    if (!input) return;
+    if (!input || responding) return;
     if (!started) {
       const selected = business.services.find((item) =>
         input.toLowerCase().includes(item.name.toLowerCase()),
       );
       if (selected) {
         selectService(selected, input);
+      } else if (looksLikeQuestion(input)) {
+        void answerOpenQuestion(input);
       } else {
         setNotes(input);
         append(input, "Which service fits best? Choose one below, then I'll ask for the details.");
@@ -143,6 +183,10 @@ export function BookingConversation({
         input,
         `The studio's cancellation window is ${business.policies.cancellationHours} hours. ${question ? questionPrompt(question) : "Review the details to continue."}`,
       );
+      return;
+    }
+    if (looksLikeQuestion(input)) {
+      void answerOpenQuestion(input);
       return;
     }
     if (!question) {
@@ -239,10 +283,31 @@ export function BookingConversation({
                 <button
                   key={item.id}
                   type="button"
+                  disabled={responding}
                   onClick={() => selectService(item, item.name)}
-                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-brand"
+                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-50"
                 >
                   {item.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {!started && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[
+                "Will it hurt?",
+                "Should I shave?",
+                "Can I eat beforehand?",
+                "First tattoo tips",
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  disabled={responding}
+                  onClick={() => void answerOpenQuestion(suggestion)}
+                  className="min-h-9 rounded-sm border border-border px-2.5 text-xs text-muted-foreground hover:border-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  {suggestion}
                 </button>
               ))}
             </div>
@@ -253,8 +318,9 @@ export function BookingConversation({
                 <button
                   key={option.id}
                   type="button"
+                  disabled={responding}
                   onClick={() => sendAnswer(option.label)}
-                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-brand"
+                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-50"
                 >
                   {option.label}
                 </button>
@@ -262,8 +328,9 @@ export function BookingConversation({
               {question.optional && (
                 <button
                   type="button"
+                  disabled={responding}
                   onClick={() => sendAnswer("Skip")}
-                  className="min-h-11 rounded-sm px-3 py-2 text-sm underline focus-visible:outline-2 focus-visible:outline-brand"
+                  className="min-h-11 rounded-sm px-3 py-2 text-sm underline focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-50"
                 >
                   Skip
                 </button>
@@ -283,6 +350,7 @@ export function BookingConversation({
             <input
               id="booking-chat-input"
               value={draft}
+              disabled={responding}
               onChange={(event) => setDraft(event.target.value)}
               placeholder={
                 question?.type === "scale"
@@ -293,21 +361,23 @@ export function BookingConversation({
             />
             <button
               type="submit"
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || responding}
               aria-label="Send message"
               className="flex min-h-11 min-w-11 items-center justify-center rounded-sm bg-foreground text-card disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
               <Send size={17} aria-hidden="true" />
             </button>
           </form>
+          {responding && <p className="mt-2 text-xs text-muted-foreground">Thinking…</p>}
           {complete && (
             <button
               type="button"
+              disabled={responding}
               onClick={() => {
                 onApply(service.id, answers, notes);
                 setOpen(false);
               }}
-              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-sm bg-brand px-4 text-sm font-semibold text-brand-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-sm bg-brand px-4 text-sm font-semibold text-brand-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:opacity-50"
             >
               Review booking <ArrowRight size={17} aria-hidden="true" />
             </button>

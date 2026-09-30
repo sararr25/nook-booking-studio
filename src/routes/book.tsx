@@ -849,7 +849,7 @@ function FlashPicker({
                 loading="lazy"
                 width={912}
                 height={1104}
-                className="aspect-[4/5] w-full object-cover"
+                className="aspect-[4/5] w-full bg-card object-contain p-2 sm:p-3"
               />
               <span className="block min-w-0 px-2.5 py-3 sm:p-3">
                 <span className="block text-[13px] font-semibold leading-snug sm:text-sm">

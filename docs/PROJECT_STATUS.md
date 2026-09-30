@@ -2,6 +2,12 @@
 
 Last verified: 30 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`.
 
+## Customer booking feedback (30 September 2026)
+
+Flash cards on `/book` now fit the whole artwork inside their frames instead of cropping it. The booking ticket distinguishes requests that need studio review from standard requests that confirm immediately once their deposit is paid. Payment status and confirmation rules in the actual booking flow remain separate from this short ticket label.
+
+The secondary booking chat keeps its structured answers for preparing a booking and now sends open questions to a server-side Lovable AI call. It accepts questions about pain, shaving, eating before the sitting, and first-appointment preparation in English or Italian; it does not claim to book, diagnose, or invent studio-specific rules. No client-side API key is exposed. If the AI gateway is unavailable, the chat says so and directs the visitor to the studio. The call is bounded to a short message and recent history; Lovable AI use consumes project credits. General preparation guidance in the assistant is informed by [Mayo Clinic tattoo precautions](https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/tattoos-and-piercings/art-20045067), [NSW Health skin preparation](https://www.health.nsw.gov.au/environment/factsheets/Pages/tattooing.aspx), and [German federal tattoo preparation guidance](https://www.bundesumweltministerium.de/safer-tattoo/sichergehen).
+
 ## Owner flash deletion (30 September 2026)
 
 The Flash tab now has a confirmed **Delete flash** action for each published design. It archives the catalog row and hides the design from owner and customer flash lists while retaining historical booking references and the uploaded image. Bundled artwork that was published and then deleted stays out of the unpublished queue. Availability checks and booking submission reject archived designs, and booking status changes cannot make them available again.
