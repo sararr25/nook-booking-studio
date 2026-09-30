@@ -112,6 +112,8 @@ export function MonthCalendar({ availableDays, selected, onSelect }: Props) {
                   key={key}
                   type="button"
                   disabled={!free}
+                  aria-label={`${day.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}, ${free ? `${slots.length} ${slots.length === 1 ? "time" : "times"} open` : "not available"}`}
+                  aria-pressed={isOpen || isSelected}
                   onClick={() => setOpenDay(isOpen ? null : key)}
                   className={cn(
                     "relative flex aspect-square h-auto min-h-11 w-full flex-col items-center justify-center rounded-sm text-xs transition-colors",
@@ -160,6 +162,10 @@ export function MonthCalendar({ availableDays, selected, onSelect }: Props) {
                           )}
                         >
                           <span className="font-mono font-medium tabular-nums">{slot.time}</span>
+                          {/* Same time can be open with several artists; name them apart. */}
+                          <span className="text-xs text-muted-foreground">
+                            {slot.memberName.split(" ")[0]}
+                          </span>
                         </Button>
                       );
                     })}
@@ -170,7 +176,9 @@ export function MonthCalendar({ availableDays, selected, onSelect }: Props) {
           ) : (
             <div className="pt-1">
               <p className="text-xs font-semibold">Available times</p>
-              <p className="mt-1 text-xs text-muted-foreground">Choose a highlighted day</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pick an open day to see its times.
+              </p>
             </div>
           )}
         </div>

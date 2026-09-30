@@ -142,7 +142,7 @@ export const defaultBusiness: BusinessConfig = {
         {
           id: "reference",
           label: "Describe the idea",
-          help: "A sentence or two. Reference images can be sent after booking.",
+          help: "A sentence or two. Add reference pictures at the top of this page.",
           type: "text",
         },
       ],

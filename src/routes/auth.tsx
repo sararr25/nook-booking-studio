@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/nook/wordmark";
@@ -100,8 +100,15 @@ function OwnerAuth() {
       </section>
       <section className="flex items-center rounded-sm border border-border bg-card px-6 py-14 lg:rounded-l-none sm:px-12">
         <div className="mx-auto w-full max-w-sm">
-          <Wordmark className="lg:hidden" />
-          <p className="eyebrow mt-12 lg:mt-0">Owner access</p>
+          <Link
+            to="/"
+            className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            Back to the studio site
+          </Link>
+          <Wordmark className="mt-6 block lg:hidden" />
+          <p className="eyebrow mt-12 lg:mt-10">Owner access</p>
           <h2 className="display mt-3 text-3xl">
             {mode === "signin" ? "Welcome back" : "Create your studio account"}
           </h2>

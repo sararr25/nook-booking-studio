@@ -84,6 +84,10 @@ function BookingFlow() {
   const fetchAvailable = useServerFn(getAvailableSlots);
   const submitOnServer = useServerFn(submitBooking);
   const [step, setStep] = useState(0);
+  // Each step starts at the top, not where the previous step was scrolled to.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [step]);
   const [serviceId, setServiceId] = useState(business.services[0]?.id ?? "tattoo");
   const [answers, setAnswers] = useState<Answers>({});
   const [selected, setSelected] = useState<{ date: string; slot: Slot } | null>(null);
@@ -147,7 +151,8 @@ function BookingFlow() {
     setSelected(null);
   };
 
-  const allAnswered = questions.every((q) => isAnswered(q, answers));
+  const firstUnanswered = questions.find((q) => !isAnswered(q, answers));
+  const allAnswered = !firstUnanswered;
 
   const setAnswer = (id: string, value: Answers[string]) =>
     setAnswers((prev) => ({ ...prev, [id]: value }));
@@ -291,7 +296,7 @@ function BookingFlow() {
     : step === 1
       ? needsFlashPick
         ? "Pick a flash design to continue."
-        : "Answer the question above to continue."
+        : `Still to answer: ${firstUnanswered?.label ?? "a question above"}`
       : step === 3
         ? "Pick a date and time to continue."
         : step === 4 && quote.requiresPhotos && referenceFiles.length === 0
@@ -525,7 +530,9 @@ function BookingFlow() {
                 <p className="mt-1 max-w-lg text-sm text-muted-foreground">
                   {needsReview
                     ? business.policies.reviewNote
-                    : "This request confirms automatically. Your slot is secured after the deposit is paid."}
+                    : quote.deposit > 0
+                      ? "No studio review needed. We email you a deposit link, and your slot is secured once it is paid."
+                      : "No studio review needed. Your booking is confirmed straight away."}
                 </p>
 
                 <div className="mt-7 max-w-xl space-y-5">
@@ -632,7 +639,11 @@ function BookingFlow() {
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {formatDuration(quote.duration)}
-                  {needsReview ? ", needs a quick review" : ", confirms instantly"}
+                  {needsReview
+                    ? ", needs a quick review"
+                    : quote.deposit > 0
+                      ? ", secured by deposit"
+                      : ", confirms instantly"}
                 </p>
               </div>
               {blockedReason && (
@@ -664,7 +675,9 @@ function BookingFlow() {
                   : step === 4
                     ? needsReview
                       ? "Send request"
-                      : "Confirm booking"
+                      : quote.deposit > 0
+                        ? "Reserve my slot"
+                        : "Confirm booking"
                     : "Continue"}
                 {step < 4 && <ArrowRight className="size-4" />}
               </Button>

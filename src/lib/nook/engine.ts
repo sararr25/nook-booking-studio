@@ -148,7 +148,8 @@ export const buildQuote = (
   const spread = price > 0 ? Math.max(20, price * 0.12) : 0;
 
   return {
-    low: Math.round((price - spread) / 5) * 5,
+    // Never quote below the advertised "from" price unless answers lowered it.
+    low: Math.round(Math.max(price - spread, Math.min(price, service.basePrice)) / 5) * 5,
     high: Math.round((price + spread) / 5) * 5,
     duration,
     deposit: Math.round((price * service.depositPercent) / 100),
