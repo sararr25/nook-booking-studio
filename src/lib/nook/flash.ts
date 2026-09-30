@@ -21,7 +21,7 @@ export const studioFlashArtwork = [
   { image_path: "seed:red-fish", title: "Red fish", imageUrl: redFish },
   { image_path: "seed:breathe", title: "Breathe", imageUrl: breathe },
   { image_path: "seed:matches", title: "A spark", imageUrl: matches },
-  { image_path: "seed:dark-flash", title: "Dark flash", imageUrl: darkFlash },
+  { image_path: "seed:dark-flash", title: "Loose thread", imageUrl: darkFlash },
   { image_path: "seed:moon-mirror", title: "Moon mirror", imageUrl: moonMirror },
   { image_path: "seed:wildflowers", title: "Wildflowers", imageUrl: wildflowers },
   { image_path: "seed:koi", title: "Koi & maple", imageUrl: koi },
