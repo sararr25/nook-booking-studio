@@ -1,10 +1,14 @@
 # Nook Booking Studio — project status
 
-Last verified: 29 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`.
+Last verified: 30 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`.
 
 ## New Stillroom flash artwork (30 September 2026)
 
 All ten supplied designs in `assets/tatto1.png` through `tatto10.png` are available in the owner's Flash tab as unpublished artwork. The owner chooses each design's name, base price, and sitting length before publishing it to the existing `flash_designs` catalog. Published prices can also be edited later, including on reserved designs. Customer selection and quotes continue to read the saved catalog price. No SQL migration is needed for this change.
+
+PR #2 was merged into `main`, and commit `854575d` added the last three artwork files. Lovable reports `main` in sync, but every new GitHub revision is marked **Build unsuccessful** and its preview is out of date. The site has not been published. Local TypeScript, targeted lint, and production build pass. Do not treat the current Lovable preview as proof of these flash controls.
+
+Lovable's quick security scan flagged public read access to every object in `flash-gallery`. Migration `20260930133000_restrict_flash_gallery_reads.sql` limits anonymous reads to designs with an available catalog entry and gives owners access to all flash files. The policy was applied through Lovable Cloud SQL editor and verified in `pg_policies`; a new scan is pending. The separate warning on public `studio_settings` reads remains to be reviewed.
 
 ## Booking conversation change (30 September 2026)
 
