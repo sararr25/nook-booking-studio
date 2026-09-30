@@ -4,7 +4,7 @@ Last verified: 29 September 2026. The connected GitHub repository is `sararr25/n
 
 ## New Stillroom flash artwork (30 September 2026)
 
-Seven illustrated designs supplied in `assets/tatto2.png`, `tatto3.png`, `tatto5.png`, and `tatto7.png` through `tatto10.png` are available in the owner's Flash tab as unpublished artwork. The owner chooses each design's name, base price, and sitting length before publishing it to the existing `flash_designs` catalog. Published prices can also be edited later, including on reserved designs. Customer selection and quotes continue to read the saved catalog price. No SQL migration is needed for this change. The two lettering files (`tatto1.png`, `tatto4.png`) and the nearly black `tatto6.png` are not in the flash catalog pending owner direction.
+All ten supplied designs in `assets/tatto1.png` through `tatto10.png` are available in the owner's Flash tab as unpublished artwork. The owner chooses each design's name, base price, and sitting length before publishing it to the existing `flash_designs` catalog. Published prices can also be edited later, including on reserved designs. Customer selection and quotes continue to read the saved catalog price. No SQL migration is needed for this change.
 
 ## Booking conversation change (30 September 2026)
 
