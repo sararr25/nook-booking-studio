@@ -34,7 +34,7 @@ import { buildQuote, describeOptionEffect, formatDuration, formatMoney } from "@
 import type { BookingRequest, BusinessConfig, TeamMember } from "@/lib/nook/types";
 import { artistImage } from "@/lib/nook/artist-images";
 import { supabase } from "@/integrations/supabase/client";
-import { loadFlashDesigns } from "@/lib/nook/flash";
+import { loadFlashDesigns, studioFlashArtwork } from "@/lib/nook/flash";
 import { getCalendarBusy } from "@/lib/nook/booking-emails.functions";
 import { OwnerCalendar } from "@/components/nook/owner-calendar";
 import { PricingImport } from "@/components/nook/pricing-import";
@@ -603,6 +603,9 @@ function AvailabilityTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
 function FlashTab() {
   const currency = useNook().business.policies.currency;
   const designs = useQuery({ queryKey: ["owner-flash"], queryFn: loadFlashDesigns });
+  const unpublishedArtwork = studioFlashArtwork.filter(
+    (artwork) => !designs.data?.some((design) => design.image_path === artwork.image_path),
+  );
   const upload = async (files: File[]) => {
     for (const file of files) {
       const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
@@ -631,8 +634,8 @@ function FlashTab() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-muted-foreground">
-          Each design can be booked once. New uploads start at {formatMoney(150, currency)} and 1 hr
-          30 min.
+          Set a base price for each design. Each published flash can be booked once. New uploads
+          start at {formatMoney(150, currency)} and 1 hr 30 min.
         </p>
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm bg-ink px-4 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand">
           <Upload className="size-4" />
@@ -646,6 +649,27 @@ function FlashTab() {
           />
         </label>
       </div>
+      {!designs.isLoading && !designs.isError && unpublishedArtwork.length > 0 && (
+        <section className="mt-8" aria-labelledby="new-flash-heading">
+          <h2 id="new-flash-heading" className="text-xl font-semibold">
+            New artwork to price
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            These designs stay out of the booking flow until you set a base price and publish them.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {unpublishedArtwork.map((artwork) => (
+              <StudioFlashDraft
+                key={artwork.image_path}
+                artwork={artwork}
+                currency={currency}
+                onPublished={() => void designs.refetch()}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {designs.data && <h2 className="mt-8 text-xl font-semibold">Flash book</h2>}
       <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
         {designs.isError && <p role="alert">Could not load flash designs. Reload to try again.</p>}
         {designs.data?.map((design) => (
@@ -664,65 +688,180 @@ function FlashTab() {
                 {formatMoney(design.price, currency)}, {formatDuration(design.duration_minutes)}
                 {!design.available && " · Reserved"}
               </p>
-              {design.available && (
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <label className="text-xs">
-                    Price ({currency})
-                    <input
-                      type="number"
-                      min="0"
-                      defaultValue={design.price}
-                      onBlur={async (event) => {
-                        const price = Number(event.target.value);
-                        if (!Number.isFinite(price) || price < 0) return;
-                        const { error } = await supabase
-                          .from("flash_designs")
-                          .update({ price })
-                          .eq("id", design.id);
-                        if (error) toast.error(error.message);
-                        else {
-                          toast.success("Flash price saved");
-                          void designs.refetch();
-                        }
-                      }}
-                      className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
-                    />
-                  </label>
-                  <label className="text-xs">
-                    Minutes
-                    <input
-                      type="number"
-                      min="15"
-                      max="720"
-                      defaultValue={design.duration_minutes}
-                      onBlur={async (event) => {
-                        const duration_minutes = Number(event.target.value);
-                        if (
-                          !Number.isFinite(duration_minutes) ||
-                          duration_minutes < 15 ||
-                          duration_minutes > 720
-                        )
-                          return;
-                        const { error } = await supabase
-                          .from("flash_designs")
-                          .update({ duration_minutes })
-                          .eq("id", design.id);
-                        if (error) toast.error(error.message);
-                        else {
-                          toast.success("Flash time saved");
-                          void designs.refetch();
-                        }
-                      }}
-                      className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
-                    />
-                  </label>
-                </div>
-              )}
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <label className="text-xs">
+                  Base price ({currency})
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    defaultValue={design.price}
+                    onBlur={async (event) => {
+                      const price = Number(event.target.value);
+                      if (!Number.isFinite(price) || price <= 0) {
+                        toast.error("Enter a base price above zero");
+                        event.target.value = String(design.price);
+                        return;
+                      }
+                      if (price === design.price) return;
+                      const { error } = await supabase
+                        .from("flash_designs")
+                        .update({ price })
+                        .eq("id", design.id);
+                      if (error) {
+                        event.target.value = String(design.price);
+                        toast.error(error.message);
+                      } else {
+                        toast.success("Flash price saved");
+                        void designs.refetch();
+                      }
+                    }}
+                    className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+                  />
+                </label>
+                <label className="text-xs">
+                  Minutes
+                  <input
+                    type="number"
+                    min="15"
+                    max="720"
+                    defaultValue={design.duration_minutes}
+                    onBlur={async (event) => {
+                      const duration_minutes = Number(event.target.value);
+                      if (
+                        !Number.isFinite(duration_minutes) ||
+                        duration_minutes < 15 ||
+                        duration_minutes > 720
+                      ) {
+                        event.target.value = String(design.duration_minutes);
+                        return;
+                      }
+                      if (duration_minutes === design.duration_minutes) return;
+                      const { error } = await supabase
+                        .from("flash_designs")
+                        .update({ duration_minutes })
+                        .eq("id", design.id);
+                      if (error) {
+                        event.target.value = String(design.duration_minutes);
+                        toast.error(error.message);
+                      } else {
+                        toast.success("Flash time saved");
+                        void designs.refetch();
+                      }
+                    }}
+                    className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+                  />
+                </label>
+              </div>
             </div>
           </article>
         ))}
       </div>
     </div>
+  );
+}
+
+function StudioFlashDraft({
+  artwork,
+  currency,
+  onPublished,
+}: {
+  artwork: (typeof studioFlashArtwork)[number];
+  currency: string;
+  onPublished: () => void;
+}) {
+  const [title, setTitle] = useState<string>(artwork.title);
+  const [price, setPrice] = useState("");
+  const [minutes, setMinutes] = useState("90");
+  const [saving, setSaving] = useState(false);
+
+  const publish = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const amount = Number(price);
+    const duration = Number(minutes);
+    if (!title.trim() || !Number.isFinite(amount) || amount <= 0) {
+      toast.error("Add a title and a base price above zero");
+      return;
+    }
+    if (!Number.isInteger(duration) || duration < 15 || duration > 720) {
+      toast.error("Session length must be between 15 and 720 minutes");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from("flash_designs").insert({
+      title: title.trim(),
+      image_path: artwork.image_path,
+      price: amount,
+      duration_minutes: duration,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${title.trim()} is now in the flash book`);
+    onPublished();
+  };
+
+  return (
+    <article className="nook-choice overflow-hidden border border-border">
+      <img
+        src={artwork.imageUrl}
+        alt={artwork.title}
+        loading="lazy"
+        width={1264}
+        height={1264}
+        className="aspect-[4/5] w-full bg-card object-contain p-3"
+      />
+      <form
+        onSubmit={(event) => void publish(event)}
+        className="space-y-3 border-t border-border p-3"
+      >
+        <label className="block text-xs">
+          Design name
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            required
+            className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-xs">
+            Base price ({currency})
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={price}
+              onChange={(event) => setPrice(event.target.value)}
+              required
+              className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+            />
+          </label>
+          <label className="text-xs">
+            Minutes
+            <input
+              type="number"
+              min="15"
+              max="720"
+              step="1"
+              value={minutes}
+              onChange={(event) => setMinutes(event.target.value)}
+              required
+              className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+            />
+          </label>
+        </div>
+        <button
+          type="submit"
+          disabled={saving}
+          className="min-h-10 w-full rounded-sm bg-ink px-3 text-sm font-medium text-brand-foreground disabled:opacity-60"
+        >
+          {saving ? "Publishing…" : "Publish flash"}
+        </button>
+      </form>
+    </article>
   );
 }
 
@@ -1015,7 +1154,8 @@ function RequestsTab() {
                                 setEditing(r.id);
                                 return;
                               }
-                              const nextStatus = r.quote.deposit > 0 ? "awaiting_deposit" : "confirmed";
+                              const nextStatus =
+                                r.quote.deposit > 0 ? "awaiting_deposit" : "confirmed";
                               if (await setRequestStatus(r.id, nextStatus))
                                 toast.success(
                                   nextStatus === "awaiting_deposit"

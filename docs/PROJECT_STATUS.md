@@ -2,6 +2,10 @@
 
 Last verified: 29 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`.
 
+## New Stillroom flash artwork (30 September 2026)
+
+Seven illustrated designs supplied in `assets/tatto2.png`, `tatto3.png`, `tatto5.png`, and `tatto7.png` through `tatto10.png` are available in the owner's Flash tab as unpublished artwork. The owner chooses each design's name, base price, and sitting length before publishing it to the existing `flash_designs` catalog. Published prices can also be edited later, including on reserved designs. Customer selection and quotes continue to read the saved catalog price. No SQL migration is needed for this change. The two lettering files (`tatto1.png`, `tatto4.png`) and the nearly black `tatto6.png` are not in the flash catalog pending owner direction.
+
 ## Booking conversation change (30 September 2026)
 
 The current PR adds short typed question reveals and a secondary guided conversation on `/book`. Conversation answers populate the existing quote and booking form; submitting still requires the customer's date, contact details, and explicit confirmation. The receipt now labels deposit bookings as awaiting deposit. See [BOOKING_EXPERIENCE.md](./BOOKING_EXPERIENCE.md) for the visual proposals and the guided assistant's supported scope. Local compilation and browser flow checks do not verify the Lovable preview or any booking, email, or calendar mutation.

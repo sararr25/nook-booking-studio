@@ -3,12 +3,33 @@ import botanical from "@/assets/flash-botanical.jpg";
 import moth from "@/assets/flash-moth.jpg";
 import sun from "@/assets/flash-sun.jpg";
 import swallow from "@/assets/flash-swallow.jpg";
+import orbit from "@/assets/stillroom-flash/tatto2.png";
+import redFish from "@/assets/stillroom-flash/tatto3.png";
+import matches from "@/assets/stillroom-flash/tatto5.png";
+import moonMirror from "@/assets/stillroom-flash/tatto7.png";
+import wildflowers from "@/assets/stillroom-flash/tatto8.png";
+import koi from "@/assets/stillroom-flash/tatto9.png";
+import frog from "@/assets/stillroom-flash/tatto10.png";
+
+/** Studio artwork is offered to the owner first; a database row makes it bookable. */
+export const studioFlashArtwork = [
+  { image_path: "seed:orbit", title: "Red orbit", imageUrl: orbit },
+  { image_path: "seed:red-fish", title: "Red fish", imageUrl: redFish },
+  { image_path: "seed:matches", title: "A spark", imageUrl: matches },
+  { image_path: "seed:moon-mirror", title: "Moon mirror", imageUrl: moonMirror },
+  { image_path: "seed:wildflowers", title: "Wildflowers", imageUrl: wildflowers },
+  { image_path: "seed:koi", title: "Koi & maple", imageUrl: koi },
+  { image_path: "seed:frog", title: "Flower for you", imageUrl: frog },
+] as const;
 
 const seedImages: Record<string, string> = {
   "seed:botanical": botanical,
   "seed:moth": moth,
   "seed:sun": sun,
   "seed:swallow": swallow,
+  ...Object.fromEntries(
+    studioFlashArtwork.map((artwork) => [artwork.image_path, artwork.imageUrl]),
+  ),
 };
 
 export type FlashDesign = {
