@@ -61,7 +61,7 @@ function StudioHome() {
       <header className="studio-header">
         <div className="studio-header-inner">
           <a className="studio-wordmark" href="#top" aria-label="Stillroom Tattoo, home">
-            STILLROOM <span>TATTOO</span>
+            Stillroom <span>tattoo</span>
           </a>
           <nav className="studio-nav" aria-label="Studio navigation">
             <a href="#work">Work</a>
@@ -92,10 +92,6 @@ function StudioHome() {
           <div className="studio-hero-art" aria-hidden="true">
             <img className="studio-betta" src={betta} alt="" />
             <img className="studio-bubbles" src={bubbles} alt="" />
-          </div>
-          <div className="studio-hero-image">
-            <img src={rafa} alt="Rafa, one of the artists at Stillroom Tattoo" />
-            <span>The people behind the work</span>
           </div>
         </section>
         <div className="studio-ticker" aria-label="Studio specialities">
@@ -192,7 +188,7 @@ function StudioHome() {
       </main>
       <footer className="studio-footer">
         <a className="studio-wordmark" href="#top">
-          STILLROOM <span>TATTOO</span>
+          Stillroom <span>tattoo</span>
         </a>
         <p className="studio-footer-note">
           <img src={frog} alt="" aria-hidden="true" />

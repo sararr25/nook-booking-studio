@@ -54,17 +54,20 @@
   gap: 2rem;
 }
 .studio-wordmark {
-  font-family: "Avenir Next", "Manrope", sans-serif;
-  font-size: clamp(1.1rem, 1.8vw, 1.7rem);
-  font-weight: 800;
-  letter-spacing: -0.065em;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: clamp(1.5rem, 2.1vw, 2rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 .studio-wordmark span {
-  margin-left: 0.25em;
+  margin-left: 0.35em;
+  font-family: "IBM Plex Mono", monospace;
   font-size: 0.34em;
-  letter-spacing: 0.15em;
-  vertical-align: 0.22em;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  vertical-align: 0.3em;
 }
 .studio-nav {
   display: flex;
@@ -115,7 +118,8 @@
   font-weight: 400;
 }
 .studio-site h3 {
-  font-family: "Avenir Next", "Manrope", sans-serif;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
 }
 .studio-site h1 em,
 .studio-site h2 em {
@@ -124,9 +128,9 @@
 .studio-hero h1 {
   max-width: 12ch;
   margin: 0;
-  font-size: clamp(3.6rem, 6.4vw, 7.4rem);
+  font-size: clamp(3.2rem, 5.6vw, 6rem);
   letter-spacing: -0.02em;
-  line-height: 0.92;
+  line-height: 0.95;
 }
 .studio-hero-lead {
   max-width: 32rem;
@@ -154,33 +158,11 @@
   background: var(--studio-accent);
   transform: translateY(-2px);
 }
-.studio-hero-image {
-  position: relative;
-  min-height: 450px;
-  overflow: hidden;
-  background: var(--studio-charcoal);
-}
-.studio-hero-image img,
 .studio-visit-image img {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
-}
-.studio-hero-image img {
-  object-position: center 40%;
-  filter: grayscale(0.8) contrast(1.04);
-}
-.studio-hero-image span {
-  position: absolute;
-  right: 1.4rem;
-  bottom: 1.4rem;
-  color: white;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 6px #0009;
 }
 .studio-ticker {
   display: flex;
@@ -287,23 +269,23 @@
 }
 /* Hero art: the betta swims over the seam between copy and portrait. */
 .studio-hero-art {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
   pointer-events: none;
-  z-index: 2;
 }
 .studio-betta {
   position: absolute;
-  left: 50%;
-  top: 8%;
-  width: clamp(200px, 22vw, 340px);
+  left: 8%;
+  top: 10%;
+  width: min(78%, 520px);
   filter: drop-shadow(0 14px 22px #5a1a1033);
   animation: studio-swim 9s ease-in-out infinite;
 }
 .studio-bubbles {
   position: absolute;
-  left: calc(50% - clamp(40px, 4vw, 70px));
-  bottom: 6%;
+  left: 2%;
+  top: 4%;
   width: clamp(60px, 6vw, 100px);
   animation: studio-rise 12s ease-in-out infinite;
 }
@@ -466,22 +448,22 @@
     grid-template-columns: 1fr;
   }
   .studio-hero-copy {
-    min-height: 520px;
+    padding-bottom: 1rem;
   }
-  .studio-hero-image {
-    height: 520px;
+  .studio-hero-art {
+    min-height: 320px;
   }
   .studio-betta {
     left: auto;
-    right: -24px;
-    top: auto;
-    bottom: calc(520px - 70px);
-    width: 170px;
+    right: 6%;
+    top: 0;
+    width: min(62%, 320px);
   }
   .studio-bubbles {
-    left: 1.25rem;
-    bottom: calc(520px - 150px);
-    width: 52px;
+    left: auto;
+    right: calc(6% + min(62%, 320px) - 20px);
+    top: 2%;
+    width: 56px;
   }
   .studio-ticker {
     overflow-x: auto;
@@ -508,22 +490,11 @@
     padding-left: 0.75rem;
     font-size: 0.72rem;
   }
-  .studio-hero-copy {
-    min-height: 500px;
-  }
   .studio-hero h1 {
-    font-size: clamp(3.35rem, 13vw, 5rem);
+    font-size: clamp(3.1rem, 13vw, 4.6rem);
   }
-  .studio-hero-image {
-    min-height: 0;
-    height: 410px;
-  }
-  .studio-betta {
-    bottom: calc(410px - 60px);
-    width: 150px;
-  }
-  .studio-bubbles {
-    bottom: calc(410px - 140px);
+  .studio-hero-art {
+    min-height: 260px;
   }
   .studio-flash-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

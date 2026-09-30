@@ -252,139 +252,160 @@ export function BookingConversation({
         <section
           id="booking-conversation"
           aria-label="Booking conversation"
-          className="mt-4 border border-foreground bg-card p-4 shadow-[4px_4px_0_var(--brand)] sm:p-5"
+          className="nook-enter mt-4 rounded-sm border border-foreground bg-card shadow-[4px_4px_0_var(--brand)]"
         >
-          <div
-            className="max-h-80 space-y-3 overflow-y-auto pr-1"
-            aria-live="polite"
-            aria-relevant="additions text"
-          >
-            {messages.map((message, index) => (
-              <p
-                key={index}
-                className={
-                  message.role === "assistant"
-                    ? "max-w-[90%] border-l-2 border-brand bg-background px-3 py-2 text-sm"
-                    : "ml-auto max-w-[90%] border border-border px-3 py-2 text-sm"
-                }
-              >
-                {message.role === "assistant" && index === messages.length - 1 ? (
-                  <TypedQuestion text={message.text} />
+          <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+            <p className="flex items-center gap-2 font-display text-base font-bold">
+              <span
+                aria-hidden="true"
+                className="size-2.5 border-r-[3px] border-t-[3px] border-brand-ink"
+              />
+              Plan it together
+            </p>
+            <p className="font-mono text-xs text-muted-foreground">Draft only, you confirm</p>
+          </header>
+          <div className="p-4 sm:p-5">
+            <div
+              className="max-h-80 space-y-4 overflow-y-auto pr-1"
+              aria-live="polite"
+              aria-relevant="additions text"
+            >
+              {messages.map((message, index) =>
+                message.role === "assistant" ? (
+                  <div key={index} className="max-w-[88%]">
+                    <p className="mb-1 font-mono text-xs font-medium text-brand-ink">Nook</p>
+                    <p className="rounded-sm border border-border bg-background px-3.5 py-2.5 text-sm leading-relaxed">
+                      {index === messages.length - 1 ? (
+                        <TypedQuestion text={message.text} />
+                      ) : (
+                        message.text
+                      )}
+                    </p>
+                  </div>
                 ) : (
-                  message.text
-                )}
-              </p>
-            ))}
-            <div ref={endRef} />
-          </div>
-          {!started && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {business.services.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  disabled={responding}
-                  onClick={() => selectService(item, item.name)}
-                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-          )}
-          {!started && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {[
-                "Will it hurt?",
-                "Should I shave?",
-                "Can I eat beforehand?",
-                "First tattoo tips",
-              ].map((suggestion) => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  disabled={responding}
-                  onClick={() => void answerOpenQuestion(suggestion)}
-                  className="min-h-9 rounded-sm border border-border px-2.5 text-xs text-muted-foreground hover:border-foreground hover:text-foreground disabled:opacity-50"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          )}
-          {question?.options && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {question.options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  disabled={responding}
-                  onClick={() => sendAnswer(option.label)}
-                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
-                >
-                  {option.label}
-                </button>
-              ))}
-              {question.optional && (
-                <button
-                  type="button"
-                  disabled={responding}
-                  onClick={() => sendAnswer("Skip")}
-                  className="min-h-11 rounded-sm px-3 py-2 text-sm underline focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
-                >
-                  Skip
-                </button>
+                  <div key={index} className="ml-auto max-w-[80%] text-right">
+                    <p className="mb-1 font-mono text-xs font-medium text-muted-foreground">You</p>
+                    <p className="inline-block rounded-sm bg-foreground px-3.5 py-2.5 text-left text-sm leading-relaxed text-card">
+                      {message.text}
+                    </p>
+                  </div>
+                ),
               )}
+              <div ref={endRef} />
             </div>
-          )}
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              sendAnswer(draft);
-            }}
-            className="mt-4 flex gap-2"
-          >
-            <label className="sr-only" htmlFor="booking-chat-input">
-              Your message
-            </label>
-            <input
-              id="booking-chat-input"
-              value={draft}
-              disabled={responding}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder={
-                question?.type === "scale"
-                  ? `Size in ${question.unit ?? "units"}`
-                  : "Type your message"
-              }
-              className="min-h-11 min-w-0 flex-1 rounded-sm border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-foreground"
-            />
-            <button
-              type="submit"
-              disabled={!draft.trim() || responding}
-              aria-label="Send message"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-sm bg-foreground text-card disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-            >
-              <Send size={17} aria-hidden="true" />
-            </button>
-          </form>
-          {responding && <p className="mt-2 text-xs text-muted-foreground">Thinking…</p>}
-          {complete && (
-            <button
-              type="button"
-              disabled={responding}
-              onClick={() => {
-                onApply(service.id, answers, notes);
-                setOpen(false);
+            {!started && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {business.services.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    disabled={responding}
+                    onClick={() => selectService(item, item.name)}
+                    className="nook-choice min-h-11 rounded-sm border border-border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!started && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[
+                  "Will it hurt?",
+                  "Should I shave?",
+                  "Can I eat beforehand?",
+                  "First tattoo tips",
+                ].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    disabled={responding}
+                    onClick={() => void answerOpenQuestion(suggestion)}
+                    className="min-h-9 rounded-sm border border-dashed border-input px-2.5 text-xs text-muted-foreground transition-colors hover:border-foreground hover:bg-brand-soft hover:text-foreground disabled:opacity-50"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+            {question?.options && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {question.options.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={responding}
+                    onClick={() => sendAnswer(option.label)}
+                    className="nook-choice min-h-11 rounded-sm border border-border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+                {question.optional && (
+                  <button
+                    type="button"
+                    disabled={responding}
+                    onClick={() => sendAnswer("Skip")}
+                    className="min-h-11 rounded-sm px-3 py-2 text-sm underline focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
+                  >
+                    Skip
+                  </button>
+                )}
+              </div>
+            )}
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                sendAnswer(draft);
               }}
-              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-sm bg-brand px-4 text-sm font-semibold text-brand-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:opacity-50"
+              className="mt-5 flex gap-2 border-t border-border pt-4"
             >
-              Review booking <ArrowRight size={17} aria-hidden="true" />
-            </button>
-          )}
-          <p className="mt-3 text-xs text-muted-foreground">
-            This assistant prepares a draft. You choose a time and confirm the request yourself.
-          </p>
+              <label className="sr-only" htmlFor="booking-chat-input">
+                Your message
+              </label>
+              <input
+                id="booking-chat-input"
+                value={draft}
+                disabled={responding}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder={
+                  question?.type === "scale"
+                    ? `Size in ${question.unit ?? "units"}`
+                    : "Type your message"
+                }
+                className="min-h-11 min-w-0 flex-1 rounded-sm border border-input bg-background px-3 text-sm outline-none focus:border-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+              />
+              <button
+                type="submit"
+                disabled={!draft.trim() || responding}
+                aria-label="Send message"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-sm bg-foreground text-card transition-colors hover:bg-brand hover:text-brand-foreground disabled:opacity-40 disabled:hover:bg-foreground disabled:hover:text-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+              >
+                <Send size={17} aria-hidden="true" />
+              </button>
+            </form>
+            {responding && (
+              <p className="mt-2 font-mono text-xs text-muted-foreground" role="status">
+                Nook is thinking…
+              </p>
+            )}
+            {complete && (
+              <button
+                type="button"
+                disabled={responding}
+                onClick={() => {
+                  onApply(service.id, answers, notes);
+                  setOpen(false);
+                }}
+                className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-sm bg-foreground px-5 text-sm font-semibold text-card transition-colors hover:bg-brand hover:text-brand-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:opacity-50"
+              >
+                Review booking <ArrowRight size={17} aria-hidden="true" />
+              </button>
+            )}
+            <p className="mt-3 text-xs text-muted-foreground">
+              This assistant prepares a draft. You choose a time and confirm the request yourself.
+            </p>
+          </div>
         </section>
       )}
     </div>
