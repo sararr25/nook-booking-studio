@@ -13,6 +13,7 @@ export function BookingTicket({
   price,
   rows,
   review,
+  pendingDeposit = false,
   note,
   terms,
   className,
@@ -22,6 +23,7 @@ export function BookingTicket({
   price: ReactNode;
   rows: TicketRow[];
   review: boolean;
+  pendingDeposit?: boolean;
   note?: string | undefined;
   /** Small-print conditions, e.g. estimate and deposit rules. */
   terms?: string[];
@@ -45,8 +47,10 @@ export function BookingTicket({
         ))}
       </dl>
       <div className="nook-perforation px-5 py-4">
-        <span className={cn("nook-stamp", review ? "text-brand" : "text-highlight")}>
-          {review ? "Needs review" : "Confirms instantly"}
+        <span
+          className={cn("nook-stamp", review || pendingDeposit ? "text-brand" : "text-highlight")}
+        >
+          {review ? "Needs review" : pendingDeposit ? "Awaiting deposit" : "Confirms instantly"}
         </span>
         {note && <p className="mt-3 text-xs text-muted-foreground">{note}</p>}
       </div>

@@ -265,6 +265,15 @@
 }
 
 .nook-title { position: relative; padding-bottom: 0.75rem; }
+.nook-typed-question { display: inline; }
+.nook-typing-caret {
+  display: inline-block;
+  width: 0.12em;
+  height: 0.9em;
+  margin-left: 0.12em;
+  background: var(--brand);
+  vertical-align: -0.1em;
+}
 .nook-title::after {
   content: "";
   position: absolute;
@@ -280,10 +289,10 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   .nook-lift, .nook-lift:hover, .nook-lift:active { transform: none; }
+  .nook-typing-caret { display: none; }
 }
 
 @utility rule-grid {
   background-image: linear-gradient(var(--border) 1px, transparent 1px);
   background-size: 100% 2rem;
 }
-
