@@ -26,10 +26,13 @@ import { MonthCalendar } from "@/components/nook/month-calendar";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookingTicket } from "@/components/nook/booking-ticket";
+import { TypedQuestion } from "@/components/nook/typed-question";
+import { BookingConversation } from "@/components/nook/booking-conversation";
 import { Wordmark } from "@/components/nook/wordmark";
 import { NookProvider, useNook } from "@/lib/nook/store";
 import {
   buildQuote,
+  describeArtistFit,
   describeOptionEffect,
   formatDuration,
   formatMoney,
@@ -299,6 +302,21 @@ function BookingFlow() {
     <div className="min-h-screen bg-background">
       <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col border-x border-border bg-card">
         <BookingHeader step={step} onBack={() => setStep((current) => Math.max(0, current - 1))} />
+        {step <= 1 && (
+          <BookingConversation
+            business={business}
+            currentServiceId={serviceId}
+            currentAnswers={answers}
+            onApply={(nextServiceId, nextAnswers, conversationNotes) => {
+              setServiceId(nextServiceId);
+              setAnswers(nextAnswers);
+              setSelected(null);
+              setArtistChoice("auto");
+              setNotes((previous) => [previous, conversationNotes].filter(Boolean).join("\n"));
+              setStep(nextServiceId === "flash" ? 1 : 2);
+            }}
+          />
+        )}
         {/* Content row stretches so the action bar sits at the bottom even on short steps. */}
         <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[1fr_auto] lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div
@@ -420,8 +438,8 @@ function BookingFlow() {
                 />
                 <ArtistPicker
                   team={quote.eligibleTeam}
+                  quote={quote}
                   recommendedId={recommendation?.member.id}
-                  reason={recommendation?.reason}
                   choice={artistChoice}
                   onChoose={chooseArtist}
                 />
@@ -894,7 +912,7 @@ function QuestionBlock({
         <span className="display mt-0.5 text-sm text-brand">{String(index).padStart(2, "0")}</span>
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold">
-            {question.label}
+            <TypedQuestion text={question.label} />
             {!question.optional && <span className="ml-1 text-brand">*</span>}
           </h2>
           {question.help && <p className="mt-1 text-sm text-muted-foreground">{question.help}</p>}
@@ -1200,6 +1218,7 @@ function SummaryPanel({
       }
       rows={rows}
       review={quote.requiresReview || quote.eligibleTeam.length === 0}
+      pendingDeposit={quote.deposit > 0}
       note={quote.requiresPhotos ? "Reference pictures required." : undefined}
       terms={bookingTerms({
         free: quote.high === 0,
@@ -1266,7 +1285,11 @@ function Confirmation({
       <SiteHeader />
       <main className="mx-auto w-full max-w-2xl px-5 py-20">
         <p className="eyebrow">
-          {done.reviewPending ? "Request sent" : done.awaitingDeposit ? "Pending deposit" : "Appointment confirmed"}
+          {done.reviewPending
+            ? "Request sent"
+            : done.awaitingDeposit
+              ? "Pending deposit"
+              : "Appointment confirmed"}
         </p>
         <h1 className="display mt-4 text-3xl sm:text-4xl">
           {done.reviewPending
@@ -1406,14 +1429,14 @@ function ReferenceUpload({
 
 function ArtistPicker({
   team,
+  quote,
   recommendedId,
-  reason,
   choice,
   onChoose,
 }: {
   team: TeamMember[];
+  quote: ReturnType<typeof buildQuote>;
   recommendedId: string | undefined;
-  reason: string | undefined;
   choice: string;
   onChoose: (id: string) => void;
 }) {
@@ -1467,13 +1490,14 @@ function ArtistPicker({
                 {active && <Check className="nook-pop size-4 shrink-0 text-brand" />}
               </Button>
               {best && (
-                <p className="mt-3 flex items-start gap-1.5 rounded-sm bg-secondary px-2.5 py-2 text-xs">
-                  <Star className="mt-0.5 size-3 shrink-0 fill-brand text-brand" />
-                  <span>
-                    <strong className="font-semibold">Best match.</strong> {reason}
-                  </span>
+                <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-brand">
+                  <Star className="mt-0.5 size-3 shrink-0 fill-brand" aria-hidden="true" />
+                  Closest match for this request
                 </p>
               )}
+              <p className="mt-3 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
+                {describeArtistFit(quote, member)}
+              </p>
               {member.portfolioUrl && (
                 <a
                   href={member.portfolioUrl}

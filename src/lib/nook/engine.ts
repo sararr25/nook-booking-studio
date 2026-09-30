@@ -237,3 +237,29 @@ export const recommendArtist = (quote: Quote): { member: TeamMember; reason: str
       : `Covers everything this piece needs and has time for a ${formatDuration(quote.duration)} sitting.`;
   return { member: best.member, reason };
 };
+
+const skillNames: Record<string, string> = {
+  fineline: "fine line",
+  blackwork: "blackwork",
+  colour: "colour",
+  lettering: "lettering",
+  coverup: "cover-ups",
+  "exposed-placement": "exposed placements",
+};
+
+/** Customer-facing fit note based only on configured skills and sitting length. */
+export const describeArtistFit = (quote: Quote, member: TeamMember) => {
+  const firstName = member.name.split(" ")[0] ?? member.name;
+  const matching = quote.requiredSkills.filter((skill) => member.skills.includes(skill));
+  if (matching.length === 0) {
+    return `${firstName} can take the estimated ${formatDuration(quote.duration)} sitting.`;
+  }
+  const focus = matching.filter((skill) => member.skills.slice(0, 2).includes(skill));
+  const names = (focus.length ? focus : matching).map((skill) => skillNames[skill] ?? skill);
+  const specialties = new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(
+    names,
+  );
+  return focus.length
+    ? `${specialties[0]?.toUpperCase() ?? ""}${specialties.slice(1)} ${names.length > 1 ? "are" : "is"} a focus of ${firstName}'s work.`
+    : `${firstName} also takes ${specialties} pieces.`;
+};
