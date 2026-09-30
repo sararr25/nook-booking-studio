@@ -6,6 +6,8 @@ Last verified: 29 September 2026. The connected GitHub repository is `sararr25/n
 
 The current PR adds short typed question reveals and a secondary guided conversation on `/book`. Conversation answers populate the existing quote and booking form; submitting still requires the customer's date, contact details, and explicit confirmation. The receipt now labels deposit bookings as awaiting deposit. See [BOOKING_EXPERIENCE.md](./BOOKING_EXPERIENCE.md) for the visual proposals and the guided assistant's supported scope. Local compilation and browser flow checks do not verify the Lovable preview or any booking, email, or calendar mutation.
 
+The follow-up on the same PR adds customer-facing fit notes to the artist choices, derived from configured skills and the quoted sitting length. Additional layout proposals are documented but remain unimplemented while the new flash artwork is being prepared.
+
 ## Current change rollout
 
 The current revision gates deposit bookings behind an `awaiting_deposit` state. The email targets a dedicated server endpoint that records and verifies the demo deposit before redirecting to a read-only receipt. Migration `20260929145901` has been applied to Lovable Cloud; the database constraint and booking RPC accept `awaiting_deposit`.

@@ -32,6 +32,7 @@ import { Wordmark } from "@/components/nook/wordmark";
 import { NookProvider, useNook } from "@/lib/nook/store";
 import {
   buildQuote,
+  describeArtistFit,
   describeOptionEffect,
   formatDuration,
   formatMoney,
@@ -437,8 +438,8 @@ function BookingFlow() {
                 />
                 <ArtistPicker
                   team={quote.eligibleTeam}
+                  quote={quote}
                   recommendedId={recommendation?.member.id}
-                  reason={recommendation?.reason}
                   choice={artistChoice}
                   onChoose={chooseArtist}
                 />
@@ -1428,14 +1429,14 @@ function ReferenceUpload({
 
 function ArtistPicker({
   team,
+  quote,
   recommendedId,
-  reason,
   choice,
   onChoose,
 }: {
   team: TeamMember[];
+  quote: ReturnType<typeof buildQuote>;
   recommendedId: string | undefined;
-  reason: string | undefined;
   choice: string;
   onChoose: (id: string) => void;
 }) {
@@ -1489,13 +1490,14 @@ function ArtistPicker({
                 {active && <Check className="nook-pop size-4 shrink-0 text-brand" />}
               </Button>
               {best && (
-                <p className="mt-3 flex items-start gap-1.5 rounded-sm bg-secondary px-2.5 py-2 text-xs">
-                  <Star className="mt-0.5 size-3 shrink-0 fill-brand text-brand" />
-                  <span>
-                    <strong className="font-semibold">Best match.</strong> {reason}
-                  </span>
+                <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-brand">
+                  <Star className="mt-0.5 size-3 shrink-0 fill-brand" aria-hidden="true" />
+                  Closest match for this request
                 </p>
               )}
+              <p className="mt-3 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
+                {describeArtistFit(quote, member)}
+              </p>
               {member.portfolioUrl && (
                 <a
                   href={member.portfolioUrl}
