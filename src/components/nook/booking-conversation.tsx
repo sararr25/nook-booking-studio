@@ -76,6 +76,11 @@ export function BookingConversation({
   const [notes, setNotes] = useState("");
   const [draft, setDraft] = useState("");
   const [responding, setResponding] = useState(false);
+  // "thinking" shows the dots before a reply; "typing" lasts while the reply is written out.
+  const [thinking, setThinking] = useState(false);
+  const [typing, setTyping] = useState(true);
+  const replyTimer = useRef<number | undefined>(undefined);
+  const busy = responding || thinking || typing;
   const askOnServer = useServerFn(askBookingAssistant);
   const [started, setStarted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -95,15 +100,29 @@ export function BookingConversation({
         block: "end",
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       });
-  }, [messages, open]);
+  }, [messages, open, thinking]);
+
+  useEffect(() => () => window.clearTimeout(replyTimer.current), []);
+
+  function reply(assistant: string) {
+    setThinking(false);
+    setTyping(true);
+    setMessages((previous) => [...previous, { role: "assistant", text: assistant }]);
+  }
 
   function append(customer: string, assistant: string) {
-    setMessages((previous) => [
-      ...previous,
-      { role: "customer", text: customer },
-      { role: "assistant", text: assistant },
-    ]);
+    setMessages((previous) => [...previous, { role: "customer", text: customer }]);
     setDraft("");
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      reply(assistant);
+      return;
+    }
+    setThinking(true);
+    window.clearTimeout(replyTimer.current);
+    replyTimer.current = window.setTimeout(
+      () => reply(assistant),
+      500 + Math.min(700, assistant.length * 6),
+    );
   }
 
   function selectService(next: Service, label: string) {
@@ -125,19 +144,16 @@ export function BookingConversation({
     if (responding) return;
     const history = messages.slice(-8);
     setResponding(true);
+    setThinking(true);
     setMessages((previous) => [...previous, { role: "customer", text: input }]);
     setDraft("");
     try {
       const result = await askOnServer({ data: { message: input, history } });
-      setMessages((previous) => [...previous, { role: "assistant", text: result.answer }]);
+      reply(result.answer);
     } catch {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          text: "I can't answer that reliably right now. You can ask the studio directly or add it to your booking notes for the artist.",
-        },
-      ]);
+      reply(
+        "I can't answer that reliably right now. You can ask the studio directly or add it to your booking notes for the artist.",
+      );
     } finally {
       setResponding(false);
     }
@@ -272,18 +288,26 @@ export function BookingConversation({
             >
               {messages.map((message, index) =>
                 message.role === "assistant" ? (
-                  <div key={index} className="max-w-[88%]">
-                    <p className="mb-1 font-mono text-xs font-medium text-brand-ink">Nook</p>
-                    <p className="rounded-sm border border-border bg-background px-3.5 py-2.5 text-sm leading-relaxed">
-                      {index === messages.length - 1 ? (
-                        <TypedQuestion text={message.text} />
-                      ) : (
-                        message.text
-                      )}
-                    </p>
+                  <div key={index} className="nook-enter flex max-w-[88%] items-start gap-2.5">
+                    <NookFace />
+                    <div className="min-w-0">
+                      <p className="mb-1 font-mono text-xs font-medium text-brand-ink">Nook</p>
+                      <p className="rounded-sm border border-border bg-background px-3.5 py-2.5 text-sm leading-relaxed">
+                        {index === messages.length - 1 ? (
+                          <TypedQuestion
+                            text={message.text}
+                            msPerCharacter={26}
+                            maxDuration={2600}
+                            onDone={() => setTyping(false)}
+                          />
+                        ) : (
+                          message.text
+                        )}
+                      </p>
+                    </div>
                   </div>
                 ) : (
-                  <div key={index} className="ml-auto max-w-[80%] text-right">
+                  <div key={index} className="nook-enter ml-auto max-w-[80%] text-right">
                     <p className="mb-1 font-mono text-xs font-medium text-muted-foreground">You</p>
                     <p className="inline-block rounded-sm bg-foreground px-3.5 py-2.5 text-left text-sm leading-relaxed text-card">
                       {message.text}
@@ -291,15 +315,29 @@ export function BookingConversation({
                   </div>
                 ),
               )}
+              {thinking && (
+                <div className="nook-enter flex items-center gap-2.5" role="status">
+                  <NookFace thinking />
+                  <span className="sr-only">Nook is typing</span>
+                  <span
+                    aria-hidden="true"
+                    className="nook-dots inline-flex gap-1 rounded-sm border border-border bg-background px-3.5 py-3"
+                  >
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                </div>
+              )}
               <div ref={endRef} />
             </div>
-            {!started && (
+            {!started && !busy && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {business.services.map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    disabled={responding}
+                    disabled={busy}
                     onClick={() => selectService(item, item.name)}
                     className="nook-choice min-h-11 rounded-sm border border-border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                   >
@@ -308,7 +346,7 @@ export function BookingConversation({
                 ))}
               </div>
             )}
-            {!started && (
+            {!started && !busy && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {[
                   "Will it hurt?",
@@ -319,7 +357,7 @@ export function BookingConversation({
                   <button
                     key={suggestion}
                     type="button"
-                    disabled={responding}
+                    disabled={busy}
                     onClick={() => void answerOpenQuestion(suggestion)}
                     className="min-h-9 rounded-sm border border-dashed border-input px-2.5 text-xs text-muted-foreground transition-colors hover:border-foreground hover:bg-brand-soft hover:text-foreground disabled:opacity-50"
                   >
@@ -328,13 +366,13 @@ export function BookingConversation({
                 ))}
               </div>
             )}
-            {question?.options && (
+            {question?.options && !busy && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {question.options.map((option) => (
                   <button
                     key={option.id}
                     type="button"
-                    disabled={responding}
+                    disabled={busy}
                     onClick={() => sendAnswer(option.label)}
                     className="nook-choice min-h-11 rounded-sm border border-border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                   >
@@ -344,7 +382,7 @@ export function BookingConversation({
                 {question.optional && (
                   <button
                     type="button"
-                    disabled={responding}
+                    disabled={busy}
                     onClick={() => sendAnswer("Skip")}
                     className="min-h-11 rounded-sm px-3 py-2 text-sm underline focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                   >
@@ -366,7 +404,7 @@ export function BookingConversation({
               <input
                 id="booking-chat-input"
                 value={draft}
-                disabled={responding}
+                disabled={busy}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder={
                   question?.type === "scale"
@@ -377,22 +415,17 @@ export function BookingConversation({
               />
               <button
                 type="submit"
-                disabled={!draft.trim() || responding}
+                disabled={!draft.trim() || busy}
                 aria-label="Send message"
                 className="flex min-h-11 min-w-11 items-center justify-center rounded-sm bg-foreground text-card transition-colors hover:bg-brand hover:text-brand-foreground disabled:opacity-40 disabled:hover:bg-foreground disabled:hover:text-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
               >
                 <Send size={17} aria-hidden="true" />
               </button>
             </form>
-            {responding && (
-              <p className="mt-2 font-mono text-xs text-muted-foreground" role="status">
-                Nook is thinking…
-              </p>
-            )}
-            {complete && (
+            {complete && !busy && (
               <button
                 type="button"
-                disabled={responding}
+                disabled={busy}
                 onClick={() => {
                   onApply(service.id, answers, notes);
                   setOpen(false);
@@ -409,5 +442,32 @@ export function BookingConversation({
         </section>
       )}
     </div>
+  );
+}
+
+/** Nook's small face: peach disc, blinking eyes, a smile that turns to an "o" while thinking. */
+function NookFace({ thinking = false }: { thinking?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="nook-face mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-foreground bg-brand"
+    >
+      <svg viewBox="0 0 24 24" className="size-6" fill="none">
+        <g className="nook-face-eyes" fill="currentColor">
+          <circle cx="8.5" cy="10" r="1.6" />
+          <circle cx="15.5" cy="10" r="1.6" />
+        </g>
+        {thinking ? (
+          <circle cx="12" cy="16" r="1.7" stroke="currentColor" strokeWidth="1.6" />
+        ) : (
+          <path
+            d="M8 14.5c1 1.6 2.4 2.3 4 2.3s3-.7 4-2.3"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+          />
+        )}
+      </svg>
+    </span>
   );
 }
