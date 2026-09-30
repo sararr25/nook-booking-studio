@@ -216,9 +216,7 @@ function StudioHome() {
         <a className="studio-wordmark" href="#top">
           Stillroom <span>tattoo</span>
         </a>
-        <p className="studio-footer-note">
-          Custom tattoo, made with care in Malmö. See you soon.
-        </p>
+        <p className="studio-footer-note">Custom tattoo, made with care in Malmö. See you soon.</p>
         <div>
           <Link to="/book">Book an appointment</Link>
           <Link to="/auth" search={{ notice: undefined }}>

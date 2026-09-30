@@ -35,7 +35,7 @@ export function BookingTicket({
         <p className="eyebrow">{heading}</p>
         <p className="mt-3 font-display text-xl font-semibold leading-tight">{title}</p>
         <p className="nook-enter mt-2 font-mono text-2xl font-semibold tabular-nums">
-          <span key={price} className="nook-mark">
+          <span key={String(price)} className="nook-mark">
             {price}
           </span>
         </p>
