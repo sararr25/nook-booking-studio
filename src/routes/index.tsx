@@ -5,9 +5,16 @@ import studio from "@/assets/studio.jpg";
 import ines from "@/assets/artist-ines.jpg";
 import tove from "@/assets/artist-tove.jpg";
 import rafa from "@/assets/artist-rafa.jpg";
-import botanical from "@/assets/flash-botanical.jpg";
-import moth from "@/assets/flash-moth.jpg";
-import swallow from "@/assets/flash-swallow.jpg";
+import betta from "@/assets/art/betta.webp";
+import bubbles from "@/assets/art/bubbles.webp";
+import staySoft from "@/assets/art/stay-soft.webp";
+import breathe from "@/assets/art/breathe.webp";
+import frog from "@/assets/art/frog.webp";
+import koi from "@/assets/art/koi.webp";
+import matches from "@/assets/art/matches.webp";
+import wildflowers from "@/assets/art/wildflowers.webp";
+import veiledMirror from "@/assets/art/veiled-mirror.webp";
+import moonWave from "@/assets/art/moon-wave.webp";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,9 +44,12 @@ const artists = [
   { name: "Rafa Osei", specialty: "Colour & illustrative", image: rafa },
 ];
 const flash = [
-  { name: "Botanical", image: botanical },
-  { name: "Night moth", image: moth },
-  { name: "Swallow", image: swallow },
+  { name: "Koi in the waves", style: "Colour", image: koi },
+  { name: "Frog with a daisy", style: "Fine line", image: frog },
+  { name: "Last match", style: "Illustrative", image: matches },
+  { name: "Wildflowers", style: "Fine line", image: wildflowers },
+  { name: "Veiled mirror", style: "Blackwork", image: veiledMirror },
+  { name: "Moon tide", style: "Fine line", image: moonWave },
 ];
 
 function StudioHome() {
@@ -67,7 +77,10 @@ function StudioHome() {
         <section className="studio-hero" aria-labelledby="studio-title">
           <div className="studio-hero-copy">
             <p className="studio-overline">Custom tattoo · Malmö</p>
-            <h1 id="studio-title">A quieter place to make your mark.</h1>
+            <h1 id="studio-title">
+              A quieter place to make your <em>mark.</em>
+            </h1>
+            <img className="studio-signature" src={staySoft} alt="stay soft, handwritten" />
             <p className="studio-hero-lead">
               Considered design, personal attention and work made to stay with you. Tell us what you
               have in mind. We&apos;ll take it from there.
@@ -75,6 +88,10 @@ function StudioHome() {
             <Link className="studio-button" to="/book">
               Book an appointment <ArrowRight aria-hidden="true" size={18} />
             </Link>
+          </div>
+          <div className="studio-hero-art" aria-hidden="true">
+            <img className="studio-betta" src={betta} alt="" />
+            <img className="studio-bubbles" src={bubbles} alt="" />
           </div>
           <div className="studio-hero-image">
             <img src={rafa} alt="Rafa, one of the artists at Stillroom Tattoo" />
@@ -91,8 +108,10 @@ function StudioHome() {
         <section className="studio-section studio-work" id="work" aria-labelledby="work-title">
           <div className="studio-section-heading">
             <div>
-              <p className="studio-overline">From idea to ink</p>
-              <h2 id="work-title">A piece with a point of view.</h2>
+              <p className="studio-overline">From the flash sheet</p>
+              <h2 id="work-title">
+                A piece with a <em>point of view.</em>
+              </h2>
             </div>
             <p>
               Every appointment begins with a conversation. Bring a clear idea, a handful of
@@ -105,7 +124,7 @@ function StudioHome() {
                 <img src={piece.image} alt={`${piece.name} tattoo flash design`} loading="lazy" />
                 <figcaption>
                   {piece.name}
-                  <span>Flash design</span>
+                  <span>{piece.style}</span>
                 </figcaption>
               </figure>
             ))}
@@ -122,7 +141,9 @@ function StudioHome() {
           <div className="studio-section-heading">
             <div>
               <p className="studio-overline">Meet the studio</p>
-              <h2 id="artists-title">Good work is personal.</h2>
+              <h2 id="artists-title">
+                Good work is <em>personal.</em>
+              </h2>
             </div>
             <p>
               Three artists, different hands, and the same care for the person wearing the work.
@@ -146,7 +167,14 @@ function StudioHome() {
           </div>
           <div className="studio-visit-copy">
             <p className="studio-overline">Come as you are</p>
-            <h2 id="visit-title">Room to feel at home.</h2>
+            <h2 id="visit-title">
+              Room to feel at <em>home.</em>
+            </h2>
+            <img
+              className="studio-signature studio-signature-light"
+              src={breathe}
+              alt="breathe, handwritten"
+            />
             <p>
               A calm space to talk through your idea, ask every question and take your time. We work
               by appointment so your visit has our full attention.
@@ -166,7 +194,10 @@ function StudioHome() {
         <a className="studio-wordmark" href="#top">
           STILLROOM <span>TATTOO</span>
         </a>
-        <p>Custom tattoo, made with care in Malmö.</p>
+        <p className="studio-footer-note">
+          <img src={frog} alt="" aria-hidden="true" />
+          Custom tattoo, made with care in Malmö. See you soon.
+        </p>
         <div>
           <Link to="/book">Book an appointment</Link>
           <Link to="/auth" search={{ notice: undefined }}>
