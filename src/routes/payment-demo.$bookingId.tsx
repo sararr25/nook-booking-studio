@@ -61,7 +61,7 @@ function PaymentDemoPage() {
       <div className="mx-auto w-full max-w-xl">
         <div className="flex items-center justify-between border-b border-foreground pb-4">
           <Wordmark />
-          <span className="eyebrow text-brand">Payment demo</span>
+          <span className="eyebrow text-brand-ink">Payment demo</span>
         </div>
 
         <section className="nook-ticket mt-8" aria-labelledby="payment-title" aria-live="polite">
@@ -70,7 +70,7 @@ function PaymentDemoPage() {
               <CircleCheck className="size-7 text-highlight" aria-hidden="true" />
             )}
             {state.kind === "failed" && (
-              <CircleAlert className="size-7 text-brand" aria-hidden="true" />
+              <CircleAlert className="size-7 text-brand-ink" aria-hidden="true" />
             )}
             <h1 id="payment-title" className="mt-5 text-balance text-4xl font-bold sm:text-5xl">
               {state.kind === "paid" && "Payment complete!"}
@@ -112,7 +112,7 @@ function PaymentDemoPage() {
             )}
             <div className="flex items-baseline justify-between gap-4">
               <dt className="text-muted-foreground">Payment status</dt>
-              <dd className="font-mono font-medium text-brand">
+              <dd className="font-mono font-medium text-brand-ink">
                 {state.kind === "paid" ? "Confirmed · paid (demo)" : "Not paid"}
               </dd>
             </div>

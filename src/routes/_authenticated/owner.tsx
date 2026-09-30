@@ -242,7 +242,7 @@ function OwnerPage() {
               <div className="flex items-center gap-2.5">
                 <span
                   aria-hidden="true"
-                  className="flex size-9 items-center justify-center rounded-full bg-ink font-mono text-xs font-semibold text-brand-foreground"
+                  className="flex size-9 items-center justify-center rounded-full bg-ink font-mono text-xs font-semibold text-primary-foreground"
                 >
                   {initials}
                 </span>
@@ -450,7 +450,7 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
             <span
               className={cn(
                 "font-mono text-5xl font-semibold tabular-nums",
-                tile.urgent && "text-brand",
+                tile.urgent && "text-brand-ink",
               )}
             >
               {tile.count}
@@ -662,7 +662,7 @@ function FlashTab() {
           Set a base price for each design. Each published flash can be booked once. New uploads
           start at {formatMoney(150, currency)} and 1 hr 30 min.
         </p>
-        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm bg-ink px-4 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand">
+        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm bg-ink px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand hover:text-brand-foreground">
           <Upload className="size-4" />
           Upload design
           <input
@@ -913,7 +913,7 @@ function StudioFlashDraft({
         <button
           type="submit"
           disabled={saving}
-          className="min-h-10 w-full rounded-sm bg-ink px-3 text-sm font-medium text-brand-foreground disabled:opacity-60"
+          className="min-h-10 w-full rounded-sm bg-ink px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
           {saving ? "Publishing…" : "Publish flash"}
         </button>
@@ -1095,7 +1095,7 @@ function RequestsTab() {
                                   "border px-2 py-0.5 font-mono text-xs",
                                   r.depositPaidAt
                                     ? "border-highlight/40 text-highlight"
-                                    : "border-brand/50 text-brand",
+                                    : "border-brand/50 text-brand-ink",
                                 )}
                               >
                                 {r.depositPaidAt ? "Deposit paid" : "Awaiting deposit"}
@@ -1149,7 +1149,7 @@ function RequestsTab() {
 
                       {!hasArtist && r.status !== "declined" && (
                         <p className="mt-3 flex gap-2 rounded-sm border border-brand/50 bg-background px-3 py-2 text-xs">
-                          <AlertTriangle className="size-4 shrink-0 text-brand" />
+                          <AlertTriangle className="size-4 shrink-0 text-brand-ink" />
                           <span>
                             {isConfirmed
                               ? "Confirmed, but nobody is booked to do it. The date and time are only the customer's preference. Pick an artist and a real time with Change booking."
@@ -1220,7 +1220,7 @@ function RequestsTab() {
                                     : `${r.customerName} confirmed.`,
                                 );
                             }}
-                            className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
+                            className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand hover:text-brand-foreground"
                           >
                             <Check className="size-4" />
                             {hasArtist ? "Approve" : "Pick artist to approve"}
@@ -1593,7 +1593,7 @@ function EditBooking({
         <select
           value={memberId}
           onChange={(e) => setMemberId(e.target.value)}
-          className={cn(inputClass, "min-h-11", !member && "border-brand")}
+          className={cn(inputClass, "min-h-11", !member && "border-brand-ink")}
         >
           <option value="" disabled>
             Choose an artist
@@ -1618,7 +1618,7 @@ function EditBooking({
             </ul>
           )}
           {warnings.length > 0 && (
-            <ul className="space-y-1 text-sm text-brand">
+            <ul className="space-y-1 text-sm text-brand-ink">
               {warnings.map((warning) => (
                 <li key={warning} className="flex gap-2">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {warning}
@@ -1634,7 +1634,7 @@ function EditBooking({
           type="button"
           onClick={() => void save()}
           disabled={errors.length > 0 || saving}
-          className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink"
+          className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand hover:text-brand-foreground disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink"
         >
           {saving && <Loader2 className="size-4 animate-spin" />}
           {wasConfirmed ? "Save changes" : "Save & confirm"}
@@ -1654,7 +1654,7 @@ function EditBooking({
 
 function NoArtistPill() {
   return (
-    <span className="rounded-full border border-brand/50 bg-card px-2.5 py-0.5 font-mono text-xs font-medium text-brand">
+    <span className="rounded-full border border-brand/50 bg-card px-2.5 py-0.5 font-mono text-xs font-medium text-brand-ink">
       No artist
     </span>
   );
@@ -1663,8 +1663,8 @@ function NoArtistPill() {
 function StatusPill({ status }: { status: BookingRequest["status"] }) {
   const map = {
     confirmed: "border-highlight/40 text-highlight",
-    awaiting_deposit: "border-brand/50 text-brand",
-    pending: "border-brand/50 text-brand",
+    awaiting_deposit: "border-brand/50 text-brand-ink",
+    pending: "border-brand/50 text-brand-ink",
     declined: "border-border text-muted-foreground",
   } as const;
   const labels = {
@@ -1838,7 +1838,7 @@ function SkillPicker({
         </span>
       </div>
       {uncovered.length > 0 && (
-        <p className="mt-2 flex gap-1.5 text-xs text-brand">
+        <p className="mt-2 flex gap-1.5 text-xs text-brand-ink">
           <AlertTriangle className="size-3.5 shrink-0" />
           Nobody on the team has {uncovered.join(", ")} yet, so this answer can&apos;t be matched to
           an artist. Add it to someone in Team.
@@ -1983,7 +1983,7 @@ function ServicesTab() {
                 <Link
                   to="/owner"
                   search={{ tab: "questions" }}
-                  className="min-h-10 text-sm text-brand underline"
+                  className="min-h-10 text-sm text-brand-ink underline"
                 >
                   Edit question rules
                 </Link>
@@ -2008,7 +2008,7 @@ function ServicesTab() {
                         <span>
                           {question.label} · {option.label}
                         </span>
-                        <span className="font-mono text-xs text-brand">
+                        <span className="font-mono text-xs text-brand-ink">
                           {describeOptionEffect(option, business.policies.currency)}
                         </span>
                       </li>
@@ -2135,7 +2135,7 @@ function QuestionsTab() {
         {service.questions.map((q, index) => (
           <div key={q.id} className="rounded-sm border border-border bg-card p-5">
             <div className="flex flex-wrap items-start gap-3">
-              <span className="mt-8 font-mono text-sm text-brand">
+              <span className="mt-8 font-mono text-sm text-brand-ink">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <div className="min-w-0 flex-1">
@@ -2339,7 +2339,7 @@ function QuestionsTab() {
                         {o.requiresReview ? "You check first" : "Confirms on its own"}
                       </button>
                     </div>
-                    <p className="mt-3 font-mono text-xs text-brand">
+                    <p className="mt-3 font-mono text-xs text-brand-ink">
                       Customer sees:{" "}
                       {describeOptionEffect(o, currency) || (
                         <span className="text-muted-foreground">No change</span>

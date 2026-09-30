@@ -162,7 +162,7 @@ export function OwnerCalendar({
                         toast.error("Google Calendar did not sync");
                       }
                     }}
-                    className="min-h-10 text-brand underline"
+                    className="min-h-10 text-brand-ink underline"
                   >
                     Retry sync
                   </button>

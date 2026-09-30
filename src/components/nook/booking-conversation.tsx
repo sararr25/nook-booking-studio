@@ -238,7 +238,7 @@ export function BookingConversation({
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           aria-controls="booking-conversation"
-          className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-foreground px-4 text-sm font-semibold text-foreground transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-foreground px-4 text-sm font-semibold text-foreground transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
         >
           {open ? (
             <X size={16} aria-hidden="true" />
@@ -285,7 +285,7 @@ export function BookingConversation({
                   type="button"
                   disabled={responding}
                   onClick={() => selectService(item, item.name)}
-                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-50"
+                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                 >
                   {item.name}
                 </button>
@@ -320,7 +320,7 @@ export function BookingConversation({
                   type="button"
                   disabled={responding}
                   onClick={() => sendAnswer(option.label)}
-                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-50"
+                  className="min-h-11 rounded-sm border border-border px-3 py-2 text-sm hover:border-foreground focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                 >
                   {option.label}
                 </button>
@@ -330,7 +330,7 @@ export function BookingConversation({
                   type="button"
                   disabled={responding}
                   onClick={() => sendAnswer("Skip")}
-                  className="min-h-11 rounded-sm px-3 py-2 text-sm underline focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-50"
+                  className="min-h-11 rounded-sm px-3 py-2 text-sm underline focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                 >
                   Skip
                 </button>
@@ -357,13 +357,13 @@ export function BookingConversation({
                   ? `Size in ${question.unit ?? "units"}`
                   : "Type your message"
               }
-              className="min-h-11 min-w-0 flex-1 rounded-sm border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-brand"
+              className="min-h-11 min-w-0 flex-1 rounded-sm border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-foreground"
             />
             <button
               type="submit"
               disabled={!draft.trim() || responding}
               aria-label="Send message"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-sm bg-foreground text-card disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-sm bg-foreground text-card disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
             >
               <Send size={17} aria-hidden="true" />
             </button>

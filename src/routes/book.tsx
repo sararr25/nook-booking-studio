@@ -358,14 +358,19 @@ function BookingFlow() {
                       <span className="flex w-full items-start justify-between gap-3">
                         <span className="block font-display text-xl font-semibold">{s.name}</span>
                         {serviceId === s.id && (
-                          <Check className="nook-pop size-4 shrink-0 text-brand" />
+                          <Check className="nook-pop size-4 shrink-0 text-brand-ink" />
                         )}
                       </span>
                       <span className="mt-2 flex-1">
                         <span className="mt-1 block text-sm text-muted-foreground">{s.blurb}</span>
                       </span>
                       <span className="mt-5 block shrink-0 text-sm">
-                        <span className="block font-mono font-medium tabular-nums">
+                        <span
+                          className={cn(
+                            "inline-block font-mono font-medium tabular-nums",
+                            serviceId === s.id && "nook-mark",
+                          )}
+                        >
                           {s.basePrice === 0
                             ? "Free"
                             : `from ${formatMoney(s.basePrice, business.policies.currency)}`}
@@ -509,14 +514,14 @@ function BookingFlow() {
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="min-h-11 text-sm text-brand underline"
+                      className="min-h-11 text-sm text-brand-ink underline"
                     >
                       Edit artist
                     </button>
                     <button
                       type="button"
                       onClick={() => setStep(3)}
-                      className="min-h-11 text-sm text-brand underline"
+                      className="min-h-11 text-sm text-brand-ink underline"
                     >
                       Edit date
                     </button>
@@ -548,7 +553,7 @@ function BookingFlow() {
                       autoComplete="name"
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Nadia Berg"
-                      className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
+                      className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-foreground"
                     />
                   </Field>
                   {attempted && !name.trim() && (
@@ -565,7 +570,7 @@ function BookingFlow() {
                       aria-invalid={attempted && !/^\S+@\S+\.\S+$/.test(contact.trim())}
                       onChange={(e) => setContact(e.target.value)}
                       placeholder="you@email.com"
-                      className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
+                      className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-foreground"
                     />
                   </Field>
                   {attempted && !/^\S+@\S+\.\S+$/.test(contact.trim()) && (
@@ -582,7 +587,7 @@ function BookingFlow() {
                       aria-invalid={attempted && phone.replace(/[^0-9]/g, "").length < 6}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+46 70 123 45 67"
-                      className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
+                      className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-foreground"
                     />
                   </Field>
                   {attempted && phone.replace(/[^0-9]/g, "").length < 6 && (
@@ -596,13 +601,13 @@ function BookingFlow() {
                       onChange={(e) => setNotes(e.target.value)}
                       rows={3}
                       placeholder="Allergies, timing, questions…"
-                      className="w-full rounded-sm border border-border bg-card p-3 text-sm outline-none focus:border-brand"
+                      className="w-full rounded-sm border border-border bg-card p-3 text-sm outline-none focus:border-foreground"
                     />
                   </Field>
 
                   {quote.requiresPhotos && (
                     <div className="flex items-start gap-3 rounded-sm border border-brand/40 bg-brand-soft/40 p-4 text-sm">
-                      <Camera className="mt-0.5 size-4 shrink-0 text-brand" />
+                      <Camera className="mt-0.5 size-4 shrink-0 text-brand-ink" />
                       <p>
                         Reference photos are required for this request. Add at least one
                         {service.id === "tattoo" ? " on the size step" : " above"}.
@@ -741,7 +746,7 @@ function NoMatchPicker({
               setDate(e.target.value);
               commit(e.target.value, timeOfDay);
             }}
-            className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-brand"
+            className="min-h-11 w-full rounded-sm border border-border bg-card px-3 text-sm outline-none focus:border-foreground"
           />
         </Field>
         <Field label="Preferred time">
@@ -808,7 +813,7 @@ function BookingHeader({ step, onBack }: { step: number; onBack: () => void }) {
             <span
               className={cn(
                 "absolute inset-y-0 left-0 bg-primary transition-[width] duration-500 ease-out",
-                index < step ? "w-full bg-brand" : index === step ? "w-full" : "w-0",
+                index < step ? "w-full" : index === step ? "w-full bg-brand" : "w-0",
               )}
             />
           </span>
@@ -835,7 +840,7 @@ function FlashPicker({
   return (
     <div className="mt-8">
       <div className="flex items-center gap-2">
-        <ImagePlus className="size-4 text-brand" />
+        <ImagePlus className="size-4 text-brand-ink" />
         <h2 className="font-semibold">Choose a flash design</h2>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -922,11 +927,13 @@ function QuestionBlock({
   return (
     <div>
       <div className="flex gap-3">
-        <span className="display mt-0.5 text-sm text-brand">{String(index).padStart(2, "0")}</span>
+        <span className="display mt-0.5 text-sm text-brand-ink">
+          {String(index).padStart(2, "0")}
+        </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold">
             <TypedQuestion text={question.label} />
-            {!question.optional && <span className="ml-1 text-brand">*</span>}
+            {!question.optional && <span className="ml-1 text-brand-ink">*</span>}
           </h2>
           {question.help && <p className="mt-1 text-sm text-muted-foreground">{question.help}</p>}
 
@@ -993,7 +1000,7 @@ function QuestionBlock({
                   aria-required={!question.optional}
                   aria-invalid={showTextHint && !answered}
                   className={cn(
-                    "w-full rounded-sm border bg-card p-3 text-sm outline-none focus:border-brand",
+                    "w-full rounded-sm border bg-card p-3 text-sm outline-none focus:border-foreground",
                     showTextHint && !answered && textValue.length > 0
                       ? "border-destructive/60"
                       : "border-border",
@@ -1050,7 +1057,7 @@ function QuestionBlock({
                         </span>
                       )}
                       {describeOptionEffect(option, currency) && (
-                        <span className="mt-1 block font-mono text-xs font-medium text-brand">
+                        <span className="mt-1 block font-mono text-xs font-medium text-brand-ink">
                           {describeOptionEffect(option, currency)}
                         </span>
                       )}
@@ -1350,7 +1357,7 @@ function Confirmation({
         <div className="mt-10 flex flex-wrap gap-3">
           <Link
             to="/"
-            className="inline-flex min-h-11 items-center rounded-sm bg-ink px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand"
+            className="inline-flex min-h-11 items-center rounded-sm bg-ink px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand hover:text-brand-foreground"
           >
             Back home
           </Link>
@@ -1392,7 +1399,7 @@ function ReferenceUpload({
         }}
         className="nook-lift group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed border-input bg-background text-center hover:border-foreground"
       >
-        <Upload className="size-6 transition-transform duration-300 group-hover:-translate-y-1 group-hover:text-brand" />
+        <Upload className="size-6 transition-transform duration-300 group-hover:-translate-y-1 group-hover:text-brand-ink" />
         <span className="mt-3 text-xs font-medium">Drag & drop your images here</span>
         <span className="mt-1 text-xs text-muted-foreground">
           or click to upload · JPG, PNG, WebP
@@ -1500,10 +1507,10 @@ function ArtistPicker({
                   <span className="block font-semibold">{member.name}</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">{member.role}</span>
                 </span>
-                {active && <Check className="nook-pop size-4 shrink-0 text-brand" />}
+                {active && <Check className="nook-pop size-4 shrink-0 text-brand-ink" />}
               </Button>
               {best && (
-                <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-brand">
+                <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-brand-ink">
                   <Star className="mt-0.5 size-3 shrink-0 fill-brand" aria-hidden="true" />
                   Closest match for this request
                 </p>
@@ -1516,7 +1523,7 @@ function ArtistPicker({
                   href={member.portfolioUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-1 self-start text-xs font-medium underline-offset-4 hover:text-brand hover:underline"
+                  className="mt-3 inline-flex items-center gap-1 self-start text-xs font-medium underline-offset-4 hover:text-brand-ink hover:underline"
                 >
                   See their work <ExternalLink className="size-3" />
                 </a>

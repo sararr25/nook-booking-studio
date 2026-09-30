@@ -34,7 +34,9 @@ export function BookingTicket({
       <div className="px-5 pb-5 pt-4">
         <p className="eyebrow">{heading}</p>
         <p className="mt-3 font-display text-xl font-semibold leading-tight">{title}</p>
-        <p className="nook-enter mt-2 font-mono text-2xl font-semibold tabular-nums">{price}</p>
+        <p className="nook-enter mt-2 font-mono text-2xl font-semibold tabular-nums">
+          <span className="nook-mark">{price}</span>
+        </p>
       </div>
       <dl className="nook-perforation grid gap-3 px-5 py-5 text-sm">
         {rows.map((row) => (
@@ -48,7 +50,10 @@ export function BookingTicket({
       </dl>
       <div className="nook-perforation px-5 py-4">
         <span
-          className={cn("nook-stamp", review || pendingDeposit ? "text-brand" : "text-highlight")}
+          className={cn(
+            "nook-stamp",
+            review || pendingDeposit ? "text-brand-ink" : "text-highlight",
+          )}
         >
           {review
             ? "To be confirmed by the studio"

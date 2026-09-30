@@ -283,7 +283,7 @@ export function PricingImport({
   return (
     <section className="border border-border bg-background p-5">
       <div className="flex items-start gap-3">
-        <FileSpreadsheet className="mt-1 size-5 text-brand" />
+        <FileSpreadsheet className="mt-1 size-5 text-brand-ink" />
         <div>
           <h2 className="font-display text-xl font-semibold">Import an existing price list</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -318,7 +318,7 @@ export function PricingImport({
           type="button"
           disabled={!sheetUrl || loading}
           onClick={() => void sheetImport()}
-          className="inline-flex min-h-11 items-center gap-2 bg-ink px-4 text-sm text-brand-foreground disabled:opacity-50"
+          className="inline-flex min-h-11 items-center gap-2 bg-ink px-4 text-sm text-primary-foreground disabled:opacity-50"
         >
           <Link2 className="size-4" /> Read Sheet
         </button>
@@ -439,7 +439,7 @@ export function PricingImport({
             type="button"
             disabled={!valid}
             onClick={apply}
-            className="mt-5 inline-flex min-h-11 items-center gap-2 bg-ink px-5 text-sm font-medium text-brand-foreground disabled:opacity-50"
+            className="mt-5 inline-flex min-h-11 items-center gap-2 bg-ink px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             <FileText className="size-4" /> Apply reviewed prices
           </button>

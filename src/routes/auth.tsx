@@ -181,7 +181,7 @@ function AuthField({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-12 w-full rounded-sm border border-border bg-card px-3 outline-none focus:border-brand"
+        className="min-h-12 w-full rounded-sm border border-border bg-card px-3 outline-none focus:border-foreground"
       />
     </label>
   );

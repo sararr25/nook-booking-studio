@@ -32,6 +32,7 @@
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
   --color-brand-foreground: var(--brand-foreground);
+  --color-brand-ink: var(--brand-ink);
   --color-highlight: var(--highlight);
   --color-highlight-soft: var(--highlight-soft);
   --color-ink: var(--ink);
@@ -74,32 +75,34 @@
 
 :root {
   --radius: 0.2rem;
-  --background: oklch(0.925 0.011 80);
-  --foreground: oklch(0.105 0.007 50);
-  --ink: oklch(0.105 0.007 50);
-  --sand: oklch(0.905 0.014 78);
-  --brand: oklch(0.46 0.155 38);
-  --brand-soft: oklch(0.91 0.052 48);
-  --brand-foreground: oklch(0.99 0.002 82);
+  --background: oklch(0.956 0.005 78);
+  --foreground: oklch(0.223 0.004 286);
+  --ink: oklch(0.223 0.004 286);
+  --sand: oklch(0.923 0.007 81);
+  --brand: oklch(0.831 0.104 50);
+  --brand-soft: oklch(0.934 0.038 53);
+  --brand-foreground: oklch(0.223 0.004 286);
+  /* Peach is a fill only; text in the accent uses --brand-ink. */
+  --brand-ink: oklch(0.503 0.119 45);
   --highlight: oklch(0.38 0.09 150);
   --highlight-soft: oklch(0.9 0.038 145);
-  --card: oklch(0.975 0.006 85);
-  --card-foreground: oklch(0.105 0.007 50);
-  --popover: oklch(0.975 0.006 85);
-  --popover-foreground: oklch(0.105 0.007 50);
-  --primary: oklch(0.105 0.007 50);
-  --primary-foreground: oklch(0.99 0.002 82);
-  --secondary: oklch(0.905 0.014 78);
-  --secondary-foreground: oklch(0.105 0.007 50);
-  --muted: oklch(0.905 0.014 78);
-  --muted-foreground: oklch(0.37 0.02 60);
-  --accent: oklch(0.905 0.014 78);
-  --accent-foreground: oklch(0.2 0.015 50);
+  --card: oklch(0.985 0.003 85);
+  --card-foreground: oklch(0.223 0.004 286);
+  --popover: oklch(0.985 0.003 85);
+  --popover-foreground: oklch(0.223 0.004 286);
+  --primary: oklch(0.223 0.004 286);
+  --primary-foreground: oklch(0.985 0.003 85);
+  --secondary: oklch(0.923 0.007 81);
+  --secondary-foreground: oklch(0.223 0.004 286);
+  --muted: oklch(0.923 0.007 81);
+  --muted-foreground: oklch(0.459 0.005 301);
+  --accent: oklch(0.923 0.007 81);
+  --accent-foreground: oklch(0.223 0.004 286);
   --destructive: oklch(0.545 0.178 27);
   --destructive-foreground: oklch(0.985 0.006 84);
-  --border: oklch(0.78 0.014 72);
-  --input: oklch(0.72 0.014 72);
-  --ring: oklch(0.46 0.155 38);
+  --border: oklch(0.859 0.008 81);
+  --input: oklch(0.64 0.01 80);
+  --ring: oklch(0.223 0.004 286);
   --chart-1: oklch(0.575 0.132 42);
   --chart-2: oklch(0.62 0.07 140);
   --chart-3: oklch(0.7 0.1 80);
@@ -115,7 +118,6 @@
   --sidebar-ring: oklch(0.575 0.132 42);
 }
 
-
 @layer base {
   * {
     border-color: var(--color-border);
@@ -129,7 +131,12 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
     line-height: 1.05;
@@ -163,49 +170,96 @@
 }
 
 @keyframes nook-enter {
-  from { opacity: 0; transform: translateY(0.5rem); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.nook-enter { animation: nook-enter 320ms cubic-bezier(0.2, 0, 0, 1) both; }
+.nook-enter {
+  animation: nook-enter 320ms cubic-bezier(0.2, 0, 0, 1) both;
+}
 
 @keyframes nook-rise {
-  from { opacity: 0; transform: translateY(0.75rem) scale(0.985); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes nook-pop {
-  0% { transform: scale(0.4); opacity: 0; }
-  70% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 @keyframes nook-underline {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
-.nook-stagger > * { animation: nook-rise 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.nook-stagger > *:nth-child(2) { animation-delay: 60ms; }
-.nook-stagger > *:nth-child(3) { animation-delay: 120ms; }
-.nook-stagger > *:nth-child(4) { animation-delay: 180ms; }
-.nook-stagger > *:nth-child(5) { animation-delay: 240ms; }
-.nook-stagger > *:nth-child(n + 6) { animation-delay: 300ms; }
+.nook-stagger > * {
+  animation: nook-rise 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.nook-stagger > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+.nook-stagger > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+.nook-stagger > *:nth-child(4) {
+  animation-delay: 180ms;
+}
+.nook-stagger > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+.nook-stagger > *:nth-child(n + 6) {
+  animation-delay: 300ms;
+}
 
 .nook-lift {
-  transition: transform 160ms cubic-bezier(0.2, 0, 0, 1), box-shadow 160ms ease, border-color 150ms ease, background-color 150ms ease;
+  transition:
+    transform 160ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 160ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
 }
 .nook-lift:hover {
   transform: translateY(-2px);
   box-shadow: 3px 4px 0 color-mix(in oklab, var(--foreground) 18%, transparent);
 }
-.nook-lift:active { transform: translateY(1px) scale(0.99); box-shadow: none; }
-.nook-pop { animation: nook-pop 320ms ease-out both; }
+.nook-lift:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: none;
+}
+.nook-pop {
+  animation: nook-pop 320ms ease-out both;
+}
 
 /*
  * Shape and elevation rules (keep consistent everywhere):
  * - Controls and surfaces use --radius (2px). Full round is only for avatars
  *   and small status/count badges.
  * - The only elevation is a hard offset "print" shadow. No soft blur shadows.
- * - Selected = ink border + shadow in the accent colour. No filled background.
+ * - Selected = ink border, peach offset shadow and corner brackets. No filled background.
  */
 .nook-choice {
   border-radius: var(--radius);
@@ -216,12 +270,53 @@
   border-color: var(--foreground);
   box-shadow: 4px 4px 0 color-mix(in oklab, var(--foreground) 26%, transparent);
 }
-.nook-choice:active { box-shadow: 1px 1px 0 color-mix(in oklab, var(--foreground) 24%, transparent); }
+.nook-choice:active {
+  box-shadow: 1px 1px 0 color-mix(in oklab, var(--foreground) 24%, transparent);
+}
 .nook-choice.nook-selected,
 .nook-selected {
+  position: relative;
   border-color: var(--foreground);
   background-color: var(--card);
   box-shadow: 3px 3px 0 var(--brand);
+}
+/* Signature: corner brackets frame the chosen option, a literal nook. */
+.nook-selected::before,
+.nook-selected::after {
+  content: "";
+  position: absolute;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 3px solid var(--foreground);
+  pointer-events: none;
+  animation: nook-bracket 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.nook-selected::before {
+  top: -6px;
+  left: -6px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.nook-selected::after {
+  bottom: -6px;
+  right: -6px;
+  border-left: 0;
+  border-top: 0;
+}
+@keyframes nook-bracket {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Peach highlighter behind a word or number. */
+.nook-mark {
+  background: linear-gradient(transparent 55%, var(--brand) 55%, var(--brand) 92%, transparent 92%);
+  padding-inline: 0.1em;
 }
 
 /* Booking ticket: a neutral receipt that summarises any booking. */
@@ -247,8 +342,14 @@
   border: 1px solid var(--foreground);
   background: var(--background);
 }
-.nook-perforation::before { left: -0.5rem; clip-path: inset(0 0 0 50%); }
-.nook-perforation::after { right: -0.5rem; clip-path: inset(0 50% 0 0); }
+.nook-perforation::before {
+  left: -0.5rem;
+  clip-path: inset(0 0 0 50%);
+}
+.nook-perforation::after {
+  right: -0.5rem;
+  clip-path: inset(0 50% 0 0);
+}
 .nook-stamp {
   display: inline-flex;
   align-items: center;
@@ -264,14 +365,19 @@
   transform: rotate(-2deg);
 }
 
-.nook-title { position: relative; padding-bottom: 0.75rem; }
-.nook-typed-question { display: inline; }
+.nook-title {
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+.nook-typed-question {
+  display: inline;
+}
 .nook-typing-caret {
   display: inline-block;
   width: 0.12em;
   height: 0.9em;
   margin-left: 0.12em;
-  background: var(--brand);
+  background: var(--brand-ink);
   vertical-align: -0.1em;
 }
 .nook-title::after {
@@ -280,16 +386,29 @@
   left: 0;
   bottom: 0;
   width: 3.5rem;
-  height: 2px;
+  height: 6px;
   background: var(--brand);
   transform-origin: left;
   animation: nook-underline 600ms 150ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
-  .nook-lift, .nook-lift:hover, .nook-lift:active { transform: none; }
-  .nook-typing-caret { display: none; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .nook-lift,
+  .nook-lift:hover,
+  .nook-lift:active {
+    transform: none;
+  }
+  .nook-typing-caret {
+    display: none;
+  }
 }
 
 @utility rule-grid {
