@@ -141,6 +141,7 @@ export type Database = {
       }
       flash_designs: {
         Row: {
+          archived_at: string | null
           artist_id: string | null
           available: boolean
           created_at: string
@@ -153,6 +154,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           artist_id?: string | null
           available?: boolean
           created_at?: string
@@ -165,6 +167,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           artist_id?: string | null
           available?: boolean
           created_at?: string

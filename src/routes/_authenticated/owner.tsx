@@ -383,7 +383,10 @@ const formatWhen = (date: string, time: string) =>
 
 function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
   const { business, requests } = useNook();
-  const flashQuery = useQuery({ queryKey: ["owner-flash"], queryFn: loadFlashDesigns });
+  const flashQuery = useQuery({
+    queryKey: ["owner-flash"],
+    queryFn: () => loadFlashDesigns(true),
+  });
   const fetchCalendar = useServerFn(getCalendarBusy);
   const calendar = useQuery({
     queryKey: ["owner-google-calendar"],
@@ -420,7 +423,8 @@ function OverviewTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
     },
     {
       title: "Flash designs",
-      count: flashQuery.data?.filter((design) => design.available).length ?? 0,
+      count:
+        flashQuery.data?.filter((design) => design.available && !design.archived_at).length ?? 0,
       detail: "Ready to book",
       tab: "Flash",
     },
@@ -602,10 +606,31 @@ function AvailabilityTab({ onOpen }: { onOpen: (tab: Tab) => void }) {
 
 function FlashTab() {
   const currency = useNook().business.policies.currency;
-  const designs = useQuery({ queryKey: ["owner-flash"], queryFn: loadFlashDesigns });
+  const designs = useQuery({
+    queryKey: ["owner-flash"],
+    queryFn: () => loadFlashDesigns(true),
+  });
+  const [archivingId, setArchivingId] = useState<string | null>(null);
   const unpublishedArtwork = studioFlashArtwork.filter(
     (artwork) => !designs.data?.some((design) => design.image_path === artwork.image_path),
   );
+  const archiveDesign = async (id: string) => {
+    setArchivingId(id);
+    const { data, error } = await supabase
+      .from("flash_designs")
+      .update({ archived_at: new Date().toISOString(), available: false })
+      .eq("id", id)
+      .is("archived_at", null)
+      .select("id")
+      .maybeSingle();
+    setArchivingId(null);
+    if (error || !data) {
+      toast.error(error?.message ?? "This flash could not be deleted. Reload and try again.");
+      return;
+    }
+    await designs.refetch();
+    toast.success("Flash deleted from the catalog");
+  };
   const upload = async (files: File[]) => {
     for (const file of files) {
       const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
@@ -672,90 +697,122 @@ function FlashTab() {
       {designs.data && <h2 className="mt-8 text-xl font-semibold">Flash book</h2>}
       <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
         {designs.isError && <p role="alert">Could not load flash designs. Reload to try again.</p>}
-        {designs.data?.map((design) => (
-          <article key={design.id} className="nook-choice overflow-hidden border border-border">
-            <img
-              src={design.imageUrl}
-              alt={design.title}
-              loading="lazy"
-              width={912}
-              height={1104}
-              className="aspect-[4/5] w-full object-cover"
-            />
-            <div className="border-t border-border p-3">
-              <h3 className="text-sm font-semibold">{design.title}</h3>
-              <p className="mt-1 font-mono text-xs text-muted-foreground">
-                {formatMoney(design.price, currency)}, {formatDuration(design.duration_minutes)}
-                {!design.available && " · Reserved"}
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <label className="text-xs">
-                  Base price ({currency})
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    defaultValue={design.price}
-                    onBlur={async (event) => {
-                      const price = Number(event.target.value);
-                      if (!Number.isFinite(price) || price <= 0) {
-                        toast.error("Enter a base price above zero");
-                        event.target.value = String(design.price);
-                        return;
-                      }
-                      if (price === design.price) return;
-                      const { error } = await supabase
-                        .from("flash_designs")
-                        .update({ price })
-                        .eq("id", design.id);
-                      if (error) {
-                        event.target.value = String(design.price);
-                        toast.error(error.message);
-                      } else {
-                        toast.success("Flash price saved");
-                        void designs.refetch();
-                      }
-                    }}
-                    className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
-                  />
-                </label>
-                <label className="text-xs">
-                  Minutes
-                  <input
-                    type="number"
-                    min="15"
-                    max="720"
-                    defaultValue={design.duration_minutes}
-                    onBlur={async (event) => {
-                      const duration_minutes = Number(event.target.value);
-                      if (
-                        !Number.isFinite(duration_minutes) ||
-                        duration_minutes < 15 ||
-                        duration_minutes > 720
-                      ) {
-                        event.target.value = String(design.duration_minutes);
-                        return;
-                      }
-                      if (duration_minutes === design.duration_minutes) return;
-                      const { error } = await supabase
-                        .from("flash_designs")
-                        .update({ duration_minutes })
-                        .eq("id", design.id);
-                      if (error) {
-                        event.target.value = String(design.duration_minutes);
-                        toast.error(error.message);
-                      } else {
-                        toast.success("Flash time saved");
-                        void designs.refetch();
-                      }
-                    }}
-                    className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
-                  />
-                </label>
+        {designs.data
+          ?.filter((design) => !design.archived_at)
+          .map((design) => (
+            <article key={design.id} className="nook-choice overflow-hidden border border-border">
+              <img
+                src={design.imageUrl}
+                alt={design.title}
+                loading="lazy"
+                width={912}
+                height={1104}
+                className="aspect-[4/5] w-full object-cover"
+              />
+              <div className="border-t border-border p-3">
+                <h3 className="text-sm font-semibold">{design.title}</h3>
+                <p className="mt-1 font-mono text-xs text-muted-foreground">
+                  {formatMoney(design.price, currency)}, {formatDuration(design.duration_minutes)}
+                  {!design.available && " · Reserved"}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <label className="text-xs">
+                    Base price ({currency})
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      defaultValue={design.price}
+                      onBlur={async (event) => {
+                        const price = Number(event.target.value);
+                        if (!Number.isFinite(price) || price <= 0) {
+                          toast.error("Enter a base price above zero");
+                          event.target.value = String(design.price);
+                          return;
+                        }
+                        if (price === design.price) return;
+                        const { error } = await supabase
+                          .from("flash_designs")
+                          .update({ price })
+                          .eq("id", design.id);
+                        if (error) {
+                          event.target.value = String(design.price);
+                          toast.error(error.message);
+                        } else {
+                          toast.success("Flash price saved");
+                          void designs.refetch();
+                        }
+                      }}
+                      className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    Minutes
+                    <input
+                      type="number"
+                      min="15"
+                      max="720"
+                      defaultValue={design.duration_minutes}
+                      onBlur={async (event) => {
+                        const duration_minutes = Number(event.target.value);
+                        if (
+                          !Number.isFinite(duration_minutes) ||
+                          duration_minutes < 15 ||
+                          duration_minutes > 720
+                        ) {
+                          event.target.value = String(design.duration_minutes);
+                          return;
+                        }
+                        if (duration_minutes === design.duration_minutes) return;
+                        const { error } = await supabase
+                          .from("flash_designs")
+                          .update({ duration_minutes })
+                          .eq("id", design.id);
+                        if (error) {
+                          event.target.value = String(design.duration_minutes);
+                          toast.error(error.message);
+                        } else {
+                          toast.success("Flash time saved");
+                          void designs.refetch();
+                        }
+                      }}
+                      className="mt-1 min-h-10 w-full border border-border bg-card px-2 text-sm"
+                    />
+                  </label>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={archivingId === design.id}
+                      className="mt-3 inline-flex min-h-10 items-center gap-2 text-xs text-destructive underline-offset-4 hover:underline disabled:opacity-50"
+                    >
+                      <Trash2 className="size-3.5" aria-hidden="true" />
+                      Delete flash
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {design.title}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This removes the design from the flash book and future bookings. Existing
+                        booking records stay intact.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep design</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => void archiveDesign(design.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete flash
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          ))}
       </div>
     </div>
   );

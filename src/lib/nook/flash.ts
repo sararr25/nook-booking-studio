@@ -46,14 +46,17 @@ export type FlashDesign = {
   price: number;
   duration_minutes: number;
   available: boolean;
+  archived_at: string | null;
   imageUrl: string;
 };
 
-export async function loadFlashDesigns(): Promise<FlashDesign[]> {
-  const { data, error } = await supabase
+export async function loadFlashDesigns(includeArchived = false): Promise<FlashDesign[]> {
+  let query = supabase
     .from("flash_designs")
-    .select("id,title,description,image_path,price,duration_minutes,available")
+    .select("id,title,description,image_path,price,duration_minutes,available,archived_at")
     .order("created_at");
+  if (!includeArchived) query = query.is("archived_at", null);
+  const { data, error } = await query;
   if (error) throw error;
   return Promise.all(
     (data ?? []).map(async (design) => {

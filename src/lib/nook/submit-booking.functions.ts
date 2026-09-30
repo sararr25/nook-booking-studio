@@ -51,10 +51,11 @@ export const submitBooking = createServerFn({ method: "POST" })
       if (!data.flashDesignId) throw new Error("Choose a flash design");
       const { data: flash, error: flashError } = await supabaseAdmin
         .from("flash_designs")
-        .select("price,duration_minutes,available")
+        .select("price,duration_minutes,available,archived_at")
         .eq("id", data.flashDesignId)
         .maybeSingle();
-      if (flashError || !flash?.available) throw new Error("Flash design is no longer available");
+      if (flashError || !flash?.available || flash.archived_at)
+        throw new Error("Flash design is no longer available");
       pricedService = { ...service, basePrice: flash.price, baseDuration: flash.duration_minutes };
     }
     const quote = buildQuote(business, pricedService, data.answers);

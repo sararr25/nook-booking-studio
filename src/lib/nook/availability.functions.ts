@@ -33,10 +33,11 @@ export const getAvailableSlots = createServerFn({ method: "POST" })
       if (!data.flashId) return { connected: true, days: {} };
       const { data: flash, error: flashError } = await supabaseAdmin
         .from("flash_designs")
-        .select("price,duration_minutes,available")
+        .select("price,duration_minutes,available,archived_at")
         .eq("id", data.flashId)
         .maybeSingle();
-      if (flashError || !flash?.available) return { connected: true, days: {} };
+      if (flashError || !flash?.available || flash.archived_at)
+        return { connected: true, days: {} };
       pricedService = { ...service, basePrice: flash.price, baseDuration: flash.duration_minutes };
     }
     const quote = buildQuote(business, pricedService, data.answers);

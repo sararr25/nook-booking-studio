@@ -2,6 +2,12 @@
 
 Last verified: 30 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`.
 
+## Owner flash deletion (30 September 2026)
+
+The Flash tab now has a confirmed **Delete flash** action for each published design. It archives the catalog row and hides the design from owner and customer flash lists while retaining historical booking references and the uploaded image. Bundled artwork that was published and then deleted stays out of the unpublished queue. Availability checks and booking submission reject archived designs, and booking status changes cannot make them available again.
+
+Migration `20260930153000_archive_flash_designs.sql` was applied to Lovable Cloud before this code release. A read-only database query confirmed the archive column, availability constraint, public catalog policy, and image policy are present. No live design or booking was deleted during validation.
+
 ## New Stillroom flash artwork (30 September 2026)
 
 All ten supplied designs in `assets/tatto1.png` through `tatto10.png` are available in the owner's Flash tab as unpublished artwork. The owner chooses each design's name, base price, and sitting length before publishing it to the existing `flash_designs` catalog. Published prices can also be edited later, including on reserved designs. Customer selection and quotes continue to read the saved catalog price. No SQL migration is needed for this change.

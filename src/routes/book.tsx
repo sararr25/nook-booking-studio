@@ -96,7 +96,7 @@ function BookingFlow() {
   const [flashDesignId, setFlashDesignId] = useState<string | undefined>();
   const flashQuery = useQuery({
     queryKey: ["booking-flash"],
-    queryFn: loadFlashDesigns,
+    queryFn: () => loadFlashDesigns(),
     enabled: serviceId === "flash",
   });
   const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
