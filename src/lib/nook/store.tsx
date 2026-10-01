@@ -33,6 +33,8 @@ type StoreValue = {
   retrySave: () => void;
   updateBusiness: (updater: (draft: BusinessConfig) => BusinessConfig) => void;
   addRequest: (request: BookingRequest) => void;
+  /** Permanently deletes every cancelled or declined booking. Resolves to how many were removed. */
+  deleteCancelledNow: () => Promise<number | null>;
   /** Resolves to true once the database has the change. */
   setRequestStatus: (
     id: string,
@@ -74,6 +76,7 @@ const toRequest = (row: RequestRow): BookingRequest => {
   return {
     id: row.id,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
     customerName: row.customer_name,
     contact: row.contact,
     phone: row.phone,
@@ -177,8 +180,6 @@ export function NookProvider({
     };
   }, [includeBookings, loaded, loadError]);
 
-
-
   // Owner edits are saved to the database shortly after the last change.
   useEffect(() => {
     if (!loaded || !dirty.current) return;
@@ -229,7 +230,7 @@ export function NookProvider({
       setRequests((prev) =>
         prev.map((r) => {
           if (r.id !== id) return r;
-          return { ...r, ...patch };
+          return { ...r, ...patch, updatedAt: new Date().toISOString() };
         }),
       );
       const { error } = await supabase
@@ -276,6 +277,52 @@ export function NookProvider({
     [requests, syncCalendar],
   );
 
+  // Retention: cancelled bookings go after 15 days, past ones after 100 (see purge_expired_bookings).
+  useEffect(() => {
+    if (!includeBookings || !loaded || loadError) return;
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase.rpc("purge_expired_bookings" as never);
+      if (cancelled) return;
+      if (error) {
+        toast.error(`Could not clean up old bookings: ${error.message}`);
+        return;
+      }
+      const removed = data as unknown as { cancelled?: number; past?: number } | null;
+      if (!removed || (removed.cancelled ?? 0) + (removed.past ?? 0) === 0) return;
+      const { data: fresh, error: refreshError } = await supabase
+        .from("booking_requests")
+        .select("*")
+        .order("appointment_date");
+      if (cancelled) return;
+      if (refreshError || !fresh) {
+        toast.error(
+          "Old bookings were removed, but the list could not be refreshed. Reload the page.",
+        );
+        return;
+      }
+      setRequests(fresh.map(toRequest));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [includeBookings, loaded, loadError]);
+
+  const deleteCancelledNow = useCallback(async (): Promise<number | null> => {
+    const { data, error } = await supabase
+      .from("booking_requests")
+      .delete()
+      .eq("status", "declined")
+      .select("id");
+    if (error) {
+      toast.error(`Could not delete the cancelled bookings: ${error.message}`);
+      return null;
+    }
+    const removed = new Set(data.map((row) => row.id));
+    setRequests((prev) => prev.filter((request) => !removed.has(request.id)));
+    return removed.size;
+  }, []);
+
   const setRequestStatus = useCallback(
     (id: string, status: BookingRequest["status"], reason?: string) =>
       updateRequest(id, { status }, reason),
@@ -297,6 +344,7 @@ export function NookProvider({
       retrySave,
       updateBusiness,
       addRequest,
+      deleteCancelledNow,
       setRequestStatus,
       updateRequest,
       resetAll,
@@ -310,6 +358,7 @@ export function NookProvider({
       retrySave,
       updateBusiness,
       addRequest,
+      deleteCancelledNow,
       setRequestStatus,
       updateRequest,
       resetAll,

@@ -2,6 +2,14 @@
 
 Last verified: 30 September 2026. The connected GitHub repository is `sararr25/nook-booking-studio`, branch `main`.
 
+## Demo owner account and booking retention (1 October 2026)
+
+The challenge demo account `demo.ai.tester@gmail.com` can open `/owner`. Migration `20261001100000_owner_email_allowlist.sql` adds an `owner_emails` allowlist and a trigger that grants the owner role once that address is confirmed (and promotes the account if it already exists). The password is not stored in the repository.
+
+The Bookings tab now folds old bookings into two collapsed groups below the live list. Cancelled or declined bookings are removed 15 days after they were cancelled, with a **Delete all now** button. Past bookings are removed 100 days after the appointment, and **Download Excel** saves them as an `.xlsx` first. Migration `20261001101000_booking_retention_and_demo_data.sql` adds `purge_expired_bookings()` and 15 demo bookings (10 past, 5 cancelled). The owner panel calls the function when it opens, so cleanup only happens while an owner opens the panel; nothing is scheduled in the database. Apply both migrations to Lovable Cloud (SQL editor) before using this code: until then the panel shows a "Could not clean up old bookings" error toast. Files in `booking-references` that belong to a removed booking are not deleted.
+
+Verified locally: TypeScript, lint and production build pass; the new folded lists, countdown labels, Excel download (read back with `read-excel-file`) and delete confirmation work against fake data. The migrations and the demo sign-in were not run against the real database.
+
 ## Customer booking feedback (30 September 2026)
 
 Flash cards on `/book` now fit the whole artwork inside their frames instead of cropping it. The booking ticket distinguishes requests that need studio review from standard requests that confirm immediately once their deposit is paid. Payment status and confirmation rules in the actual booking flow remain separate from this short ticket label.

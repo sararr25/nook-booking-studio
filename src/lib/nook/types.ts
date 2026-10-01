@@ -108,6 +108,8 @@ export type Quote = {
 export type BookingRequest = {
   id: string;
   createdAt: string;
+  /** Last change, which for a cancelled booking is when it was cancelled. */
+  updatedAt?: string;
   customerName: string;
   /** Customer email. */
   contact: string;

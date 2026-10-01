@@ -39,6 +39,7 @@ import { loadFlashDesigns, studioFlashArtwork } from "@/lib/nook/flash";
 import { getCalendarBusy } from "@/lib/nook/booking-emails.functions";
 import { OwnerCalendar } from "@/components/nook/owner-calendar";
 import { OwnerAddBooking } from "@/components/nook/owner-add-booking";
+import { OwnerArchive } from "@/components/nook/owner-archive";
 import { PricingImport } from "@/components/nook/pricing-import";
 import { Button } from "@/components/ui/button";
 import {
@@ -928,7 +929,6 @@ const statusGroups: { status: BookingRequest["status"]; title: string; empty: st
   { status: "pending", title: "Needs your review", empty: "Nothing waiting for review." },
   { status: "awaiting_deposit", title: "Pending — awaiting deposit", empty: "No deposits due." },
   { status: "confirmed", title: "Confirmed", empty: "No confirmed bookings yet." },
-  { status: "declined", title: "Declined or cancelled", empty: "" },
 ];
 
 /** Patch where `undefined` removes the key, so optional fields can be cleared. */
@@ -954,7 +954,7 @@ const dangerButton =
   "inline-flex min-h-10 items-center gap-2 rounded-sm px-3 text-sm text-muted-foreground transition-colors hover:text-destructive";
 
 function RequestsTab() {
-  const { business, requests, setRequestStatus, updateRequest } = useNook();
+  const { business, requests, setRequestStatus, updateRequest, deleteCancelledNow } = useNook();
   const [view, setView] = useState<"list" | "calendar">("list");
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<"all" | "upcoming" | "history">("all");
@@ -970,6 +970,18 @@ function RequestsTab() {
   const [decision, setDecision] = useState<{ id: string; kind: "decline" | "cancel" } | null>(null);
   const [decisionReason, setDecisionReason] = useState("");
   const currency = business.policies.currency;
+  const today = todayKey();
+  const matchesSearch = (r: BookingRequest) =>
+    `${r.customerName} ${r.contact} ${r.serviceId} ${r.date} ${r.memberId}`
+      .toLowerCase()
+      .includes(search.toLowerCase().trim());
+  // Finished and cancelled bookings live in folded groups below the live ones.
+  const past = requests
+    .filter((r) => r.status !== "declined" && r.date < today)
+    .filter(matchesSearch);
+  const cancelled = requests.filter((r) => r.status === "declined").filter(matchesSearch);
+
+  const visibleGroups = scope === "history" ? [] : statusGroups;
 
   if (view === "calendar")
     return (
@@ -1045,23 +1057,11 @@ function RequestsTab() {
           </select>
         </label>
       </div>
-      {statusGroups.map((group) => {
+      {visibleGroups.map((group) => {
         const items = requests
-          .filter((r) => r.status === group.status)
-          .filter(
-            (r) =>
-              scope === "all" ||
-              (scope === "upcoming"
-                ? r.date >= todayKey() && r.status !== "declined"
-                : r.date < todayKey() || r.status === "declined"),
-          )
-          .filter((r) =>
-            `${r.customerName} ${r.contact} ${r.serviceId} ${r.date} ${r.memberId}`
-              .toLowerCase()
-              .includes(search.toLowerCase().trim()),
-          )
+          .filter((r) => r.status === group.status && r.date >= today)
+          .filter(matchesSearch)
           .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-        if (items.length === 0 && !group.empty) return null;
         return (
           <section key={group.status}>
             <h2 className="flex items-baseline gap-2 font-display text-xl font-semibold">
@@ -1301,6 +1301,15 @@ function RequestsTab() {
           </section>
         );
       })}
+      {scope !== "upcoming" && (
+        <OwnerArchive
+          business={business}
+          past={past}
+          cancelled={cancelled}
+          onBackToReview={(id) => void setRequestStatus(id, "pending")}
+          onDeleteCancelled={deleteCancelledNow}
+        />
+      )}
       <AlertDialog
         open={Boolean(decision)}
         onOpenChange={(open) => {
