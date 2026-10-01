@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -54,14 +55,16 @@ export function BookingTicket({
         <span
           className={cn(
             "nook-stamp",
-            review || pendingDeposit ? "text-brand-ink" : "text-highlight",
+            // Green reassures: the slot is confirmed automatically. Only manual review stays in ink.
+            review ? "text-brand-ink" : "text-emerald-700 dark:text-emerald-400",
           )}
         >
+          {!review && <Check className="size-3.5" strokeWidth={2.5} aria-hidden="true" />}
           {review
-            ? "To be confirmed by the studio"
+            ? "Studio confirms it"
             : pendingDeposit
-              ? "Instant confirmation after deposit"
-              : "Instant confirmation"}
+              ? "Confirmed on deposit"
+              : "Confirmed instantly"}
         </span>
         {note && <p className="mt-3 text-xs text-muted-foreground">{note}</p>}
       </div>

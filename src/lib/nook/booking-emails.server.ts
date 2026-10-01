@@ -3,8 +3,20 @@ import type { BookingEmailKind } from "@/lib/email-templates/booking-update";
 import { currentStudioName } from "@/lib/nook/studio-brand";
 import { getRequest } from "@tanstack/react-start/server";
 
-type QuoteShape = { low?: number; high?: number; deposit?: number };
-type ConfigShape = { name?: string; policies?: { currency?: string; depositDueHours?: number } };
+type QuoteShape = { low?: number; high?: number; deposit?: number; duration?: number };
+type ConfigShape = {
+  name?: string;
+  location?: string;
+  services?: { id: string; name: string }[];
+  team?: { id: string; name: string }[];
+  policies?: { currency?: string; depositDueHours?: number };
+};
+
+const formatDuration = (minutes: number) => {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return [hours ? `${hours} hr` : "", rest ? `${rest} min` : ""].filter(Boolean).join(" ");
+};
 
 const money = (value: number, currency: string) =>
   new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 0 }).format(
@@ -50,7 +62,11 @@ export async function sendBookingEmail(
         customerName: booking.customer_name,
         date: booking.appointment_date,
         time: booking.appointment_time.slice(0, 5),
-        priceRange: high > 0 ? `${money(low, currency)} to ${money(high, currency)}` : "Free",
+        priceRange: high > 0 ? `${money(low, currency)}–${money(high, currency)}` : "Free",
+        serviceName: config.services?.find((item) => item.id === booking.service_id)?.name ?? "",
+        artistName: config.team?.find((member) => member.id === booking.member_id)?.name ?? "",
+        duration: quote.duration ? formatDuration(quote.duration) : "",
+        location: config.location ?? "",
         deposit: deposit > 0 ? money(deposit, currency) : "",
         depositDueHours: config.policies?.depositDueHours ?? 24,
         pendingDeposit,

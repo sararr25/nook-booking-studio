@@ -1,6 +1,19 @@
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_calendar/calendar/v3";
 export const STUDIO_TIME_ZONE = "Europe/Stockholm";
 
+/**
+ * Which Google calendar holds the studio's appointments. Set GOOGLE_CALENDAR_ID to a
+ * dedicated calendar's id (Google Calendar → calendar settings → "Calendar ID") to keep
+ * Nook bookings apart from personal events; defaults to the account's primary calendar.
+ */
+function calendarId() {
+  return process.env["GOOGLE_CALENDAR_ID"]?.trim() || "primary";
+}
+
+function calendarPath() {
+  return `/calendars/${encodeURIComponent(calendarId())}`;
+}
+
 export type BusyBlock = { date: string; start: number; end: number };
 
 function headers() {
@@ -48,26 +61,25 @@ function toStudioLocal(iso: string): { date: string; minutes: number } {
   };
 }
 
-/** Busy times in the studio's primary calendar, split per local day. */
+/** Busy times in the studio's calendar, split per local day. */
 export async function fetchBusyBlocks(timeMin: string, timeMax: string): Promise<BusyBlock[]> {
   const result = (await call("/freeBusy", {
     timeMin,
     timeMax,
     timeZone: STUDIO_TIME_ZONE,
-    items: [{ id: "primary" }],
+    items: [{ id: calendarId() }],
   })) as {
-    calendars?: {
-      primary?: {
-        busy?: { start: string; end: string }[];
-        errors?: { reason?: string }[];
-      };
-    };
+    calendars?: Record<
+      string,
+      { busy?: { start: string; end: string }[]; errors?: { reason?: string }[] }
+    >;
   };
-  if (!result.calendars?.primary || result.calendars.primary.errors?.length) {
+  const calendar = result.calendars?.[calendarId()];
+  if (!calendar || calendar.errors?.length) {
     throw new Error("Google Calendar availability could not be verified");
   }
   const blocks: BusyBlock[] = [];
-  for (const busy of result.calendars?.primary?.busy ?? []) {
+  for (const busy of calendar.busy ?? []) {
     let cursor = new Date(busy.start);
     const end = new Date(busy.end);
     // Walk day by day so multi-day events block every day they cover.
@@ -86,7 +98,7 @@ export async function fetchBusyBlocks(timeMin: string, timeMax: string): Promise
   return blocks;
 }
 
-/** Adds a confirmed appointment to the studio's primary calendar. */
+/** Adds a confirmed appointment to the studio's calendar. */
 export async function createAppointmentEvent(input: {
   bookingId: string;
   summary: string;
@@ -105,7 +117,7 @@ export async function createAppointmentEvent(input: {
   // A deterministic event id makes repeat calls harmless (Google rejects duplicates).
   const eventId = `nook${input.bookingId.replace(/-/g, "")}`;
   try {
-    await call("/calendars/primary/events", {
+    await call(`${calendarPath()}/events`, {
       id: eventId,
       summary: input.summary,
       description: input.description,
@@ -131,7 +143,7 @@ export async function updateAppointmentEvent(input: Parameters<typeof createAppo
   const eventId = `nook${input.bookingId.replace(/-/g, "")}`;
   try {
     await call(
-      `/calendars/primary/events/${eventId}`,
+      `${calendarPath()}/events/${eventId}`,
       {
         summary: input.summary,
         description: input.description,
@@ -155,7 +167,7 @@ export async function updateAppointmentEvent(input: Parameters<typeof createAppo
 export async function deleteAppointmentEvent(bookingId: string) {
   const eventId = `nook${bookingId.replace(/-/g, "")}`;
   try {
-    await call(`/calendars/primary/events/${eventId}`, undefined, "DELETE");
+    await call(`${calendarPath()}/events/${eventId}`, undefined, "DELETE");
   } catch (error) {
     if (error instanceof Error && error.message.includes("[404]")) return;
     throw error;

@@ -125,14 +125,18 @@ function BookingFlow() {
       : service;
   const quote = pricedService ? buildQuote(business, pricedService, answers) : null;
   const needsReview = Boolean(quote?.requiresReview || quote?.eligibleTeam.length === 0);
+  // "auto" still means the recommended artist, so the times shown are theirs and the
+  // summary never switches to someone else once a slot is picked.
+  const slotArtistId =
+    artistChoice !== "auto" ? artistChoice : quote ? recommendArtist(quote)?.member.id : undefined;
   const slotsQuery = useQuery({
-    queryKey: ["available-slots", serviceId, answers, artistChoice, flashDesignId],
+    queryKey: ["available-slots", serviceId, answers, slotArtistId, flashDesignId],
     queryFn: () =>
       fetchAvailable({
         data: {
           serviceId,
           answers,
-          ...(artistChoice !== "auto" ? { artistId: artistChoice } : {}),
+          ...(slotArtistId ? { artistId: slotArtistId } : {}),
           ...(flashDesignId ? { flashId: flashDesignId } : {}),
         },
       }),
