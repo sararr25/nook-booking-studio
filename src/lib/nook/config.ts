@@ -1,6 +1,7 @@
 import type { BusinessConfig } from "./types";
+import { addCustomPlacement } from "./placement";
 
-export const defaultBusiness: BusinessConfig = {
+const baseBusiness: BusinessConfig = {
   id: "stillroom-tattoo",
   name: "Stillroom Tattoo",
   archetype: "Tattoo studio",
@@ -250,6 +251,9 @@ export const defaultBusiness: BusinessConfig = {
     },
   ],
 };
+
+/** The default setup already includes the extra body parts and the custom placement. */
+export const defaultBusiness = addCustomPlacement(baseBusiness);
 
 /**
  * Illustrative rules for the landing-page demo. They show how the same engine

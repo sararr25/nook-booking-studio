@@ -26,6 +26,7 @@ export const submitBooking = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { defaultBusiness } = await import("./config");
+    const { addCustomPlacement } = await import("./placement");
     const { buildQuote, visibleQuestions, isAnswered, slotsForDay, dateKey } =
       await import("./engine");
     const { fetchBusyBlocks } = await import("./google-calendar.server");
@@ -35,7 +36,7 @@ export const submitBooking = createServerFn({ method: "POST" })
       .eq("id", "main")
       .maybeSingle();
     if (settingsError) throw new Error("Could not load studio settings");
-    const business = (settings?.config ?? defaultBusiness) as BusinessConfig;
+    const business = addCustomPlacement((settings?.config ?? defaultBusiness) as BusinessConfig);
     const service = business.services.find((item) => item.id === data.serviceId);
     if (!service) throw new Error("Service is no longer available");
     if (
