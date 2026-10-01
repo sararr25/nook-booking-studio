@@ -640,7 +640,7 @@ function BookingFlow() {
                 <p className="truncate font-mono text-sm font-semibold tabular-nums">
                   {service.basePrice === 0
                     ? "Free consultation"
-                    : `${formatMoney(quote.low, business.policies.currency)}-${formatMoney(quote.high, business.policies.currency)}`}
+                    : `${formatMoney(quote.low, business.policies.currency)}–${formatMoney(quote.high, business.policies.currency)}`}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {formatDuration(quote.duration)}
@@ -652,7 +652,7 @@ function BookingFlow() {
                 </p>
               </div>
               {blockedReason && (
-                <p className="mt-1 truncate text-xs font-medium text-destructive">
+                <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
                   {blockedReason}
                 </p>
               )}
@@ -1093,7 +1093,7 @@ function QuoteStep({
         ) : (
           <>
             {formatMoney(quote.low, currency)}
-            <span className="text-muted-foreground"> - </span>
+            <span className="text-muted-foreground">–</span>
             {formatMoney(quote.high, currency)}
           </>
         )}
@@ -1234,7 +1234,7 @@ function SummaryPanel({
       price={
         quote.high === 0
           ? "Free"
-          : `${formatMoney(quote.low, currency)}-${formatMoney(quote.high, currency)}`
+          : `${formatMoney(quote.low, currency)}–${formatMoney(quote.high, currency)}`
       }
       rows={rows}
       review={quote.requiresReview || quote.eligibleTeam.length === 0}
@@ -1429,7 +1429,7 @@ function ReferenceUpload({
             </button>
           </div>
         ))}
-        {files.length < 5 && (
+        {files.length > 0 && files.length < 5 && (
           <label className="flex aspect-square cursor-pointer items-center justify-center rounded-sm border border-dashed border-input transition-colors hover:border-foreground">
             <Plus className="size-5" />
             <span className="sr-only">Add another picture</span>

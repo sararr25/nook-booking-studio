@@ -107,7 +107,7 @@ function OwnerAuth() {
             <ArrowLeft className="size-4" />
             Back to the studio site
           </Link>
-          <Wordmark className="mt-6 block lg:hidden" />
+          <Wordmark className="mt-6 flex w-fit lg:hidden" />
           <p className="eyebrow mt-12 lg:mt-10">Owner access</p>
           <h2 className="display mt-3 text-3xl">
             {mode === "signin" ? "Welcome back" : "Create your studio account"}
@@ -148,12 +148,13 @@ function OwnerAuth() {
           </Button>
           <button
             type="button"
-            className="mt-6 w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
+            className="group mt-6 w-full text-sm text-muted-foreground"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           >
-            {mode === "signin"
-              ? "First time here? Create the owner account"
-              : "Already have an account? Sign in"}
+            {mode === "signin" ? "First time here? " : "Already have an account? "}
+            <span className="font-medium text-foreground underline underline-offset-4 group-hover:text-brand-ink">
+              {mode === "signin" ? "Create the owner account" : "Sign in"}
+            </span>
           </button>
         </div>
       </section>

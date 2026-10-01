@@ -508,6 +508,10 @@
   .studio-visit-image {
     height: 460px;
   }
+  /* Stacked: align the copy with the page gutter used by every other section. */
+  .studio-visit-copy {
+    padding: clamp(4rem, 9vw, 6rem) clamp(1.25rem, 5vw, 5rem);
+  }
 }
 @media (max-width: 600px) {
   .studio-wordmark {
