@@ -30,14 +30,14 @@ export const getAvailableSlots = createServerFn({ method: "POST" })
     if (!service) throw new Error("Service unavailable");
     let pricedService = service;
     if (service.id === "flash") {
-      if (!data.flashId) return { connected: true, days: {} };
+      if (!data.flashId) return { connected: true, days: {}, capacity: {} };
       const { data: flash, error: flashError } = await supabaseAdmin
         .from("flash_designs")
         .select("price,duration_minutes,available,archived_at")
         .eq("id", data.flashId)
         .maybeSingle();
       if (flashError || !flash?.available || flash.archived_at)
-        return { connected: true, days: {} };
+        return { connected: true, days: {}, capacity: {} };
       pricedService = { ...service, basePrice: flash.price, baseDuration: flash.duration_minutes };
     }
     const quote = buildQuote(business, pricedService, data.answers);
@@ -63,14 +63,19 @@ export const getAvailableSlots = createServerFn({ method: "POST" })
     try {
       const blocked = await fetchBusyBlocks(today.toISOString(), until.toISOString());
       const days: Record<string, { time: string; memberId: string; memberName: string }[]> = {};
+      // Open slots on an empty diary: lets the calendar tell "fully booked" from "closed"
+      // and show how full a day is, without exposing who booked what.
+      const capacity: Record<string, number> = {};
       for (let offset = 0; offset <= horizon; offset += 1) {
         const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
         const slots = slotsForDay(business, team, quote.duration, day, booked, blocked);
         if (slots.length > 0) days[dateKey(day)] = slots;
+        const total = slotsForDay(business, team, quote.duration, day, [], []).length;
+        if (total > 0) capacity[dateKey(day)] = total;
       }
-      return { connected: true, days };
+      return { connected: true, days, capacity };
     } catch (error) {
       console.error("Availability check failed", error instanceof Error ? error.message : error);
-      return { connected: false, days: {} };
+      return { connected: false, days: {}, capacity: {} };
     }
   });

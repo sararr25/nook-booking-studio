@@ -493,6 +493,7 @@ function BookingFlow() {
                     <MonthCalendar
                       key={`${artistChoice}:${serviceId}:${flashDesignId ?? ""}:${quote.duration}`}
                       availableDays={slotsQuery.data.days}
+                      capacity={slotsQuery.data.capacity}
                       selected={selected}
                       onSelect={setSelected}
                     />
