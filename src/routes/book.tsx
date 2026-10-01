@@ -1138,9 +1138,9 @@ function QuoteStep({
             <ul className="mt-3 space-y-2">
               {quote.eligibleTeam.map((m) => (
                 <li key={m.id} className="flex items-center gap-2.5 text-sm">
-                  {artistImage(m.id) ? (
+                  {artistImage(m) ? (
                     <img
-                      src={artistImage(m.id)}
+                      src={artistImage(m)}
                       alt=""
                       loading="lazy"
                       width={816}
@@ -1493,9 +1493,9 @@ function ArtistPicker({
                 className="flex h-auto w-full items-start justify-start gap-3 whitespace-normal p-0 text-left hover:bg-transparent"
                 aria-pressed={active}
               >
-                {artistImage(member.id) ? (
+                {artistImage(member) ? (
                   <img
-                    src={artistImage(member.id)}
+                    src={artistImage(member)}
                     alt={`Portrait of ${member.name}`}
                     loading="lazy"
                     width={816}

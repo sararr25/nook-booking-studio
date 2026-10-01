@@ -26,13 +26,14 @@ import {
   Tag,
   Trash2,
   X,
+  Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { NookProvider, useNook, type SaveState } from "@/lib/nook/store";
 import { buildQuote, describeOptionEffect, formatDuration, formatMoney } from "@/lib/nook/engine";
 import type { BookingRequest, BusinessConfig, TeamMember } from "@/lib/nook/types";
-import { artistImage } from "@/lib/nook/artist-images";
+import { artistImage, toAvatarDataUrl } from "@/lib/nook/artist-images";
 import { supabase } from "@/integrations/supabase/client";
 import { loadFlashDesigns, studioFlashArtwork } from "@/lib/nook/flash";
 import { getCalendarBusy } from "@/lib/nook/booking-emails.functions";
@@ -2422,20 +2423,47 @@ function TeamTab() {
       {business.team.map((m) => (
         <div key={m.id} className="rounded-sm border border-border bg-card p-5">
           <div className="flex flex-wrap items-start gap-4">
-            {artistImage(m.id) ? (
-              <img
-                src={artistImage(m.id)}
-                alt={`Portrait of ${m.name}`}
-                loading="lazy"
-                width={816}
-                height={816}
-                className="size-14 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex size-14 items-center justify-center rounded-full bg-sand text-sm font-semibold">
-                {m.initials}
+            <label
+              className="group relative size-14 shrink-0 cursor-pointer rounded-full focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-foreground"
+              title="Upload a photo"
+            >
+              {artistImage(m) ? (
+                <img
+                  src={artistImage(m)}
+                  alt={`Portrait of ${m.name}`}
+                  loading="lazy"
+                  width={816}
+                  height={816}
+                  className="size-14 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex size-14 items-center justify-center rounded-full bg-sand text-sm font-semibold">
+                  {m.initials}
+                </span>
+              )}
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/55 text-card opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                <Camera className="size-4" aria-hidden="true" />
               </span>
-            )}
+              <span className="sr-only">Upload a photo of {m.name}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  try {
+                    patchMember(m.id, { photo: await toAvatarDataUrl(file) });
+                    toast.success(`Photo updated for ${m.name}`);
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "This image could not be read",
+                    );
+                  }
+                }}
+              />
+            </label>
             <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
               <TextField
                 label="Name"

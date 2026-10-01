@@ -63,6 +63,8 @@ export type TeamMember = {
   maxSession: number;
   /** Public link to the artist's portfolio. */
   portfolioUrl?: string;
+  /** Avatar uploaded by the owner, stored as a small JPEG data URL in the studio config. */
+  photo?: string;
 };
 
 export type Policies = {
