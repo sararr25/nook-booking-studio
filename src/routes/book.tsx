@@ -28,6 +28,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { BookingTicket } from "@/components/nook/booking-ticket";
 import { TypedQuestion } from "@/components/nook/typed-question";
 import { BookingConversation } from "@/components/nook/booking-conversation";
+import { SIZE_GUIDE_QUESTION_ID, sizeGuide } from "@/lib/nook/size-guide";
 import { Wordmark } from "@/components/nook/wordmark";
 import { NookProvider, useNook } from "@/lib/nook/store";
 import {
@@ -1039,6 +1040,8 @@ function QuestionBlock({
                     question.type === "multi"
                       ? Array.isArray(value) && value.includes(option.id)
                       : value === option.id;
+                  const guide =
+                    question.id === SIZE_GUIDE_QUESTION_ID ? sizeGuide[option.id] : undefined;
                   return (
                     <Button
                       variant="outline"
@@ -1052,9 +1055,18 @@ function QuestionBlock({
                       aria-pressed={active}
                       className={cn(
                         "nook-choice h-auto min-h-11 max-w-full flex-col items-start whitespace-normal border border-border px-4 py-2.5 text-left text-sm",
+                        guide && "w-full sm:w-[calc((100%-1rem)/3)]",
                         active && "nook-selected",
                       )}
                     >
+                      {guide && (
+                        <img
+                          src={guide.src}
+                          alt={`Size guide: a design about ${guide.cm} cm long next to a ruler`}
+                          loading="lazy"
+                          className="mb-2 aspect-[4/3] w-full rounded-sm border border-border object-cover"
+                        />
+                      )}
                       <span className="block font-medium">{option.label}</span>
                       {option.hint && (
                         <span className="mt-0.5 block text-xs text-muted-foreground">

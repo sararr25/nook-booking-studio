@@ -160,9 +160,9 @@ export const defaultBusiness: BusinessConfig = {
           label: "Size",
           type: "single",
           options: [
-            { id: "s", label: "Small (up to 7cm)" },
-            { id: "m", label: "Medium (7–14cm)", priceDelta: 70, durationDelta: 30 },
-            { id: "l", label: "Large (14cm+)", priceDelta: 160, durationDelta: 75 },
+            { id: "s", label: "Small (about 10cm)" },
+            { id: "m", label: "Medium (about 15cm)", priceDelta: 70, durationDelta: 30 },
+            { id: "l", label: "Large (about 20cm)", priceDelta: 160, durationDelta: 75 },
           ],
         },
         {
