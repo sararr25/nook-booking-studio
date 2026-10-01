@@ -1,3 +1,4 @@
+import { alignSizeGuideLabels } from "@/lib/nook/size-guide";
 import {
   createContext,
   useCallback,
@@ -59,11 +60,11 @@ const toBusiness = (config: Json | null): BusinessConfig => {
   if (!isRecord(config) || !Array.isArray(config["services"])) return defaultBusiness;
   const saved = config as unknown as BusinessConfig;
   // Configs saved before a policy existed pick up its default value.
-  return {
+  return alignSizeGuideLabels({
     ...saved,
     name: currentStudioName(saved.name),
     policies: { ...defaultBusiness.policies, ...saved.policies },
-  };
+  });
 };
 
 const toStatus = (status: string): BookingRequest["status"] =>
