@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, CircleAlert, CircleCheck } from "lucide-react";
 import { Wordmark } from "@/components/nook/wordmark";
-import { getDemoDepositStatus } from "@/lib/nook/booking-emails.functions";
+import { getDemoDepositStatus, markDemoDepositPaid } from "@/lib/nook/booking-emails.functions";
 
 export const Route = createFileRoute("/payment-demo/$bookingId")({
   loader: ({ params }) => {
@@ -49,12 +50,27 @@ function PaymentDemoPage() {
     : { kind: "failed", reason: result.reason };
   const failureReason = state.kind === "failed" ? state.reason : null;
 
-  // Links sent before the dedicated payment endpoint existed still point here.
-  // Upgrade those unpaid links with a full navigation so the server records payment first.
+  const router = useRouter();
+  const markPaid = useServerFn(markDemoDepositPaid);
+  // Still unpaid here means the payment step was skipped (an old link, or a phone that reused
+  // a cached redirect). Record it with an uncacheable POST, then reload the receipt.
   useEffect(() => {
     if (failureReason !== "unpaid") return;
-    window.location.replace(`/api/public/payment-demo/${bookingId}`);
-  }, [bookingId, failureReason]);
+    let cancelled = false;
+    void markPaid({ data: { id: bookingId } })
+      .catch((error: unknown) =>
+        console.error(
+          "Demo deposit could not be recorded",
+          error instanceof Error ? error.message : error,
+        ),
+      )
+      .finally(() => {
+        if (!cancelled) void router.invalidate();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bookingId, failureReason, markPaid, router]);
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 sm:py-14">

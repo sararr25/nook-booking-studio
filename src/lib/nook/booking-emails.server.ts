@@ -75,6 +75,7 @@ export async function sendBookingEmail(
             ? `${demoPaymentBaseUrl}/api/public/payment-demo/${bookingId}`
             : "",
         reason: reason ?? "",
+        nookLogoUrl: `${demoPaymentBaseUrl}/nook-logo-light.png`,
       },
       idempotencyKey: `booking-${kind}-${bookingId}-${eventKey}`,
     });

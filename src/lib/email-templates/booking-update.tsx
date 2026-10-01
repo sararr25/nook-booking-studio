@@ -6,6 +6,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Row,
   Section,
@@ -26,6 +27,8 @@ export interface BookingUpdateProps {
   deposit?: string;
   depositDueHours?: number;
   paymentUrl?: string;
+  /** Absolute URL of Nook's light logo, shown beside "Booked with Nook". */
+  nookLogoUrl?: string;
   pendingDeposit?: boolean;
   reason?: string;
   serviceName?: string;
@@ -115,6 +118,7 @@ function BookingUpdate({
   deposit = "",
   depositDueHours = 24,
   paymentUrl = "",
+  nookLogoUrl = "",
   pendingDeposit = false,
   reason = "",
   serviceName = "",
@@ -343,6 +347,15 @@ function BookingUpdate({
             <Text style={{ margin: 0, fontSize: "11px", lineHeight: "1.6", color: "#b9b1a5" }}>
               {studioName}
               {location ? ` · ${location}` : ""} · Booked with Nook
+              {nookLogoUrl && (
+                <Img
+                  src={nookLogoUrl}
+                  width="16"
+                  height="16"
+                  alt="Nook"
+                  style={{ display: "inline-block", verticalAlign: "-3px", marginLeft: "6px" }}
+                />
+              )}
             </Text>
           </Section>
         </Container>

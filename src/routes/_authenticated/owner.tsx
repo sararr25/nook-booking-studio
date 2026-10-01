@@ -38,6 +38,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { loadFlashDesigns, studioFlashArtwork } from "@/lib/nook/flash";
 import { getCalendarBusy } from "@/lib/nook/booking-emails.functions";
 import { OwnerCalendar } from "@/components/nook/owner-calendar";
+import { OwnerAddBooking } from "@/components/nook/owner-add-booking";
 import { PricingImport } from "@/components/nook/pricing-import";
 import { Button } from "@/components/ui/button";
 import {
@@ -996,9 +997,12 @@ function RequestsTab() {
   if (requests.length === 0)
     return (
       <div>
-        <button type="button" onClick={() => setView("calendar")} className={ghostButton}>
-          Calendar view
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setView("calendar")} className={ghostButton}>
+            Calendar view
+          </button>
+          <OwnerAddBooking />
+        </div>
         <p className="mt-5 text-sm text-muted-foreground">
           No bookings yet. Try the customer flow and they will show up here.
         </p>
@@ -1018,6 +1022,7 @@ function RequestsTab() {
         <button type="button" onClick={() => setView("calendar")} className={ghostButton}>
           <CalendarDays className="size-4" /> Calendar
         </button>
+        <OwnerAddBooking />
         <label className="ml-auto text-xs">
           Search bookings
           <input

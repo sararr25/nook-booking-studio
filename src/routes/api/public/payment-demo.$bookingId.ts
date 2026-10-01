@@ -11,7 +11,14 @@ export const Route = createFileRoute("/api/public/payment-demo/$bookingId")({
         }
         const { recordDemoDepositPayment } = await import("@/lib/nook/payment-demo.server");
         await recordDemoDepositPayment(parsed.data);
-        return Response.redirect(new URL(`/payment-demo/${parsed.data}`, request.url), 303);
+        // Mobile mail apps and Safari may reuse a cached redirect, skipping the payment step.
+        return new Response(null, {
+          status: 303,
+          headers: {
+            Location: new URL(`/payment-demo/${parsed.data}`, request.url).toString(),
+            "Cache-Control": "no-store",
+          },
+        });
       },
     },
   },
