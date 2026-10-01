@@ -260,6 +260,8 @@
  *   and small status/count badges.
  * - The only elevation is a hard offset "print" shadow. No soft blur shadows.
  * - Selected = ink border, peach offset shadow and corner brackets. No filled background.
+ * - Exception: the booking chat (Nook) uses round bubbles, pill replies and one soft
+ *   shadow so it reads as a conversation with a person, not a form.
  */
 .nook-choice {
   border-radius: var(--radius);
@@ -430,8 +432,29 @@
   color: var(--foreground);
   animation: nook-pop 320ms ease-out both;
 }
+.nook-reply {
+  color: var(--foreground);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+.nook-reply:hover {
+  border-color: var(--foreground);
+  background-color: var(--brand-soft);
+  transform: translateY(-1px);
+}
+.nook-chat {
+  box-shadow: 0 18px 48px -24px color-mix(in oklab, var(--foreground) 35%, transparent);
+}
 .nook-face-eyes {
-  transform-origin: 12px 10px;
+  transition: transform 240ms ease;
+}
+.nook-face-eyes--up {
+  translate: 0.6px -1.4px;
+}
+.nook-face-eyes {
+  transform-origin: 16px 15.5px;
   animation: nook-blink 4.2s infinite;
 }
 @keyframes nook-blink {

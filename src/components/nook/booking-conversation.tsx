@@ -23,8 +23,39 @@ function nextQuestion(service: Service, answers: Answers, skipped: string[]) {
   );
 }
 
+// The form labels are terse ("Size", "Placement"); in chat Nook asks the way a person at the desk would.
+const CHAT_PROMPTS: Record<string, string> = {
+  size: "Roughly how big are you imagining it? A guess in cm is totally fine, we'll measure together at the studio.",
+  style: "What kind of look are you going for?",
+  placement: "And where would you like it to live on your body?",
+  coverup: "Quick one: is this going over an older tattoo, or on fresh skin?",
+  extras: "Want to add anything to the session? Pick any that sound good, or skip.",
+  firsttime: "Is this your first tattoo? No wrong answer, it just helps us plan a bit more time.",
+  reference:
+    "Now the fun part: tell me about the idea in a sentence or two. You can add reference pictures at the top of the page too.",
+  sizeflash: "Great pick. How big would you like it?",
+  placementflash: "And where should it go?",
+  scope: "Happy to set up a chat with an artist. What's on your mind?",
+  notes: "Anything you'd like the artist to know before you meet? Totally optional.",
+};
+
 function questionPrompt(question: Question) {
-  return `${question.label}${question.help ? ` ${question.help}` : ""}`;
+  return (
+    CHAT_PROMPTS[question.id] ?? `${question.label}${question.help ? ` ${question.help}` : ""}`
+  );
+}
+
+const ACKS = ["Got it.", "Perfect.", "Nice, noted.", "Sounds good.", "Great."];
+
+/** A short, human acknowledgement before the next question. */
+function acknowledge(question: Question, value: Answers[string], step: number) {
+  const chosen = question.options?.find((option) => option.id === value)?.label;
+  if (question.type === "scale")
+    return `${value} ${question.unit ?? ""}, got it.`.replace(" ,", ",");
+  if (question.type === "text") return "Thanks, that really helps the artist.";
+  if (chosen && question.type === "single")
+    return `${chosen}, ${["nice choice.", "noted.", "great."][step % 3]}`;
+  return ACKS[step % ACKS.length];
 }
 
 function matchOption(question: Question, input: string) {
@@ -86,7 +117,7 @@ export function BookingConversation({
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      text: "Tell me what you'd like to book. I can turn the details into a booking request.",
+      text: "Hi, I'm Nook 👋 I help people get booked in at the studio. What are you dreaming of getting? Pick an option below or just tell me in your own words.",
     },
   ]);
   const endRef = useRef<HTMLDivElement>(null);
@@ -135,7 +166,7 @@ export function BookingConversation({
     append(
       label,
       first
-        ? questionPrompt(first)
+        ? `${next.name}, lovely. ${questionPrompt(first)}`
         : "I have enough to prepare the booking. Review the details next.",
     );
   }
@@ -172,7 +203,10 @@ export function BookingConversation({
         void answerOpenQuestion(input);
       } else {
         setNotes(input);
-        append(input, "Which service fits best? Choose one below, then I'll ask for the details.");
+        append(
+          input,
+          "Sounds exciting! Which of these is closest to what you have in mind? Then I'll ask a few quick things.",
+        );
       }
       return;
     }
@@ -227,19 +261,20 @@ export function BookingConversation({
       append(
         input,
         question.type === "scale"
-          ? `Please give a size between ${question.min ?? 0} and ${question.max ?? 100} ${question.unit ?? "units"}.`
-          : "I couldn't match that to this question. Use one of the choices below, or type its full label.",
+          ? `Could you give me a size between ${question.min ?? 0} and ${question.max ?? 100} ${question.unit ?? "units"}.`
+          : "Hmm, I didn't quite catch that. Could you tap one of the options below?",
       );
       return;
     }
     const nextAnswers = { ...answers, [question.id]: value };
     setAnswers(nextAnswers);
     const following = nextQuestion(service, nextAnswers, skipped);
+    const ack = acknowledge(question, value, Object.keys(nextAnswers).length);
     append(
       input,
       following
-        ? questionPrompt(following)
-        : "That's enough to prepare your booking. Review the details next.",
+        ? `${ack} ${questionPrompt(following)}`
+        : `${ack} That's everything I need! Have a look at the summary and pick a time that suits you.`,
     );
   }
 
@@ -268,31 +303,34 @@ export function BookingConversation({
         <section
           id="booking-conversation"
           aria-label="Booking conversation"
-          className="nook-enter mt-4 rounded-sm border border-foreground bg-card shadow-[4px_4px_0_var(--brand)]"
+          className="nook-enter nook-chat mt-4 overflow-hidden rounded-[20px] border border-border bg-card"
         >
-          <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
-            <p className="flex items-center gap-2 font-display text-base font-bold">
-              <span
-                aria-hidden="true"
-                className="size-2.5 border-r-[3px] border-t-[3px] border-brand-ink"
-              />
-              Plan it together
-            </p>
-            <p className="font-mono text-xs text-muted-foreground">Draft only, you confirm</p>
+          <header className="flex items-center gap-3 border-b border-border bg-brand-soft/60 px-4 py-3 sm:px-5">
+            <NookFace size="lg" thinking={thinking} />
+            <div className="min-w-0">
+              <p className="font-display text-base font-bold leading-tight">Nook</p>
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span aria-hidden="true" className="size-1.5 rounded-full bg-emerald-600" />
+                {thinking ? "typing…" : `${business.name}'s booking helper`}
+              </p>
+            </div>
           </header>
           <div className="p-4 sm:p-5">
             <div
-              className="max-h-80 space-y-4 overflow-y-auto pr-1"
+              className="max-h-96 space-y-2.5 overflow-y-auto pr-1"
               aria-live="polite"
               aria-relevant="additions text"
             >
               {messages.map((message, index) =>
                 message.role === "assistant" ? (
-                  <div key={index} className="nook-enter flex max-w-[88%] items-start gap-2.5">
-                    <NookFace />
+                  <div key={index} className="nook-enter flex max-w-[88%] items-end gap-2">
+                    {messages[index + 1]?.role === "assistant" ? (
+                      <span aria-hidden="true" className="w-9 shrink-0" />
+                    ) : (
+                      <NookFace />
+                    )}
                     <div className="min-w-0">
-                      <p className="mb-1 font-mono text-xs font-medium text-brand-ink">Nook</p>
-                      <p className="rounded-sm border border-border bg-background px-3.5 py-2.5 text-sm leading-relaxed">
+                      <p className="rounded-[18px] rounded-bl-[6px] bg-brand-soft px-4 py-2.5 text-[15px] leading-relaxed text-foreground">
                         {index === messages.length - 1 ? (
                           <TypedQuestion
                             text={message.text}
@@ -308,20 +346,19 @@ export function BookingConversation({
                   </div>
                 ) : (
                   <div key={index} className="nook-enter ml-auto max-w-[80%] text-right">
-                    <p className="mb-1 font-mono text-xs font-medium text-muted-foreground">You</p>
-                    <p className="inline-block rounded-sm bg-foreground px-3.5 py-2.5 text-left text-sm leading-relaxed text-card">
+                    <p className="inline-block rounded-[18px] rounded-br-[6px] bg-foreground px-4 py-2.5 text-left text-[15px] leading-relaxed text-card">
                       {message.text}
                     </p>
                   </div>
                 ),
               )}
               {thinking && (
-                <div className="nook-enter flex items-center gap-2.5" role="status">
+                <div className="nook-enter flex items-end gap-2" role="status">
                   <NookFace thinking />
                   <span className="sr-only">Nook is typing</span>
                   <span
                     aria-hidden="true"
-                    className="nook-dots inline-flex gap-1 rounded-sm border border-border bg-background px-3.5 py-3"
+                    className="nook-dots inline-flex gap-1 rounded-[18px] rounded-bl-[6px] bg-brand-soft px-4 py-3.5"
                   >
                     <span />
                     <span />
@@ -339,7 +376,7 @@ export function BookingConversation({
                     type="button"
                     disabled={busy}
                     onClick={() => selectService(item, item.name)}
-                    className="nook-choice min-h-11 rounded-sm border border-border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
+                    className="nook-reply min-h-11 rounded-full border border-brand-ink/40 bg-background px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                   >
                     {item.name}
                   </button>
@@ -359,7 +396,7 @@ export function BookingConversation({
                     type="button"
                     disabled={busy}
                     onClick={() => void answerOpenQuestion(suggestion)}
-                    className="min-h-9 rounded-sm border border-dashed border-input px-2.5 text-xs text-muted-foreground transition-colors hover:border-foreground hover:bg-brand-soft hover:text-foreground disabled:opacity-50"
+                    className="min-h-9 rounded-full bg-muted px-3.5 text-xs text-muted-foreground transition-colors hover:bg-brand-soft hover:text-foreground focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                   >
                     {suggestion}
                   </button>
@@ -374,7 +411,7 @@ export function BookingConversation({
                     type="button"
                     disabled={busy}
                     onClick={() => sendAnswer(option.label)}
-                    className="nook-choice min-h-11 rounded-sm border border-border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
+                    className="nook-reply min-h-11 rounded-full border border-brand-ink/40 bg-background px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-foreground disabled:opacity-50"
                   >
                     {option.label}
                   </button>
@@ -396,7 +433,7 @@ export function BookingConversation({
                 event.preventDefault();
                 sendAnswer(draft);
               }}
-              className="mt-5 flex gap-2 border-t border-border pt-4"
+              className="mt-5 flex gap-2 rounded-full border border-input bg-background p-1.5 focus-within:border-foreground"
             >
               <label className="sr-only" htmlFor="booking-chat-input">
                 Your message
@@ -409,15 +446,15 @@ export function BookingConversation({
                 placeholder={
                   question?.type === "scale"
                     ? `Size in ${question.unit ?? "units"}`
-                    : "Type your message"
+                    : "Write to Nook…"
                 }
-                className="min-h-11 min-w-0 flex-1 rounded-sm border border-input bg-background px-3 text-sm outline-none focus:border-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+                className="min-h-10 min-w-0 flex-1 bg-transparent px-3 text-[15px] outline-none"
               />
               <button
                 type="submit"
                 disabled={!draft.trim() || busy}
                 aria-label="Send message"
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-sm bg-foreground text-card transition-colors hover:bg-brand hover:text-brand-foreground disabled:opacity-40 disabled:hover:bg-foreground disabled:hover:text-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground text-card transition-colors hover:bg-brand hover:text-brand-foreground disabled:opacity-40 disabled:hover:bg-foreground disabled:hover:text-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
               >
                 <Send size={17} aria-hidden="true" />
               </button>
@@ -436,7 +473,7 @@ export function BookingConversation({
               </button>
             )}
             <p className="mt-3 text-xs text-muted-foreground">
-              This assistant prepares a draft. You choose a time and confirm the request yourself.
+              Nook prepares a draft for you. Nothing is booked until you pick a time and confirm.
             </p>
           </div>
         </section>
@@ -445,25 +482,38 @@ export function BookingConversation({
   );
 }
 
-/** Nook's small face: peach disc, blinking eyes, a smile that turns to an "o" while thinking. */
-function NookFace({ thinking = false }: { thinking?: boolean }) {
+/**
+ * Nook's face: a little peach ink-pot character with a top-knot, rosy cheeks and
+ * blinking eyes. While thinking the eyes glance up and the mouth becomes a small "o".
+ */
+function NookFace({ thinking = false, size = "sm" }: { thinking?: boolean; size?: "sm" | "lg" }) {
   return (
     <span
       aria-hidden="true"
-      className="nook-face mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-foreground bg-brand"
+      className={`nook-face relative flex shrink-0 items-center justify-center rounded-full bg-brand ring-2 ring-card ${size === "lg" ? "size-12" : "size-9"}`}
     >
-      <svg viewBox="0 0 24 24" className="size-6" fill="none">
-        <g className="nook-face-eyes" fill="currentColor">
-          <circle cx="8.5" cy="10" r="1.6" />
-          <circle cx="15.5" cy="10" r="1.6" />
+      <svg viewBox="0 0 32 32" className="size-full" fill="none">
+        {/* top-knot, like a brush tip */}
+        <path
+          d="M16 3.5c1.8 1.4 2.2 3.2 1 4.6-.7.8-2.3.8-3 0-1.2-1.4-.4-3.3 2-4.6Z"
+          fill="currentColor"
+        />
+        <g
+          className={thinking ? "nook-face-eyes nook-face-eyes--up" : "nook-face-eyes"}
+          fill="currentColor"
+        >
+          <ellipse cx="11.6" cy="15.5" rx="1.5" ry="1.9" />
+          <ellipse cx="20.4" cy="15.5" rx="1.5" ry="1.9" />
         </g>
+        <circle cx="8.6" cy="19.6" r="1.9" fill="#e86a4f" opacity=".35" />
+        <circle cx="23.4" cy="19.6" r="1.9" fill="#e86a4f" opacity=".35" />
         {thinking ? (
-          <circle cx="12" cy="16" r="1.7" stroke="currentColor" strokeWidth="1.6" />
+          <ellipse cx="16" cy="21" rx="1.4" ry="1.6" stroke="currentColor" strokeWidth="1.5" />
         ) : (
           <path
-            d="M8 14.5c1 1.6 2.4 2.3 4 2.3s3-.7 4-2.3"
+            d="M12.8 19.8c.9 1.5 2 2.1 3.2 2.1s2.3-.6 3.2-2.1"
             stroke="currentColor"
-            strokeWidth="1.7"
+            strokeWidth="1.6"
             strokeLinecap="round"
           />
         )}
