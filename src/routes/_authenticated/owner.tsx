@@ -1981,6 +1981,25 @@ function ServicesTab() {
                 }
               />
             </div>
+            <label className="mt-4 flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                checked={s.requiresReview === true}
+                onChange={(event) =>
+                  updateBusiness((b) =>
+                    editServices(b, s.id, { requiresReview: event.target.checked }),
+                  )
+                }
+                className="mt-0.5 size-4 accent-foreground"
+              />
+              <span>
+                <span className="font-medium">I confirm every booking myself</span>
+                <span className="block text-xs text-muted-foreground">
+                  Requests for this service always wait for your approval, even when they are cheap
+                  and short.
+                </span>
+              </span>
+            </label>
             <div className="mt-5 border-t border-border pt-4">
               <p className="text-sm font-semibold">Customer estimate starts here</p>
               <p className="mt-1 font-mono text-lg">
@@ -2128,7 +2147,7 @@ function QuestionsTab() {
             className={cn(
               "min-h-10 rounded-sm border px-4 text-sm transition-colors",
               s.id === service.id
-                ? "border-foreground bg-ink text-brand-foreground"
+                ? "border-foreground bg-ink text-primary-foreground"
                 : "border-border hover:border-foreground",
             )}
           >

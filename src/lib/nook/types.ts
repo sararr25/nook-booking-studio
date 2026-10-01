@@ -46,6 +46,8 @@ export type Service = {
   basePrice: number;
   baseDuration: number; // minutes
   depositPercent: number;
+  /** Every booking for this service waits for the owner, whatever the price or length. */
+  requiresReview?: boolean;
   questions: Question[];
 };
 

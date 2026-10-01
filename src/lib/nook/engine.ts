@@ -139,6 +139,8 @@ export const buildQuote = (
     (m) => uniqueSkills.every((s) => m.skills.includes(s)) && m.maxSession >= duration,
   );
 
+  if (service.requiresReview)
+    reviewReasons.push(`${service.name} requests are always confirmed by the studio`);
   if (price > business.policies.autoApproveUnder)
     reviewReasons.push("Above the auto-approval price ceiling");
   if (duration > business.policies.autoApproveMaxDuration)

@@ -59,3 +59,19 @@ export function addCustomPlacement(business: BusinessConfig): BusinessConfig {
     }),
   };
 }
+
+/** Custom tattoos are one-off designs: the owner always confirms them. An explicit owner choice wins. */
+function requireTattooReview(business: BusinessConfig): BusinessConfig {
+  return {
+    ...business,
+    services: business.services.map((service) =>
+      service.id === "tattoo" && service.requiresReview === undefined
+        ? { ...service, requiresReview: true }
+        : service,
+    ),
+  };
+}
+
+/** Brings a saved setup up to date with defaults added after it was saved. */
+export const normalizeSavedBusiness = (business: BusinessConfig) =>
+  requireTattooReview(addCustomPlacement(business));

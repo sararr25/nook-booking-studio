@@ -1,4 +1,4 @@
-import { addCustomPlacement } from "@/lib/nook/placement";
+import { normalizeSavedBusiness } from "@/lib/nook/placement";
 import { alignSizeGuideLabels } from "@/lib/nook/size-guide";
 import {
   createContext,
@@ -62,7 +62,7 @@ const toBusiness = (config: Json | null): BusinessConfig => {
   const saved = config as unknown as BusinessConfig;
   // Configs saved before a policy existed pick up its default value.
   return alignSizeGuideLabels(
-    addCustomPlacement({
+    normalizeSavedBusiness({
       ...saved,
       name: currentStudioName(saved.name),
       policies: { ...defaultBusiness.policies, ...saved.policies },

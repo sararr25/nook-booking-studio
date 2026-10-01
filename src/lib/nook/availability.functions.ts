@@ -17,7 +17,7 @@ export const getAvailableSlots = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { defaultBusiness } = await import("./config");
-    const { addCustomPlacement } = await import("./placement");
+    const { normalizeSavedBusiness } = await import("./placement");
     const { buildQuote, slotsForDay, dateKey } = await import("./engine");
     const { fetchBusyBlocks } = await import("./google-calendar.server");
     const { data: settings, error: settingsError } = await supabaseAdmin
@@ -26,7 +26,9 @@ export const getAvailableSlots = createServerFn({ method: "POST" })
       .eq("id", "main")
       .maybeSingle();
     if (settingsError) throw new Error("Could not load studio availability");
-    const business = addCustomPlacement((settings?.config ?? defaultBusiness) as BusinessConfig);
+    const business = normalizeSavedBusiness(
+      (settings?.config ?? defaultBusiness) as BusinessConfig,
+    );
     const service = business.services.find((item) => item.id === data.serviceId);
     if (!service) throw new Error("Service unavailable");
     let pricedService = service;

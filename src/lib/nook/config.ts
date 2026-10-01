@@ -1,5 +1,5 @@
 import type { BusinessConfig } from "./types";
-import { addCustomPlacement } from "./placement";
+import { normalizeSavedBusiness } from "./placement";
 
 const baseBusiness: BusinessConfig = {
   id: "stillroom-tattoo",
@@ -253,7 +253,7 @@ const baseBusiness: BusinessConfig = {
 };
 
 /** The default setup already includes the extra body parts and the custom placement. */
-export const defaultBusiness = addCustomPlacement(baseBusiness);
+export const defaultBusiness = normalizeSavedBusiness(baseBusiness);
 
 /**
  * Illustrative rules for the landing-page demo. They show how the same engine
