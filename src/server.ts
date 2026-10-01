@@ -35,6 +35,11 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+export function isClientAbort(request: Request, error: unknown): boolean {
+  if (request.signal.aborted) return true;
+  return error instanceof Error && (error.message === "aborted" || error.name === "AbortError");
+}
+
 function isH3SwallowedErrorBody(body: string): boolean {
   try {
     const payload = JSON.parse(body) as { unhandled?: unknown; message?: unknown };
@@ -51,6 +56,9 @@ export default {
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
+      // The browser closed the connection mid-request (reload, navigation, dev restart).
+      // Nobody is waiting for a reply, so don't log it or render an error page.
+      if (isClientAbort(request, error)) return new Response(null, { status: 499 });
       console.error(error);
       return new Response(renderErrorPage(), {
         status: 500,

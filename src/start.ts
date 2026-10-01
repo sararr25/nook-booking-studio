@@ -13,6 +13,13 @@ const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
+    // Browser disconnected mid-request: nothing to render for it.
+    if (
+      request.signal.aborted ||
+      (error instanceof Error && (error.message === "aborted" || error.name === "AbortError"))
+    ) {
+      return new Response(null, { status: 499 });
+    }
     console.error(error);
     return new Response(renderErrorPage(), {
       status: 500,
